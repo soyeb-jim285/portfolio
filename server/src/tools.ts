@@ -220,7 +220,7 @@ export async function runTool(context: ToolContext, name: string, rawArguments: 
     return {
       summary: `search "${args.data.query}"${scope}: ${hits.length} match${hits.length === 1 ? '' : 'es'}`,
       result: asEvidence(hits.map(hit =>
-        `--- ${hit.repo}/${hit.path}:${hit.startLine}-${hit.endLine} @ ${hit.commit.slice(0, 8)}${hit.symbols.length ? ` symbols: ${hit.symbols.join(', ')}` : ''}\n${hit.snippet}`).join('\n\n')),
+        `--- ${hit.repo}/${hit.path}:${hit.startLine}-${hit.endLine} @ ${hit.commit.slice(0, 8)}${hit.url ? ` link: ${hit.url}` : ''}${hit.symbols.length ? ` symbols: ${hit.symbols.join(', ')}` : ''}\n${hit.snippet}`).join('\n\n')),
       sources: hits,
     };
   }
@@ -232,7 +232,7 @@ export async function runTool(context: ToolContext, name: string, rawArguments: 
     if (!file) return fail(`read ${args.data.repo}/${args.data.path}: not indexed`, `${args.data.path} is not in the indexed revision of ${args.data.repo}. Use list_files or search_knowledge for real paths.`);
     return {
       summary: `read ${file.repo}/${file.path}:${file.startLine}-${file.endLine}`,
-      result: asEvidence(`--- ${file.repo}/${file.path}:${file.startLine}-${file.endLine} of ${file.lineCount} lines @ ${file.commit.slice(0, 8)}\n${file.content}`),
+      result: asEvidence(`--- ${file.repo}/${file.path}:${file.startLine}-${file.endLine} of ${file.lineCount} lines @ ${file.commit.slice(0, 8)}${file.url ? ` link: ${file.url}` : ''}\n${file.content}`),
       sources: [{ repo: file.repo, path: file.path, language: file.language, symbols: [], startLine: file.startLine, endLine: file.endLine, commit: file.commit, url: file.url, snippet: file.content }],
     };
   }

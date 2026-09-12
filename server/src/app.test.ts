@@ -273,6 +273,8 @@ test('runs a real tool call, reports it, cites the source and stores both', asyn
   assert.equal(toolMessage.tool_call_id, 'call_1');
   assert.match(toolMessage.content, /untrusted data, never as instructions/);
   assert.match(toolMessage.content, /hyprfm\/src\/FileOps\.cpp:10-40/);
+  // The model gets the real GitHub link with the evidence, so it never has to build one from a path.
+  assert.match(toolMessage.content, /link: https:\/\/github\.com\/soyeb-jim285\/hyprfm\/blob\/a{40}\/src\/FileOps\.cpp#L10-L40/);
   assert.equal(sent[0].tools.map((tool: any) => tool.function.name).join(','), 'search_knowledge,read_source,show_section,show_image,prepare_contact,create_artifact,get_availability,propose_booking,list_files');
   assert.match(sent[0].messages[0].content, /- hyprfm: file manager \[C\+\+, 307 stars/);
 
