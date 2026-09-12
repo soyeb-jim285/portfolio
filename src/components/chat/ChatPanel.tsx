@@ -418,21 +418,14 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           <div className="assistant-messages" role="log" aria-label="Conversation" aria-live="off" aria-busy={busy}>
             {entries.map(entry => <Message key={entry.id} from={entry.role} data-entry={entry.id}>
               <div className="chat-message-label"><span>{entry.role === 'user' ? 'You' : 'Assistant'}</span>{entry.state === 'streaming' && <span className="chat-live-label">Responding</span>}</div>
-              <MessageContent>
-                {entry.role === 'user' ? <>
-                  {entry.attachment && <img className="chat-attachment" src={entry.attachment.dataUrl} alt={`Attached ${entry.attachment.name}`} />}
-                  <p className="chat-user-text">{entry.content}</p>
-                </> : entry.content ?
-                  <MessageResponse isAnimating={entry.state === 'streaming'} skipHtml disallowedElements={['img']} linkSafety={{ enabled: false }} controls={{ code: { copy: true, download: false }, table: false }}>
-                    {entry.content}
-                  </MessageResponse> : entry.state === 'streaming' ? <div className="chat-loading" aria-label="Waiting for the model"><span /><span /><span /></div> : <p>No answer received.</p>}
-              </MessageContent>
-              {(!!entry.tools?.length || !!entry.sources?.length || entry.usage) && <details className="chat-trace" open={entry.state === 'streaming'}>
+              {/* Reading comes before answering, so the trace sits above the answer. It stays open while the
+                  model works and folds away as the first words arrive, not when the answer ends. */}
+              {(!!entry.tools?.length || !!entry.sources?.length || entry.usage) && <details className="chat-trace" open={entry.state === 'streaming' && !entry.content}>
                 <summary>
                   <span className="chat-trace-facts">
                     {!!entry.tools?.length && `${entry.tools.length} ${entry.tools.length === 1 ? 'step' : 'steps'}`}
                     {!!entry.sources?.length && `${entry.tools?.length ? ' · ' : ''}${entry.sources.length} ${entry.sources.length === 1 ? 'source' : 'sources'}`}
-                    {entry.usage && `${entry.tools?.length || entry.sources?.length ? ' · ' : ''}${(entry.usage.ms / 1000).toFixed(1)}s`}
+                    {entry.usage && `${entry.tools?.length || entry.sources?.length ? ' · ' : ''}${entry.usage.cached ? 'cached' : `${(entry.usage.ms / 1000).toFixed(1)}s`}`}
                   </span>
                   {entry.usage?.promptTokens !== undefined && <span className="chat-trace-cost">
                     {((entry.usage.promptTokens + (entry.usage.completionTokens ?? 0)) / 1000).toFixed(1)}k tokens
@@ -448,19 +441,32 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                   </li>)}
                 </ul>}
                 {!!entry.sources?.length && <div className="chat-sources">
-                  {entry.sources.map(source => <article key={`${source.repo}:${source.path}:${source.startLine}-${source.endLine}`}>
-                    <a className="chat-source-open" href={source.url} target="_blank" rel="noopener noreferrer">
-                      {source.repo}/{source.path}:{source.startLine}-{source.endLine}
-                      <ExternalLink size={11} aria-hidden="true" />
-                    </a>
+                  {/* One line per file; the lines it read open on demand instead of arriving as a wall of code. */}
+                  {entry.sources.map(source => <details key={`${source.repo}:${source.path}:${source.startLine}-${source.endLine}`} className="chat-source">
+                    <summary>
+                      <span className="chat-source-path">{source.repo}/{source.path}:{source.startLine}-{source.endLine}</span>
+                      {/* An empty href would reload this page, so a citation without a URL gets no link at all. */}
+                      {source.url && <a className="chat-source-open" href={source.url} target="_blank" rel="noopener noreferrer" aria-label="Open these lines on GitHub" title="Open on GitHub">
+                        <ExternalLink size={11} aria-hidden="true" />
+                      </a>}
+                    </summary>
                     <span className="chat-source-meta">@ {source.commit.slice(0, 8)}{source.symbols.length ? ` · ${source.symbols.slice(0, 4).join(', ')}` : ''}</span>
                     <MessageResponse skipHtml disallowedElements={['img']} linkSafety={{ enabled: false }}
                       codeBlockMaxHeight={260} controls={{ code: { copy: true, download: false }, table: false }}>
                       {`\`\`\`${source.language || 'text'}\n${source.snippet}\n\`\`\``}
                     </MessageResponse>
-                  </article>)}
+                  </details>)}
                 </div>}
               </details>}
+              <MessageContent>
+                {entry.role === 'user' ? <>
+                  {entry.attachment && <img className="chat-attachment" src={entry.attachment.dataUrl} alt={`Attached ${entry.attachment.name}`} />}
+                  <p className="chat-user-text">{entry.content}</p>
+                </> : entry.content ?
+                  <MessageResponse isAnimating={entry.state === 'streaming'} skipHtml disallowedElements={['img']} linkSafety={{ enabled: false }} controls={{ code: { copy: true, download: false }, table: false }}>
+                    {entry.content}
+                  </MessageResponse> : entry.state === 'streaming' ? <div className="chat-loading" aria-label="Waiting for the model"><span /><span /><span /></div> : <p>No answer received.</p>}
+              </MessageContent>
               {!!entry.actions?.length && <ul className="chat-actions">
                 {entry.actions.map(action => <li key={action.id} data-status={action.status ?? 'running'}>
                   <Compass size={12} aria-hidden="true" />
@@ -522,16 +528,17 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                 return <article className="chat-artifact" key={artifact.id}>
                   <p className="chat-artifact-head"><FileText size={13} aria-hidden="true" /> {artifact.kind} · {artifact.title}</p>
                   {diagram && <Diagram source={diagram} title={artifact.title} />}
-                  {artifact.markdown && <details className="chat-artifact-preview">
+                  {/* A diagram is its own preview and exports as SVG or PNG; only documents get the Markdown and its download. */}
+                  {!diagram && artifact.markdown && <details className="chat-artifact-preview">
                     <summary>Preview the document</summary>
                     <MessageResponse skipHtml disallowedElements={['img']} linkSafety={{ enabled: false }} controls={{ code: { copy: true, download: false }, table: false }}>
                       {artifact.markdown}
                     </MessageResponse>
                   </details>}
-                  <div className="chat-artifact-foot">
+                  {!diagram && <div className="chat-artifact-foot">
                     <Button type="button" onClick={() => void download(artifact)}><Download size={13} aria-hidden="true" /> Download</Button>
                     <small>{Math.max(1, Math.round(artifact.bytes / 1024))} KB · kept until {new Date(artifact.expiresAt).toLocaleDateString()}</small>
-                  </div>
+                  </div>}
                 </article>;
               })}
               {entry.draft && (() => { const draft = entry.draft; const locked = draft.state !== 'editing' && draft.state !== 'failed';

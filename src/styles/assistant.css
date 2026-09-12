@@ -84,7 +84,7 @@
 .chat-response :is(th,td) { border: 1px solid var(--line-2); padding: 7px 9px; white-space: normal; }
 .chat-response thead { background: var(--bg-2); }
 .chat-response blockquote { border-left: 2px solid var(--accent); padding-left: 12px; color: var(--muted); }
-.chat-trace { margin-top: 10px; border-top: 1px solid var(--line); font-size: 10px; color: var(--muted); }
+.chat-trace { border-block: 1px solid var(--line); margin-bottom: 4px; font-size: 10px; color: var(--muted); }
 .chat-trace > summary { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 8px 0; cursor: pointer; list-style: none; font-variant-numeric: tabular-nums; }
 .chat-trace > summary::-webkit-details-marker { display: none; }
 /* The marker belongs to the label, not to the flex row, or it drifts to the far edge. */
@@ -141,6 +141,12 @@
 .chat-diagram svg { max-width: 100%; height: auto; }
 .chat-diagram figcaption { display: flex; gap: 6px; margin-top: 8px; }
 .chat-diagram figcaption .chat-button { min-height: 32px; padding: 6px 10px; font-size: 10px; }
+.chat-diagram-fullscreen { margin-left: auto; }
+/* Full screen: the drawing fills the screen and the controls stay pinned below it. */
+.chat-diagram:fullscreen, .chat-diagram[data-expanded] { display: flex; flex-direction: column; padding: 24px; background: var(--bg); border: 0; }
+.chat-diagram[data-expanded] { position: fixed; inset: 0; z-index: 20; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+.chat-diagram:is(:fullscreen, [data-expanded]) .chat-diagram-canvas { flex: 1; min-height: 0; overflow: auto; }
+.chat-diagram:is(:fullscreen, [data-expanded]) .chat-diagram-canvas > svg { width: 100%; height: 100%; max-width: none !important; }
 .chat-diagram-source { max-height: 260px; overflow: auto; padding: 10px; background: var(--bg); border: 1px solid var(--line); font: 11px/1.6 var(--mono); }
 .chat-draft { display: grid; gap: 10px; margin-top: 12px; padding: 14px; border: 1px solid var(--line-2); background: var(--bg-2); }
 .chat-draft[data-state=sent] { border-color: var(--accent); }
@@ -153,11 +159,17 @@
 .chat-draft-sent { display: flex; align-items: center; gap: 7px; color: var(--accent); font-size: 11px; }
 .chat-draft-note { color: var(--muted); font-size: 10px; }
 .chat-draft[data-state=failed] .chat-draft-note { color: #e8663f; }
-.chat-sources { font-size: 11px; }
-.chat-sources article { padding-bottom: 12px; }
-.chat-sources a { display: inline-flex; align-items: center; gap: 5px; overflow-wrap: anywhere; }
-.chat-source-meta { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
-.chat-sources .chat-response { margin-top: 6px; font-size: 11px; }
+.chat-sources { display: grid; margin-bottom: 10px; font-size: 11px; }
+.chat-source > summary { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; list-style: none; color: var(--ink); }
+.chat-source > summary::-webkit-details-marker { display: none; }
+.chat-source > summary::before { content: "▸"; color: var(--muted); font-size: 9px; }
+.chat-source[open] > summary::before { content: "▾"; }
+.chat-source > summary:hover { color: var(--accent); }
+.chat-source-path { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.chat-source-open { display: inline-flex; padding: 4px; color: var(--muted); }
+.chat-source-open:hover { color: var(--accent); }
+.chat-source-meta { display: block; color: var(--muted); font-size: 10px; margin: 0 0 6px 15px; }
+.chat-sources .chat-response { margin: 0 0 10px; font-size: 11px; }
 .chat-sources [data-streamdown=code-block-header] { display: none; }
 /* Answer controls live with the answer; they stay quiet until the message is hovered or focused. */
 .chat-message-actions { display: flex; align-items: center; gap: 2px; margin: 6px 0 0 -10px; opacity: .45; }
@@ -172,9 +184,6 @@
 .chat-loading span { width: 5px; height: 5px; background: var(--muted); }
 .assistant-jump { align-self: center; margin-bottom: 10px; }
 
-.chat-source-open { display: inline-flex; align-items: baseline; gap: 5px; color: var(--accent); overflow-wrap: anywhere; }
-.chat-source-open:hover { text-decoration: underline; text-underline-offset: 3px; }
-.chat-source-open svg { flex-shrink: 0; align-self: center; }
 
 .assistant-footer { padding: 12px var(--assistant-pad) max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line-2); }
 .assistant-attachment { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; border: 1px solid var(--line-2); background: var(--bg-2); font-size: 10px; color: var(--muted); }
@@ -208,6 +217,11 @@
   .assistant-launch { right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: no-preference) {
+  /* The trace folds instead of snapping shut when the answer starts; browsers without
+     ::details-content keep the instant toggle. */
+  .chat-trace, .chat-source { interpolate-size: allow-keywords; }
+  .chat-trace::details-content, .chat-source::details-content { block-size: 0; overflow: clip; transition: block-size .32s cubic-bezier(.16, 1, .3, 1), content-visibility .32s allow-discrete; }
+  .chat-trace[open]::details-content, .chat-source[open]::details-content { block-size: auto; }
   .assistant-panel[data-state=open] { animation: assistant-enter .22s cubic-bezier(.16,1,.3,1); }
   /* Each message and card fades up once as it arrives; nothing loops. */
   .chat-message, .chat-slots, .chat-booking, .chat-draft, .chat-artifact { animation: assistant-rise .28s cubic-bezier(.16,1,.3,1) backwards; }

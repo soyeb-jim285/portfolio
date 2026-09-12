@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '../ui/button';
 
 // Mermaid runs with htmlLabels and script execution off, so a model-written diagram can only
@@ -44,9 +44,27 @@ export default function Diagram({ source, title = 'diagram' }: { source: string;
   const [svg, setSvg] = useState('');
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const figure = useRef<HTMLElement>(null);
   const mounted = useRef(true);
   // Set on every mount, not just the first: React re-runs mount effects in development.
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  // Native fullscreen where the browser allows it on any element; iPhone Safari only allows video,
+  // so there the figure covers the viewport instead. Escape and the browser's own exit both close it.
+  useEffect(() => {
+    const sync = () => setExpanded(document.fullscreenElement === figure.current);
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setExpanded(false); };
+    document.addEventListener('fullscreenchange', sync);
+    if (expanded && !document.fullscreenElement) document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('fullscreenchange', sync); document.removeEventListener('keydown', escape); };
+  }, [expanded]);
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else if (expanded) setExpanded(false);
+    else if (figure.current?.requestFullscreen) figure.current.requestFullscreen().catch(() => setExpanded(true));
+    else setExpanded(true);
+  };
 
   useEffect(() => {
     if (source.length > MAX_DIAGRAM_CHARS) { setFailed(true); return; }
@@ -96,12 +114,15 @@ export default function Diagram({ source, title = 'diagram' }: { source: string;
 
   // Fall back to the source rather than an error: the text is still useful and always inert.
   if (failed || !svg) return <pre className="chat-diagram-source"><code>{source}</code></pre>;
-  return <figure className="chat-diagram">
+  return <figure className="chat-diagram" ref={figure} data-expanded={expanded || undefined}>
     {/* Mermaid's strict mode sanitises its own output; this is the only place it is inserted. */}
     <div className="chat-diagram-canvas" dangerouslySetInnerHTML={{ __html: svg }} />
     <figcaption>
       <Button type="button" onClick={downloadSvg}><Download size={12} aria-hidden="true" /> SVG</Button>
       <Button type="button" onClick={() => void downloadPng()} disabled={busy}><Download size={12} aria-hidden="true" /> {busy ? 'PNG…' : 'PNG'}</Button>
+      <Button type="button" className="chat-diagram-fullscreen" onClick={toggleFullscreen} aria-pressed={expanded}>
+        {expanded ? <Minimize2 size={12} aria-hidden="true" /> : <Maximize2 size={12} aria-hidden="true" />} {expanded ? 'Exit full screen' : 'Full screen'}
+      </Button>
     </figcaption>
   </figure>;
 }
