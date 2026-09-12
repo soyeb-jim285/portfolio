@@ -58,7 +58,22 @@ const validEmail = (value: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.tr
 // Mirrors the server's defaults (MAX_MESSAGES_PER_SESSION, MAX_CONTEXT_CHARS); it trims again either way.
 const HISTORY_TURNS = 40;
 const HISTORY_CHARS = 24000;
+// Shared by reference: MessageResponse is memoised, and fresh object literals on every render would
+// re-parse every earlier answer each time a streamed chunk arrives.
+const MARKDOWN = { skipHtml: true, disallowedElements: ['img'], linkSafety: { enabled: false }, controls: { code: { copy: true, download: false }, table: false } } as const;
+// Silence, not total length, ends a turn: a long answer keeps streaming as long as events keep arriving.
+const IDLE_TIMEOUT_MS = 90000;
 const MIN_WIDTH = 340;
+
+// Folded content is only rendered once opened: a collapsed source or preview costs nothing,
+// where rendering it hidden would highlight every snippet the model read.
+function Fold({ className, summary, children }: { className: string; summary: React.ReactNode; children: () => React.ReactNode }) {
+  const [opened, setOpened] = useState(false);
+  return <details className={className} onToggle={event => { if (event.currentTarget.open) setOpened(true); }}>
+    <summary>{summary}</summary>
+    {opened && children()}
+  </details>;
+}
 const DEFAULT_WIDTH = 420;
 const clampWidth = (value: number) => Math.round(Math.min(Math.max(value, MIN_WIDTH), Math.max(MIN_WIDTH, Math.min(760, window.innerWidth - 96))));
 
@@ -123,6 +138,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   useEffect(() => {
     token.current = readToken();
     void loadConversation<Entry>()
+      .then(saved => { if (saved.length) void preloadResponse(); return saved; })
       .then(saved => setEntries(current => current.length ? current : saved.map(entry => {
         // A replayed action has already moved the page once; an interrupted turn cannot resume.
         entry.actions?.forEach(action => performed.current.add(action.id));
@@ -216,14 +232,21 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
       { id: answerId, role: 'assistant', content: '', state: 'streaming' }]);
     setAttachment(null);
     const abort = new AbortController(); controller.current = abort;
-    const timer = setTimeout(() => abort.abort('timeout'), 125000);
+    let timer = setTimeout(() => abort.abort('timeout'), IDLE_TIMEOUT_MS);
+    const alive = () => { clearTimeout(timer); timer = setTimeout(() => abort.abort('timeout'), IDLE_TIMEOUT_MS); };
+    // A fast model sends many chunks a frame; the answer is re-rendered at most once per frame with the latest text.
+    let latest = '';
+    let frame = 0;
     setQuestion(''); setBusy(true); setAlert(''); setStatus('Connecting…');
     // The question rides to the top of the viewport and stays put: the answer grows below it.
     anchor.current = userId; follow.current = false; pinned.current = true; setAtBottom(false);
     requestAnimationFrame(() => { fit(); toAnchor('smooth'); });
     const patch = (change: (entry: Entry) => Entry) => setEntries(previous => previous.map(entry => entry.id === answerId ? change(entry) : entry));
     const handlers = {
-      text: (text: string) => { setStatus('Receiving answer…'); patch(entry => ({ ...entry, content: text })); },
+      text: (text: string) => {
+        latest = text;
+        frame ||= requestAnimationFrame(() => { frame = 0; setStatus('Receiving answer…'); patch(entry => ({ ...entry, content: latest })); });
+      },
       tool: (activity: ToolActivity) => {
         setStatus(activity.status === 'running' ? `Reading source: ${activity.name.replace(/_/g, ' ')}…` : 'Receiving answer…');
         patch(entry => ({ ...entry, tools: [...(entry.tools ?? []).filter(previous => previous.id !== activity.id), activity] }));
@@ -251,22 +274,26 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           });
       },
     };
+    // Every event proves the turn is alive, so each one pushes the idle timeout back.
+    const watched = Object.fromEntries(Object.entries(handlers).map(([name, handle]) =>
+      [name, (value: never) => { alive(); (handle as (value: never) => void)(value); }])) as typeof handlers;
     try {
-      // The server owns the history, so an expired session is replaced and the question resent once.
+      // An expired session is replaced and the question resent once.
       let result;
-      try { result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, handlers, sending ?? undefined); }
+      try { result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, watched, sending ?? undefined); }
       catch (error) {
         if (!(error instanceof SessionExpired)) throw error;
         token.current = undefined; writeToken();
-        result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, handlers, sending ?? undefined);
+        result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, watched, sending ?? undefined);
       }
-      setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, content: result.text, state: 'complete' } : entry));
-      setStatus(result.finishReason === 'length' ? 'Length limit reached. Ask a follow-up to continue.' : 'Answer complete.');
+      const cut = result.finishReason === 'length' ? 'Length limit reached. Ask a follow-up to continue.' : undefined;
+      setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, content: result.text, state: 'complete', error: cut } : entry));
+      setStatus(cut ?? 'Answer complete.');
     } catch (error) {
       const reason = abort.signal.aborted ? (abort.signal.reason === 'timeout' ? 'Response timed out. Retry when ready.' : 'Stopped. You can retry this question.') : error instanceof Error ? error.message : 'Could not connect to the assistant.';
       setStatus(reason);
       setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, state: 'incomplete', error: reason } : entry));
-    } finally { clearTimeout(timer); controller.current = null; pinned.current = false; setBusy(false); }
+    } finally { clearTimeout(timer); cancelAnimationFrame(frame); controller.current = null; pinned.current = false; setBusy(false); }
   }
 
   const editDraft = (id: string, change: Partial<Entry['draft']>) =>
@@ -442,20 +469,18 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                 </ul>}
                 {!!entry.sources?.length && <div className="chat-sources">
                   {/* One line per file; the lines it read open on demand instead of arriving as a wall of code. */}
-                  {entry.sources.map(source => <details key={`${source.repo}:${source.path}:${source.startLine}-${source.endLine}`} className="chat-source">
-                    <summary>
-                      <span className="chat-source-path">{source.repo}/{source.path}:{source.startLine}-{source.endLine}</span>
-                      {/* An empty href would reload this page, so a citation without a URL gets no link at all. */}
-                      {source.url && <a className="chat-source-open" href={source.url} target="_blank" rel="noopener noreferrer" aria-label="Open these lines on GitHub" title="Open on GitHub">
-                        <ExternalLink size={11} aria-hidden="true" />
-                      </a>}
-                    </summary>
+                  {entry.sources.map(source => <Fold key={`${source.repo}:${source.path}:${source.startLine}-${source.endLine}`} className="chat-source" summary={<>
+                    <span className="chat-source-path">{source.repo}/{source.path}:{source.startLine}-{source.endLine}</span>
+                    {/* An empty href would reload this page, so a citation without a URL gets no link at all. */}
+                    {source.url && <a className="chat-source-open" href={source.url} target="_blank" rel="noopener noreferrer" aria-label="Open these lines on GitHub" title="Open on GitHub">
+                      <ExternalLink size={11} aria-hidden="true" />
+                    </a>}
+                  </>}>{() => <>
                     <span className="chat-source-meta">@ {source.commit.slice(0, 8)}{source.symbols.length ? ` · ${source.symbols.slice(0, 4).join(', ')}` : ''}</span>
-                    <MessageResponse skipHtml disallowedElements={['img']} linkSafety={{ enabled: false }}
-                      codeBlockMaxHeight={260} controls={{ code: { copy: true, download: false }, table: false }}>
+                    <MessageResponse {...MARKDOWN} codeBlockMaxHeight={260}>
                       {`\`\`\`${source.language || 'text'}\n${source.snippet}\n\`\`\``}
                     </MessageResponse>
-                  </details>)}
+                  </>}</Fold>)}
                 </div>}
               </details>}
               <MessageContent>
@@ -463,7 +488,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                   {entry.attachment && <img className="chat-attachment" src={entry.attachment.dataUrl} alt={`Attached ${entry.attachment.name}`} />}
                   <p className="chat-user-text">{entry.content}</p>
                 </> : entry.content ?
-                  <MessageResponse isAnimating={entry.state === 'streaming'} skipHtml disallowedElements={['img']} linkSafety={{ enabled: false }} controls={{ code: { copy: true, download: false }, table: false }}>
+                  <MessageResponse isAnimating={entry.state === 'streaming'} {...MARKDOWN}>
                     {entry.content}
                   </MessageResponse> : entry.state === 'streaming' ? <div className="chat-loading" aria-label="Waiting for the model"><span /><span /><span /></div> : <p>No answer received.</p>}
               </MessageContent>
@@ -529,12 +554,9 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                   <p className="chat-artifact-head"><FileText size={13} aria-hidden="true" /> {artifact.kind} · {artifact.title}</p>
                   {diagram && <Diagram source={diagram} title={artifact.title} />}
                   {/* A diagram is its own preview and exports as SVG or PNG; only documents get the Markdown and its download. */}
-                  {!diagram && artifact.markdown && <details className="chat-artifact-preview">
-                    <summary>Preview the document</summary>
-                    <MessageResponse skipHtml disallowedElements={['img']} linkSafety={{ enabled: false }} controls={{ code: { copy: true, download: false }, table: false }}>
-                      {artifact.markdown}
-                    </MessageResponse>
-                  </details>}
+                  {!diagram && artifact.markdown && <Fold className="chat-artifact-preview" summary="Preview the document">
+                    {() => <MessageResponse {...MARKDOWN}>{artifact.markdown}</MessageResponse>}
+                  </Fold>}
                   {!diagram && <div className="chat-artifact-foot">
                     <Button type="button" onClick={() => void download(artifact)}><Download size={13} aria-hidden="true" /> Download</Button>
                     <small>{Math.max(1, Math.round(artifact.bytes / 1024))} KB · kept until {new Date(artifact.expiresAt).toLocaleDateString()}</small>
@@ -564,7 +586,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                 <p className="chat-draft-note" role="status">{draft.error ?? (draft.state === 'sent' ? '' : 'Edit anything above. Nothing is sent until you press Send.')}</p>
               </form>;
               })()}
-              {entry.state === 'incomplete' && <p className="chat-incomplete" role="alert">{entry.error ?? 'Incomplete answer'}</p>}
+              {(entry.state === 'incomplete' || entry.error) && <p className="chat-incomplete" role="alert">{entry.error ?? 'Incomplete answer'}</p>}
               {entry.role === 'assistant' && entry.state !== 'streaming' && (() => {
                 const again = retryOf(entry.id);
                 const vote = entry.vote;

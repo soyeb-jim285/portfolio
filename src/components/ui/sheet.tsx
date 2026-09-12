@@ -13,9 +13,11 @@ export function SheetContent({ container, className = '', children, ...props }: 
   container: HTMLElement | null;
 }) {
   if (!container) return null;
-  return <SheetPrimitive.Portal container={container}>
+  // The content stays mounted while closed and CSS hides it: reopening shows the rendered
+  // conversation as it was, instead of parsing and highlighting every answer again.
+  return <SheetPrimitive.Portal container={container} forceMount>
     <SheetPrimitive.Overlay className="assistant-overlay" />
-    <SheetPrimitive.Content data-slot="sheet-content" className={`assistant-panel ${className}`} {...props}>
+    <SheetPrimitive.Content data-slot="sheet-content" className={`assistant-panel ${className}`} forceMount {...props}>
       {children}
     </SheetPrimitive.Content>
   </SheetPrimitive.Portal>;

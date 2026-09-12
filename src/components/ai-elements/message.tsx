@@ -6,16 +6,28 @@ import { lazy, memo, Suspense, useEffect, useState, type ComponentProps, type HT
 import type { StreamdownProps } from 'streamdown';
 import { Button } from '../ui/button';
 
-// Load Markdown and the syntax highlighter on demand, keeping the portfolio's initial load
-// light. Call preloadResponse() when the panel opens so both are ready before the first token.
-export const preloadResponse = () => Promise.all([import('streamdown'), import('@streamdown/code')]);
-const Streamdown = lazy(() => preloadResponse().then(([module]) => ({ default: module.Streamdown })));
-
 // Shiki themes chosen to sit on the site's navy: one palette, loaded once, shared by every block.
+// Kept once resolved, so a message mounted later renders highlighted on its first pass instead of
+// rendering plain and then again with colour.
+let plugins: import('streamdown').PluginConfig | undefined;
 let highlighter: Promise<import('streamdown').PluginConfig> | undefined;
-const codePlugins = () => (highlighter ??= import('@streamdown/code').then(module => ({
-  code: module.createCodePlugin({ themes: ['github-dark-dimmed', 'github-dark-dimmed'] }),
-})));
+const THEMES: ['github-dark-dimmed', 'github-dark-dimmed'] = ['github-dark-dimmed', 'github-dark-dimmed'];
+const codePlugins = () => (highlighter ??= import('@streamdown/code').then(module => {
+  const code = module.createCodePlugin({ themes: THEMES });
+  // Shiki compiles a grammar on first use, on the main thread: C++ alone stalls a frame for about
+  // half a second. Most answers here quote C++, so it is compiled while the browser is idle rather
+  // than in the middle of the first streamed code block.
+  // ponytail: one warmed language; a worker-side highlighter if other grammars ever show up in profiles.
+  const warm = () => code.highlight({ code: ' ', language: 'cpp', themes: THEMES });
+  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 }); else setTimeout(warm, 1500);
+  return (plugins = { code });
+}));
+
+// Load Markdown and the syntax highlighter on demand, keeping the portfolio's initial load light.
+// Call preloadResponse() as soon as there is anything to render, so both are ready before it paints.
+let renderer: Promise<unknown> | undefined;
+export const preloadResponse = () => (renderer ??= Promise.all([import('streamdown'), codePlugins()]));
+const Streamdown = lazy(() => preloadResponse().then(() => import('streamdown')).then(module => ({ default: module.Streamdown })));
 
 export function Message({ className = '', from, ...props }: HTMLAttributes<HTMLDivElement> & { from: 'user' | 'assistant' }) {
   return <div data-slot="message" className={`chat-message is-${from} ${className}`} {...props} />;
@@ -34,11 +46,11 @@ export function MessageAction({ label, ...props }: ComponentProps<typeof Button>
 }
 
 export const MessageResponse = memo(function MessageResponse({ className = '', ...props }: StreamdownProps) {
-  const [plugins, setPlugins] = useState<import('streamdown').PluginConfig | undefined>(undefined);
-  // Highlighting arrives a beat after the text; the block is readable either way.
-  useEffect(() => { let live = true; void codePlugins().then(loaded => { if (live) setPlugins(loaded); }); return () => { live = false; }; }, []);
+  const [ready, setReady] = useState(plugins);
+  // Only a message mounted before the highlighter finished loading waits for it; the rest start coloured.
+  useEffect(() => { if (ready) return; let live = true; void codePlugins().then(loaded => { if (live) setReady(loaded); }); return () => { live = false; }; }, [ready]);
   // Never fall back to the raw source: unrendered Markdown reads as a bug.
   return <Suspense fallback={<div className="chat-loading" aria-label="Rendering answer"><span /><span /><span /></div>}>
-    <Streamdown className={`chat-response ${className}`} plugins={plugins} {...props} />
+    <Streamdown className={`chat-response ${className}`} plugins={ready} {...props} />
   </Suspense>;
 });
