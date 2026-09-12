@@ -80,8 +80,30 @@
 .chat-response [data-streamdown=code-block-body] { border: 0; border-radius: 0; background: transparent; padding: 4px 0 0; }
 .chat-response [data-streamdown=code-block-actions] { border: 0; border-radius: 0; background: transparent; padding: 0; }
 .chat-response [data-streamdown=code-block-copy-button] { min-width: 34px; min-height: 34px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-/* Mermaid blocks share the drawing set's square corners; Streamdown styles them rounded. */
-.chat-response [data-streamdown^=mermaid], .chat-response [data-streamdown^=mermaid] :is(div, button) { border-radius: 0; }
+/* Streamdown's diagram controls carry Tailwind classes but assume its preflight reset, which this site
+   does not load, so they fell back to grey browser buttons. They get the panel's ghost buttons instead.
+   Selectors are not scoped to the panel: the full-screen view mounts on <body>. */
+[data-streamdown^=mermaid], [data-streamdown^=mermaid] :is(div, button) { border-radius: 0; }
+[data-streamdown^=mermaid] button {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 30px; min-height: 30px; padding: 0 8px; border: 1px solid transparent; background: transparent;
+  color: var(--muted); font: 500 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+}
+[data-streamdown^=mermaid] button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: var(--bg-2); }
+[data-streamdown^=mermaid] button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+[data-streamdown^=mermaid] button:disabled { opacity: .4; cursor: default; }
+[data-streamdown^=mermaid] button svg { width: 14px; height: 14px; }
+/* The toolbar and zoom stack are flat strips on the diagram's own ground. */
+[data-streamdown=mermaid-block-actions], [data-streamdown=mermaid] .absolute:has(> button) { border: 1px solid var(--line-2); background: var(--bg); gap: 2px; padding: 2px; }
+/* The format menu, the only box that follows the download button, reads as a list of options. */
+[data-streamdown^=mermaid] .relative > button + div { display: grid; min-width: 96px; border: 1px solid var(--line-2); background: var(--bg); box-shadow: 0 10px 28px rgba(8, 18, 35, .45); }
+[data-streamdown^=mermaid] .relative > button + div > button { justify-content: flex-start; width: 100%; min-height: 34px; padding: 0 12px; border-width: 0 0 1px; border-color: var(--line); }
+[data-streamdown^=mermaid] .relative > button + div > button:last-child { border-bottom: 0; }
+[data-streamdown^=mermaid] .relative > button + div > button:hover { border-color: var(--line); background: var(--bg-2); }
+[data-streamdown=mermaid-fullscreen] { background: var(--bg); }
+/* Mermaid writes an inline max-width sized for the panel; full screen should use the screen. */
+[data-streamdown=mermaid-fullscreen] [role=img] svg { max-width: min(100%, 1400px) !important; width: 100% !important; max-height: 100%; height: auto !important; }
+@media (pointer: coarse) { [data-streamdown^=mermaid] button { min-width: 44px; min-height: 44px; } }
 .chat-response [data-streamdown=table-wrapper] { max-width: 100%; overflow-x: auto; border: 0; border-radius: 0; background: transparent; padding: 0; }
 .chat-response [data-streamdown=table-wrapper] > div { border: 0; border-radius: 0; }
 .chat-response table { width: 100%; font-size: 12px; border-collapse: collapse; }
