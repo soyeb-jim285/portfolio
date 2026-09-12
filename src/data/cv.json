@@ -276,7 +276,7 @@
     {
       "name": "ocr-visualization / Neural Network X-Ray",
       "repo": "https://github.com/soyeb-jim285/ocr-visualization-",
-      "demo": "https://soyebjim.me",
+      "demo": "https://ocr.soyebjim.me",
       "src": ["site-soyebjim", "hf-api", "gh-api-repos"],
       "conf": "verified",
       "summary": "Interactive in-browser visualisation of a 13-layer CNN classifying handwritten characters, drawn live by the user.",

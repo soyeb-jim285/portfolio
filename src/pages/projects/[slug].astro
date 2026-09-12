@@ -12,6 +12,7 @@ const prev = projects[(i - 1 + n) % n];
 const next = projects[(i + 1) % n];
 const gallery = p.images?.filter((x) => x !== p.image) ?? [];
 // Slugs match the GitHub repository name for the projects whose source is indexed.
+const live = p.links.find((l) => l.label === 'Live')?.href;
 const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid view with thumbnails', '/assets/quick-preview.jpg': 'HyprFM quick preview opened with the Space key' };
 ---
 <Layout title={`${p.name}, Soyeb Pervez Jim`} description={`${p.name}: ${p.kicker}. ${p.summary}`} sheet={`5.${i + 1}`} big={p.name} stamp={p.stars ? { k: 'Stars', v: String(p.stars) } : { k: 'Type', v: 'Open source' }}>
@@ -39,7 +40,7 @@ const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid vie
     <figure class="details r" style="grid-template-columns:1fr;margin:0">
       <div>
         <img src={p.image} alt={`${p.name} screenshot`} width="1440" height="900" />
-        <figcaption><b>FIG. 1</b>{p.name}, live at soyebjim.me</figcaption>
+        <figcaption><b>FIG. 1</b>{p.name}{live && `, live at ${new URL(live).host}`}</figcaption>
       </div>
     </figure>
   ) : (

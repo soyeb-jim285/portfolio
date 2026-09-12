@@ -70,7 +70,7 @@ export const projects: Project[] = [
     ],
     image: '/assets/nnxray.jpg', thumb: '/assets/nnxray-720.jpg',
     stack: ['Next.js 16', 'React 19', 'TypeScript', 'ONNX Runtime', 'WebAssembly', 'PyTorch'],
-    links: [{ label: 'Live', href: 'https://soyebjim.me' }, { label: 'GitHub', href: 'https://github.com/soyeb-jim285/ocr-visualization-' }, { label: 'Model weights', href: 'https://huggingface.co/soyeb-jim285/ocr-visualization-models' }, { label: 'Dataset', href: 'https://huggingface.co/datasets/soyeb-jim285/ocr-handwriting-data' }],
+    links: [{ label: 'Live', href: 'https://ocr.soyebjim.me' }, { label: 'GitHub', href: 'https://github.com/soyeb-jim285/ocr-visualization-' }, { label: 'Model weights', href: 'https://huggingface.co/soyeb-jim285/ocr-visualization-models' }, { label: 'Dataset', href: 'https://huggingface.co/datasets/soyeb-jim285/ocr-handwriting-data' }],
     facts: [{ label: 'Classes', value: '146' }, { label: 'Training images', value: '~980K' }, { label: 'Epochs', value: '75' }],
   },
   {
