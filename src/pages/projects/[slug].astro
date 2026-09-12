@@ -12,7 +12,6 @@ const prev = projects[(i - 1 + n) % n];
 const next = projects[(i + 1) % n];
 const gallery = p.images?.filter((x) => x !== p.image) ?? [];
 // Slugs match the GitHub repository name for the projects whose source is indexed.
-const repo = p.links.find((l) => l.href.includes('github.com/soyeb-jim285/'))?.href.split('/').pop() ?? '';
 const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid view with thumbnails', '/assets/quick-preview.jpg': 'HyprFM quick preview opened with the Space key' };
 ---
 <Layout title={`${p.name}, Soyeb Pervez Jim`} description={`${p.name}: ${p.kicker}. ${p.summary}`} sheet={`5.${i + 1}`} big={p.name} stamp={p.stars ? { k: 'Stars', v: String(p.stars) } : { k: 'Type', v: 'Open source' }}>
@@ -21,7 +20,6 @@ const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid vie
     <p class="sub">{p.kicker}. {p.summary}</p>
     <p class="btns">
       <button type="button" class="btn" data-assistant-ask={`Explain how ${p.name} works, citing the code.`}>Ask about {p.name}</button>
-      {repo && <button type="button" class="btn" data-assistant-repo={repo}>Browse the source</button>}
     </p>
   </section>
 

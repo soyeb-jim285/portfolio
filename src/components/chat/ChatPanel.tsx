@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, FolderTree, ImagePlus, Mail, MessageSquare, RotateCcw, Send, Square, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, ImagePlus, Mail, MessageSquare, RotateCcw, Send, Square, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
 import Diagram from './Diagram';
-import Explorer, { type ExplorerTarget } from './Explorer';
 import { Button } from '../ui/button';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Message, MessageActions, MessageContent, MessageResponse, preloadResponse } from '../ai-elements/message';
@@ -73,7 +72,6 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const [atBottom, setAtBottom] = useState(true);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [openDays, setOpenDays] = useState<Record<string, string>>({});
-  const [explorer, setExplorer] = useState<ExplorerTarget | null>(null);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const picker = useRef<HTMLInputElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -109,17 +107,11 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     const onAsk = (event: Event) => {
       const detail = (event as CustomEvent<{ question?: string; repo?: string; path?: string }>).detail ?? {};
       setOpen(true);
-      if (detail.repo) { setExplorer({ repo: detail.repo, path: detail.path }); return; }
-      if (detail.question) { setExplorer(null); void ask(detail.question); }
+      if (detail.question) void ask(detail.question);
     };
     addEventListener('assistant:ask', onAsk);
     return () => removeEventListener('assistant:ask', onAsk);
   });
-
-  useEffect(() => {
-    if (!explorer || token.current || !endpoint) return;
-    void session().then(() => setExplorer({ ...explorer }));
-  }, [explorer, endpoint]);
 
   useEffect(() => {
     if (!open) return;
@@ -380,8 +372,6 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         <header className="assistant-header">
           <SheetTitle className="assistant-title">SPJ <span aria-hidden="true">/</span> Assistant</SheetTitle>
           <div className="assistant-header-actions">
-            <Button size="icon" variant="ghost" aria-label="Browse the indexed code" title="Browse the indexed code"
-              aria-pressed={Boolean(explorer)} onClick={() => setExplorer(explorer ? null : {})}><FolderTree size={15} aria-hidden="true" /></Button>
             <Button size="icon" variant="ghost" aria-label="Clear chat" title="Clear chat" disabled={busy || !entries.length} onClick={() => {
               setEntries([]); setQuestion(''); setCopied(''); setVotes({}); setAlert(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; pinned.current = false; anchor.current = ''; input.current?.focus();
               if (token.current) void clearMessages(endpoint, token.current).catch(error => { if (error instanceof SessionExpired) { token.current = undefined; writeToken(); } });
@@ -390,10 +380,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           </div>
         </header>
         <SheetDescription className="assistant-sr-only">Ask about Jim’s projects, engineering work and research. Answers come from public portfolio content.</SheetDescription>
-        {explorer ? <Explorer endpoint={endpoint} token={token.current} target={explorer}
-          onClose={() => setExplorer(null)}
-          onAsk={question => { setExplorer(null); void ask(question); }} />
-        : <div className="assistant-body" ref={viewport}
+        <div className="assistant-body" ref={viewport}
           onWheel={() => { pinned.current = false; }} onTouchMove={() => { pinned.current = false; }}
           onScroll={() => {
           // While a turn is running the pinned question owns the scroll position; scrolling must not re-arm follow.
@@ -441,10 +428,8 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                 </ul>}
                 {!!entry.sources?.length && <div className="chat-sources">
                   {entry.sources.map(source => <article key={`${source.repo}:${source.path}:${source.startLine}-${source.endLine}`}>
-                    <button type="button" className="chat-source-open" onClick={() => setExplorer({ repo: source.repo, path: source.path })}>
+                    <a className="chat-source-open" href={source.url} target="_blank" rel="noopener noreferrer">
                       {source.repo}/{source.path}:{source.startLine}-{source.endLine}
-                    </button>
-                    <a className="chat-source-github" href={source.url} target="_blank" rel="noopener noreferrer" aria-label="Open on GitHub">
                       <ExternalLink size={11} aria-hidden="true" />
                     </a>
                     <span className="chat-source-meta">@ {source.commit.slice(0, 8)}{source.symbols.length ? ` · ${source.symbols.slice(0, 4).join(', ')}` : ''}</span>
@@ -578,8 +563,8 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
             </Message>)}
             <div className="chat-tailspace" ref={spacer} aria-hidden="true" />
           </div>
-        </div>}
-        {!explorer && !atBottom && !busy && <Button className="assistant-jump" onClick={toBottom}><ArrowDown size={14} aria-hidden="true" /> Latest</Button>}
+        </div>
+        {!atBottom && !busy && <Button className="assistant-jump" onClick={toBottom}><ArrowDown size={14} aria-hidden="true" /> Latest</Button>}
         <footer className="assistant-footer">
           {alert && <p className="assistant-alert" role="alert">{alert}</p>}
           {attachment && <div className="assistant-attachment">

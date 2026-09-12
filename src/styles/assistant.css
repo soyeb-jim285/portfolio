@@ -172,42 +172,9 @@
 .chat-loading span { width: 5px; height: 5px; background: var(--muted); }
 .assistant-jump { align-self: center; margin-bottom: 10px; }
 
-/* Explorer: repository cards, file browser and the parsed module graph. */
-.explorer { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: var(--assistant-pad); }
-.explorer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: calc(var(--assistant-pad) * -1) calc(var(--assistant-pad) * -1) 12px; padding: 8px var(--assistant-pad); border-bottom: 1px solid var(--line-2); position: sticky; top: calc(var(--assistant-pad) * -1); background: var(--bg); z-index: 1; }
-.explorer-head > span { color: var(--muted); font-size: 10px; }
-.explorer-repo { color: var(--accent); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
-.explorer-error { color: #e8663f; font-size: 11px; }
-.explorer-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-.explorer-grid article { display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--bg-2); }
-.explorer-grid article:hover { border-color: var(--accent); }
-.explorer-grid button { flex: 1; text-align: left; padding: 12px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
-.explorer-grid h4 { font: 500 13px/1.3 var(--mono); color: var(--ink); }
-.explorer-grid p { margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.5; }
-.explorer-grid dl { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; padding: 0 12px 12px; font-size: 10px; }
-.explorer-grid dl div { display: flex; align-items: center; gap: 5px; }
-.explorer-grid dt { display: flex; align-items: center; gap: 3px; color: var(--muted); }
-.explorer-grid dd { margin: 0; color: var(--accent); font-variant-numeric: tabular-nums; }
-.explorer-section { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
-.explorer-graph { margin-bottom: 16px; }
-.explorer-filter { display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--muted); }
-.explorer-filter input { flex: 1; min-width: 0; padding: 9px 0; border: 0; outline: none; background: transparent; color: var(--ink); font: 12px/1.4 var(--mono); }
-.explorer-files { list-style: none; margin: 10px 0 0; padding: 0; }
-.explorer-files button { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; min-height: 34px; padding: 7px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font: 11px/1.5 var(--mono); text-align: left; cursor: pointer; overflow-wrap: anywhere; }
-.explorer-files button:hover { color: var(--accent); }
-.explorer-files small { color: var(--muted); font-variant-numeric: tabular-nums; }
-.explorer-more { padding: 10px 0; color: var(--muted); font-size: 10px; }
-.explorer-file { display: grid; gap: 10px; }
-.explorer-file-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 11px; }
-.explorer-file-head > span:first-child { display: flex; align-items: center; gap: 6px; color: var(--ink); overflow-wrap: anywhere; }
-.explorer-file-meta { color: var(--muted); font-size: 10px; }
-.explorer-code { max-height: 60dvh; overflow: auto; border: 1px solid var(--line-2); background: var(--bg-2); }
-.explorer-code .chat-response { font-size: 11px; }
-.explorer-code [data-streamdown=code-block] { border: 0; padding: 0; }
-.explorer-code [data-streamdown=code-block-header] { display: none; }
-.chat-source-open { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.chat-source-open { display: inline-flex; align-items: baseline; gap: 5px; color: var(--accent); overflow-wrap: anywhere; }
 .chat-source-open:hover { text-decoration: underline; text-underline-offset: 3px; }
-.chat-source-github { margin-left: 6px; }
+.chat-source-open svg { flex-shrink: 0; align-self: center; }
 
 .assistant-footer { padding: 12px var(--assistant-pad) max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line-2); }
 .assistant-attachment { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; border: 1px solid var(--line-2); background: var(--bg-2); font-size: 10px; color: var(--muted); }
@@ -230,7 +197,7 @@
 /* Coarse pointers get real targets, whatever the viewport width. */
 @media (pointer: coarse) {
   .chat-button[data-size=icon] { width: 44px; height: 44px; }
-  .chat-day-list button, .chat-slot-list .chat-button, .chat-diagram figcaption .chat-button, .chat-message-actions .chat-button, .explorer-files button { min-height: 44px; }
+  .chat-day-list button, .chat-slot-list .chat-button, .chat-diagram figcaption .chat-button, .chat-message-actions .chat-button { min-height: 44px; }
   .chat-trace > summary { padding-block: 12px; }
 }
 @media (max-width: 767px) {

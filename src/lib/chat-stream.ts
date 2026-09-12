@@ -167,30 +167,6 @@ export async function proposeSlot(endpoint: string, token: string, slot: { start
   return await response.json() as BookingProposal;
 }
 
-export type RepoCard = {
-  repo: string; description: string; language: string; topics: string[]; stars: number; openIssues: number;
-  url: string; pushedAt: string; commit: string; files: number; chunks: number; edges: number;
-};
-export type RepoTree = { repo: string; commit: string; url: string; files: { path: string; lines: number; language: string }[] };
-export type RepoFile = { repo: string; path: string; language: string; commit: string; lineCount: number; truncated: boolean; url: string; content: string };
-export type RepoGraph = {
-  repo: string; commit: string; edgeCount: number; moduleCount: number; truncated: boolean;
-  nodes: { id: string; files: number; lines: number }[];
-  edges: { from: string; to: string; weight: number }[];
-};
-
-const read = async <T>(endpoint: string, token: string, path: string): Promise<T> => {
-  const response = await fetch(`${base(endpoint)}${path}`, { headers: auth(token) });
-  if (!response.ok) await fail(response);
-  return await response.json() as T;
-};
-
-export const loadRepos = (endpoint: string, token: string) => read<{ repos: RepoCard[] }>(endpoint, token, '/v1/repos').then(body => body.repos);
-export const loadTree = (endpoint: string, token: string, repo: string) => read<RepoTree>(endpoint, token, `/v1/repos/${encodeURIComponent(repo)}/files`);
-export const loadFile = (endpoint: string, token: string, repo: string, path: string) =>
-  read<RepoFile>(endpoint, token, `/v1/repos/${encodeURIComponent(repo)}/file?path=${encodeURIComponent(path)}`);
-export const loadGraph = (endpoint: string, token: string, repo: string) => read<RepoGraph>(endpoint, token, `/v1/repos/${encodeURIComponent(repo)}/graph`);
-
 // Downscale in the browser so a phone photo does not become a six megabyte request.
 export async function prepareAttachment(file: File, maxEdge = 1400, quality = 0.82): Promise<Attachment> {
   if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) throw new Error('Attach a PNG, JPEG, WebP or GIF image.');
