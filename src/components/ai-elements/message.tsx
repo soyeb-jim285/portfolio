@@ -5,6 +5,7 @@
 import { lazy, memo, Suspense, useEffect, useState, type ComponentProps, type HTMLAttributes } from 'react';
 import type { StreamdownProps } from 'streamdown';
 import { Button } from '../ui/button';
+import { loadMermaid } from '../chat/Diagram';
 
 // Shiki themes chosen to sit on the site's navy: one palette, loaded once, shared by every block.
 // Kept once resolved, so a message mounted later renders highlighted on its first pass instead of
@@ -20,14 +21,26 @@ const codePlugins = () => (highlighter ??= import('@streamdown/code').then(modul
   // ponytail: one warmed language; a worker-side highlighter if other grammars ever show up in profiles.
   const warm = () => code.highlight({ code: ' ', language: 'cpp', themes: THEMES });
   if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 }); else setTimeout(warm, 1500);
-  return (plugins = { code });
+  // Mermaid fences in an answer render as diagrams through the same strict, themed instance the
+  // document cards use; Streamdown's own config is ignored so it cannot loosen securityLevel.
+  const mermaid = {
+    name: 'mermaid' as const, type: 'diagram' as const, language: 'mermaid',
+    getMermaid: () => ({ initialize() {}, render: (id: string, source: string) => loadMermaid().then(instance => instance.render(id, source)) }),
+  };
+  return (plugins = { code, mermaid });
 }));
 
 // Load Markdown and the syntax highlighter on demand, keeping the portfolio's initial load light.
 // Call preloadResponse() as soon as there is anything to render, so both are ready before it paints.
 let renderer: Promise<unknown> | undefined;
 export const preloadResponse = () => (renderer ??= Promise.all([import('streamdown'), codePlugins()]));
-const Streamdown = lazy(() => preloadResponse().then(() => import('streamdown')).then(module => ({ default: module.Streamdown })));
+const Streamdown = lazy(() => preloadResponse().then(() => import('streamdown')).then(({ Streamdown: Renderer, defaultRehypePlugins }) => {
+  // A link the sanitiser refuses, such as a bare file path the model linked, reads as its own text
+  // instead of the words and a "[blocked]" marker.
+  const [harden, options] = defaultRehypePlugins.harden as [NonNullable<StreamdownProps['rehypePlugins']>[number], object];
+  const rehypePlugins = Object.values({ ...defaultRehypePlugins, harden: [harden, { ...options, linkBlockPolicy: 'text-only' }] }) as StreamdownProps['rehypePlugins'];
+  return { default: (props: StreamdownProps) => <Renderer rehypePlugins={rehypePlugins} {...props} /> };
+}));
 
 export function Message({ className = '', from, ...props }: HTMLAttributes<HTMLDivElement> & { from: 'user' | 'assistant' }) {
   return <div data-slot="message" className={`chat-message is-${from} ${className}`} {...props} />;

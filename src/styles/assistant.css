@@ -80,13 +80,15 @@
 .chat-response [data-streamdown=code-block-body] { border: 0; border-radius: 0; background: transparent; padding: 4px 0 0; }
 .chat-response [data-streamdown=code-block-actions] { border: 0; border-radius: 0; background: transparent; padding: 0; }
 .chat-response [data-streamdown=code-block-copy-button] { min-width: 34px; min-height: 34px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+/* Mermaid blocks share the drawing set's square corners; Streamdown styles them rounded. */
+.chat-response [data-streamdown^=mermaid], .chat-response [data-streamdown^=mermaid] :is(div, button) { border-radius: 0; }
 .chat-response [data-streamdown=table-wrapper] { max-width: 100%; overflow-x: auto; border: 0; border-radius: 0; background: transparent; padding: 0; }
 .chat-response [data-streamdown=table-wrapper] > div { border: 0; border-radius: 0; }
 .chat-response table { width: 100%; font-size: 12px; border-collapse: collapse; }
 .chat-response :is(th,td) { border: 1px solid var(--line-2); padding: 7px 9px; white-space: normal; }
 .chat-response thead { background: var(--bg-2); }
 .chat-response blockquote { border-left: 2px solid var(--accent); padding-left: 12px; color: var(--muted); }
-.chat-trace { border-block: 1px solid var(--line); margin-bottom: 4px; font-size: 10px; color: var(--muted); }
+.chat-trace { margin-top: 10px; border-top: 1px solid var(--line); font-size: 10px; color: var(--muted); }
 .chat-trace > summary { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 8px 0; cursor: pointer; list-style: none; font-variant-numeric: tabular-nums; }
 .chat-trace > summary::-webkit-details-marker { display: none; }
 /* The marker belongs to the label, not to the flex row, or it drifts to the far edge. */

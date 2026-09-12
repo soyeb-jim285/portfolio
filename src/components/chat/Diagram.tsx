@@ -8,7 +8,7 @@ const MAX_DIAGRAM_CHARS = 6000;
 const PNG_SCALE = 2;
 let mermaidReady: Promise<typeof import('mermaid').default> | undefined;
 
-const loadMermaid = () => (mermaidReady ??= import('mermaid').then(module => {
+export const loadMermaid = () => (mermaidReady ??= import('mermaid').then(module => {
   module.default.initialize({
     startOnLoad: false, securityLevel: 'strict', htmlLabels: false, flowchart: { htmlLabels: false },
     theme: 'base',

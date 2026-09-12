@@ -60,7 +60,7 @@ const HISTORY_TURNS = 40;
 const HISTORY_CHARS = 24000;
 // Shared by reference: MessageResponse is memoised, and fresh object literals on every render would
 // re-parse every earlier answer each time a streamed chunk arrives.
-const MARKDOWN = { skipHtml: true, disallowedElements: ['img'], linkSafety: { enabled: false }, controls: { code: { copy: true, download: false }, table: false } } as const;
+const MARKDOWN = { skipHtml: true, disallowedElements: ['img'], linkSafety: { enabled: false }, controls: { code: { copy: true, download: false }, table: false, mermaid: { download: true, copy: false, fullscreen: true, panZoom: true } } } as const;
 // Silence, not total length, ends a turn: a long answer keeps streaming as long as events keep arriving.
 const IDLE_TIMEOUT_MS = 90000;
 const MIN_WIDTH = 340;
@@ -445,8 +445,17 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           <div className="assistant-messages" role="log" aria-label="Conversation" aria-live="off" aria-busy={busy}>
             {entries.map(entry => <Message key={entry.id} from={entry.role} data-entry={entry.id}>
               <div className="chat-message-label"><span>{entry.role === 'user' ? 'You' : 'Assistant'}</span>{entry.state === 'streaming' && <span className="chat-live-label">Responding</span>}</div>
-              {/* Reading comes before answering, so the trace sits above the answer. It stays open while the
-                  model works and folds away as the first words arrive, not when the answer ends. */}
+              <MessageContent>
+                {entry.role === 'user' ? <>
+                  {entry.attachment && <img className="chat-attachment" src={entry.attachment.dataUrl} alt={`Attached ${entry.attachment.name}`} />}
+                  <p className="chat-user-text">{entry.content}</p>
+                </> : entry.content ?
+                  <MessageResponse isAnimating={entry.state === 'streaming'} {...MARKDOWN}>
+                    {entry.content}
+                  </MessageResponse> : entry.state === 'streaming' ? <div className="chat-loading" aria-label="Waiting for the model"><span /><span /><span /></div> : <p>No answer received.</p>}
+              </MessageContent>
+              {/* Steps and sources sit under the answer. The trace is open while the model works and folds away as
+                  the first words arrive, so the answer never streams above a wall of code. */}
               {(!!entry.tools?.length || !!entry.sources?.length || entry.usage) && <details className="chat-trace" open={entry.state === 'streaming' && !entry.content}>
                 <summary>
                   <span className="chat-trace-facts">
@@ -483,15 +492,6 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                   </>}</Fold>)}
                 </div>}
               </details>}
-              <MessageContent>
-                {entry.role === 'user' ? <>
-                  {entry.attachment && <img className="chat-attachment" src={entry.attachment.dataUrl} alt={`Attached ${entry.attachment.name}`} />}
-                  <p className="chat-user-text">{entry.content}</p>
-                </> : entry.content ?
-                  <MessageResponse isAnimating={entry.state === 'streaming'} {...MARKDOWN}>
-                    {entry.content}
-                  </MessageResponse> : entry.state === 'streaming' ? <div className="chat-loading" aria-label="Waiting for the model"><span /><span /><span /></div> : <p>No answer received.</p>}
-              </MessageContent>
               {!!entry.actions?.length && <ul className="chat-actions">
                 {entry.actions.map(action => <li key={action.id} data-status={action.status ?? 'running'}>
                   <Compass size={12} aria-hidden="true" />
