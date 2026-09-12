@@ -59,6 +59,16 @@ export type IndexReport = {
   skipped: { path: string; reason: string }[]; revisionId: string; unchanged?: boolean;
 };
 
+// Written with every run, changed or not. Citations build their GitHub links from this row and the
+// system prompt lists its description, so a repository without one links nowhere.
+const saveFacts = (db: Pick<Pool, 'query'>, repo: Repo, commit: string) => db.query(
+  `INSERT INTO repo_facts (repo, owner, url, branch, description, language, topics, stars, open_issues, pushed_at, indexed_commit)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+   ON CONFLICT (repo) DO UPDATE SET owner = $2, url = $3, branch = $4, description = $5, language = $6,
+     topics = $7, stars = $8, open_issues = $9, pushed_at = $10, indexed_commit = $11, updated_at = now()`,
+  [repo.name, repo.owner, repo.url, repo.branch, repo.blurb, repo.language ?? '', repo.topics ?? [],
+   repo.stars ?? 0, repo.openIssues ?? 0, repo.pushedAt ?? null, commit]);
+
 export async function indexRepo(
   pool: Pool, repo: Repo, cacheDir: string, embedder: Embedder, github: GitHub,
   options: { force?: boolean; log?: (message: string) => void } = {},
@@ -71,6 +81,9 @@ export async function indexRepo(
     `SELECT id, commit_sha, file_count, chunk_count FROM index_revisions WHERE repo = $1 AND status = 'live' AND embedding_dims = $2`,
     [repo.name, embedder.dims]);
   if (!options.force && head && live.rows[0]?.commit_sha === head) {
+    // Facts still refresh: stars and descriptions move without a commit, and a revision indexed
+    // before repo_facts existed would otherwise never get the URL its citations link to.
+    await saveFacts(pool, repo, head);
     return { repo: repo.name, commit: head, files: live.rows[0].file_count, chunks: live.rows[0].chunk_count, embedded: 0, reused: live.rows[0].chunk_count, skipped: [], revisionId: live.rows[0].id, unchanged: true };
   }
 
@@ -157,13 +170,7 @@ export async function indexRepo(
     await client.query('BEGIN');
     await client.query(`DELETE FROM index_revisions WHERE repo = $1 AND id <> $2`, [repo.name, revisionId]);
     await client.query(`UPDATE index_revisions SET status = 'live', promoted_at = now() WHERE id = $1`, [revisionId]);
-    await client.query(
-      `INSERT INTO repo_facts (repo, owner, url, branch, description, language, topics, stars, open_issues, pushed_at, indexed_commit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       ON CONFLICT (repo) DO UPDATE SET owner = $2, url = $3, branch = $4, description = $5, language = $6,
-         topics = $7, stars = $8, open_issues = $9, pushed_at = $10, indexed_commit = $11, updated_at = now()`,
-      [repo.name, repo.owner, repo.url, repo.branch, repo.blurb, repo.language ?? '', repo.topics ?? [],
-       repo.stars ?? 0, repo.openIssues ?? 0, repo.pushedAt ?? null, commit]);
+    await saveFacts(client, repo, commit);
     await client.query('COMMIT');
   } catch (error) { await client.query('ROLLBACK').catch(() => {}); throw error; }
   finally { client.release(); }
