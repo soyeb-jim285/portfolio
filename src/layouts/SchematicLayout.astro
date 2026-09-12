@@ -30,15 +30,18 @@ const index = [
 const cur = sheet.split('.')[0];
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL('/assets/og.png', Astro.site);
-// flip to the next drawing: old sheet slides off left, new one slides in from the right
+// Plot the next drawing: a print head sweeps the frame, laying the new sheet down behind it
+// while the old one is pushed back under. Going back plots right to left. The head itself is
+// .sheet[data-plot]::after, timed to the same duration and curve as the wipe.
+const plot = { duration: '.64s', easing: 'cubic-bezier(.65,0,.35,1)' };
 const flip = {
   forwards: {
-    old: { name: 'sheetOut', duration: '.22s', easing: 'cubic-bezier(.4,0,1,1)', fillMode: 'forwards' },
-    new: { name: 'sheetIn', duration: '.36s', easing: 'cubic-bezier(.16,1,.3,1)', fillMode: 'backwards' },
+    old: { name: 'sheetOut', ...plot, fillMode: 'forwards' },
+    new: { name: 'sheetIn', ...plot, fillMode: 'backwards' },
   },
   backwards: {
-    old: { name: 'sheetOutBack', duration: '.22s', easing: 'cubic-bezier(.4,0,1,1)', fillMode: 'forwards' },
-    new: { name: 'sheetInBack', duration: '.36s', easing: 'cubic-bezier(.16,1,.3,1)', fillMode: 'backwards' },
+    old: { name: 'sheetOutBack', ...plot, fillMode: 'forwards' },
+    new: { name: 'sheetInBack', ...plot, fillMode: 'backwards' },
   },
 };
 ---
@@ -104,6 +107,29 @@ const flip = {
     init();
     initAssistantAsk();
     document.addEventListener('astro:page-load', init);
+    // The plot runs toward the higher sheet number, whether the visitor clicked, typed a URL or
+    // used browser history: sheet 3 to 5.2 sweeps forward, 5.2 back to 2 sweeps back.
+    const sheetOf = (doc: Document) => (doc.querySelector('.tb div:nth-child(2) b')?.textContent ?? '').split(' ')[0].split('.').map(Number);
+    document.addEventListener('astro:before-preparation', event => {
+      const load = event.loader;
+      event.loader = async () => {
+        await load();
+        const [from, to] = [sheetOf(document), sheetOf(event.newDocument)];
+        const order = (to[0] - from[0]) || ((to[1] ?? 0) - (from[1] ?? 0));
+        if (order) event.direction = order > 0 ? 'forward' : 'back';
+      };
+    });
+    // Arm the print head on the incoming sheet; it disarms once its own sweep ends.
+    document.addEventListener('astro:after-swap', () => {
+      const sheet = document.querySelector<HTMLElement>('.sheet');
+      if (!sheet || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      sheet.dataset.plot = `PLOT ${document.querySelector('.tb div:nth-child(2) b')?.textContent ?? ''}`.trim();
+      const done = (event: AnimationEvent) => {
+        if (event.target !== sheet || event.pseudoElement !== '::after') return;
+        delete sheet.dataset.plot; sheet.removeEventListener('animationend', done);
+      };
+      sheet.addEventListener('animationend', done);
+    });
   </script>
 </body>
 </html>

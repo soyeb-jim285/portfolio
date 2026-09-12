@@ -218,11 +218,30 @@ tr:hover td { background: rgba(201, 214, 234, .04); }
 .foot { display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 0 6px; }
 .foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
 
-/* sheet flip (view transitions) */
-@keyframes sheetOut { to { opacity: 0; transform: translateX(-4%); } }
-@keyframes sheetIn { from { opacity: 0; transform: translateX(6%); } }
-@keyframes sheetOutBack { to { opacity: 0; transform: translateX(4%); } }
-@keyframes sheetInBack { from { opacity: 0; transform: translateX(-6%); } }
+/* sheet plot (view transitions): the new sheet is uncovered behind a sweeping print head */
+@keyframes sheetIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes sheetInBack { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+/* The old sheet is cut along the same edge, so the translucent new paper never shows it underneath. */
+@keyframes sheetOut { from { clip-path: inset(0); } to { clip-path: inset(0 0 0 100%); filter: brightness(.45); } }
+@keyframes sheetOutBack { from { clip-path: inset(0); } to { clip-path: inset(0 100% 0 0); filter: brightness(.45); } }
+/* The head: a hot accent line, fresh ink glowing behind it, and its sheet number riding the top. */
+.sheet[data-plot]::after {
+  content: attr(data-plot); position: absolute; top: -2px; bottom: -2px; left: 0; width: 160px; z-index: 3; pointer-events: none;
+  transform: translateX(-100%); padding: 10px 12px 0 0; text-align: right;
+  font: 500 11px/1 var(--mono); letter-spacing: .12em; color: var(--accent); white-space: nowrap;
+  border-right: 2px solid var(--accent);
+  /* Glow as gradients, not box-shadow: a shadow would also light the band's far edge. */
+  background: linear-gradient(90deg, transparent calc(100% - 16px), rgba(232, 147, 63, .5)), linear-gradient(90deg, transparent, rgba(232, 147, 63, .05) 55%, rgba(232, 147, 63, .22));
+  animation: plotHead .64s cubic-bezier(.65, 0, .35, 1) both;
+}
+[data-astro-transition=back] .sheet[data-plot]::after {
+  transform: none; text-align: left; padding: 10px 0 0 12px;
+  border-right: 0; border-left: 2px solid var(--accent);
+  background: linear-gradient(270deg, transparent calc(100% - 16px), rgba(232, 147, 63, .5)), linear-gradient(270deg, transparent, rgba(232, 147, 63, .05) 55%, rgba(232, 147, 63, .22));
+  animation-name: plotHeadBack;
+}
+@keyframes plotHead { from { left: 0; } 92% { opacity: 1; } to { left: 100%; opacity: 0; } }
+@keyframes plotHeadBack { from { left: 100%; } 92% { opacity: 1; } to { left: 0; opacity: 0; } }
 
 /* contact dialog: a title-block form */
 .cd { border: 2px solid var(--accent); background: var(--bg); color: var(--ink); padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); font-family: var(--mono); }
@@ -262,6 +281,7 @@ tr:hover td { background: rgba(201, 214, 234, .04); }
   .diag .draw-me, .diag text, .diag .d { transition: none; }
   .js .draw text, .js .draw .d { opacity: 1; }
   .cd[open], .cd[open]::backdrop, .is-sent .cd-form::after, .is-sending .cd-send { animation: none; }
+  .sheet[data-plot]::after { display: none; }
 }
 
 @media (max-width: 1023px) {
