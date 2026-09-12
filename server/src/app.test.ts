@@ -1020,3 +1020,23 @@ test('answers carrying session-bound events, failed tools or a length cut are ne
     assert.equal((await pool.query('SELECT count(*)::int AS n FROM answer_cache')).rows[0].n, 0, `${name} must not be cached`);
   }
 });
+
+test('a long answer that keeps streaming outlives the idle timeout', async () => {
+  // Four chunks 400ms apart take 1.6s in total, well past a 1s timeout that only measures silence.
+  const client = mockClient(async () => new Response(new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      for (const [index, word] of ['Slow ', 'but ', 'steady ', 'answer.'].entries()) {
+        await new Promise(resolve => setTimeout(resolve, 400));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: word }, finish_reason: index === 3 ? 'stop' : null }] })}\n\n`));
+      }
+      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      controller.close();
+    },
+  }), { headers: { 'Content-Type': 'text/event-stream' } }));
+  const app = createApp({ ...config, REQUEST_TIMEOUT_MS: 1000 }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const token = await newSession(app);
+  const frames = events(await (await app.fetch(ask(token, 'Take your time'))).text());
+  assert.equal(frames.filter(event => event.type === 'delta').map(event => event.text).join(''), 'Slow but steady answer.');
+  assert.equal(frames.at(-1).type, 'done');
+});

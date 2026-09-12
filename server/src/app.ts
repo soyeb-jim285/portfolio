@@ -18,6 +18,8 @@ import { buildToolDefinitions, runTool } from './tools';
 const MAX_CONTEXT_CHARS = 24000;
 // A cached answer is reused when this many of the newest turns, the new question included, match.
 const CACHE_TURNS = 5;
+// However lively the stream, one answer never runs longer than this.
+const MAX_ANSWER_MS = 300000;
 // These events carry ids owned by the session that asked, or depend on the clock: never replayed to another.
 const SESSION_BOUND_EVENTS = new Set(['draft', 'proposal', 'artifact', 'action', 'slots']);
 export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone'];
@@ -184,7 +186,11 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     active++;
     return streamSSE(c, async stream => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT_MS);
+      // Silence ends a turn, not length: every provider chunk and tool result pushes the deadline back,
+      // so a long answer from a slow model finishes instead of being cut off at a fixed total.
+      let idle = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT_MS);
+      const alive = () => { clearTimeout(idle); idle = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT_MS); };
+      const ceiling = setTimeout(() => controller.abort(), MAX_ANSWER_MS);
       stream.onAbort(() => controller.abort());
       // Every event is recorded while it may still be cached; a session-bound event or a failed tool rules it out.
       let recorded: Record<string, unknown>[] | undefined = cacheKey ? [] : undefined;
@@ -228,6 +234,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
           let stepText = '';
           finish = null;
           for await (const chunk of response) {
+            alive();
             if ('error' in chunk) throw new Error('Provider stream error');
             // Only what the provider actually reports: no estimates, no invented numbers.
             if (chunk.usage) {
@@ -319,6 +326,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
               sources.push(hit);
             }
             conversation.push({ role: 'tool', tool_call_id: call.id, content: outcome.result });
+            alive();
           }
           if (sources.length) await send({ type: 'sources', sources });
         }
@@ -332,7 +340,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
         await send({ type: 'done', finishReason: finish });
       } catch {
         if (!stream.aborted) await send({ type: 'error', message: controller.signal.aborted ? 'Response timed out. Please retry.' : 'The model could not finish this answer. Please retry.' });
-      } finally { clearTimeout(timer); controller.abort(); active--; }
+      } finally { clearTimeout(idle); clearTimeout(ceiling); controller.abort(); active--; }
     });
   });
 

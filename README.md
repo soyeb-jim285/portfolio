@@ -165,7 +165,7 @@ Each SSE frame has a `data:` field containing version-1 JSON: `delta` with `text
 | `nginx.conf` | TLS, per-visitor rate limit, and the streaming settings |
 | `backup.sh` | nightly `pg_dump` with an immediate restore check |
 
-The proxy settings are the part that breaks quietly: with `proxy_buffering` on, answers arrive in one lump at the end instead of token by token. `proxy_read_timeout` must exceed `REQUEST_TIMEOUT_MS` so the API's own timeout fires first.
+The proxy settings are the part that breaks quietly: with `proxy_buffering` on, answers arrive in one lump at the end instead of token by token. `proxy_read_timeout` must exceed `REQUEST_TIMEOUT_MS` so the API's own timeout fires first. Both measure silence, not total time: the API aborts when the provider sends nothing for `REQUEST_TIMEOUT_MS`, so a long answer keeps streaming up to a five-minute ceiling.
 
 The API rate-limits by socket peer, which behind a proxy is the proxy itself, so per-visitor limiting belongs in nginx. Concurrency and the per-minute burst are per process; the daily request, send and booking budgets live in the database and are shared. Run one API process unless you add a shared limiter.
 
