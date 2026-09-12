@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import type { Pool } from 'pg';
 import { chunkFile, languageOf, sha256, skipReason, MAX_FILE_BYTES } from './chunker';
-import { parseEdges } from './edges';
 import type { Embedder } from './embeddings';
 import { toVectorLiteral } from './embeddings';
 import type { GitHub } from './github';
@@ -105,7 +104,6 @@ export async function indexRepo(
   }
   const chunks = files.flatMap(file => chunkFile(file.path, file.content));
   if (!chunks.length) throw new Error(`${repo.name}: nothing indexable at ${commit}`);
-  const edges = parseEdges(files);
 
   const insertBatched = async (sql: string, columns: number, values: unknown[][]) => {
     for (let offset = 0; offset < values.length; offset += INSERT_BATCH) {
@@ -131,10 +129,6 @@ export async function indexRepo(
   await insertBatched(
     'INSERT INTO source_chunks (revision_id, path, language, symbols, symbol_text, start_line, end_line, content, content_hash)', 9,
     chunks.map(chunk => [revisionId, chunk.path, chunk.language, chunk.symbols, chunk.symbols.join(' '), chunk.startLine, chunk.endLine, chunk.content, chunk.contentHash]));
-  if (edges.length) {
-    await insertBatched('INSERT INTO source_edges (revision_id, from_path, to_path, kind)', 4,
-      edges.map(edge => [revisionId, edge.from, edge.to, edge.kind]));
-  }
 
   // Carry over vectors for windows whose text is unchanged: the copy happens inside the
   // database, so an hourly run only pays for what was actually edited. Any earlier revision
@@ -150,7 +144,7 @@ export async function indexRepo(
 
   const { rows: pending } = await pool.query<{ id: string; path: string; start_line: number; end_line: number; symbol_text: string; content: string }>(
     `SELECT id, path, start_line, end_line, symbol_text, content FROM source_chunks WHERE revision_id = $1 AND embedding IS NULL ORDER BY id`, [revisionId]);
-  log(`${repo.name}: ${files.length} files, ${chunks.length} chunks, ${edges.length} edges, ${reused} reused, ${pending.length} to embed`);
+  log(`${repo.name}: ${files.length} files, ${chunks.length} chunks, ${reused} reused, ${pending.length} to embed`);
 
   for (let offset = 0; offset < pending.length; offset += 64) {
     const batch = pending.slice(offset, offset + 64);

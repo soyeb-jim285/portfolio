@@ -4,7 +4,6 @@
 // replace utility styling with portfolio CSS, and omit unused branch/attachment UI.
 import { lazy, memo, Suspense, useEffect, useState, type ComponentProps, type HTMLAttributes } from 'react';
 import type { StreamdownProps } from 'streamdown';
-import { Button } from '../ui/button';
 import { loadMermaid } from '../chat/Diagram';
 
 // Shiki themes chosen to sit on the site's navy: one palette, loaded once, shared by every block.
@@ -54,9 +53,6 @@ export function MessageActions({ className = '', ...props }: ComponentProps<'div
   return <div className={`chat-message-actions ${className}`} {...props} />;
 }
 
-export function MessageAction({ label, ...props }: ComponentProps<typeof Button> & { label: string }) {
-  return <Button type="button" variant="ghost" size="icon" aria-label={label} title={label} {...props} />;
-}
 
 export const MessageResponse = memo(function MessageResponse({ className = '', ...props }: StreamdownProps) {
   const [ready, setReady] = useState(plugins);

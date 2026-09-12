@@ -164,11 +164,5 @@ CREATE TABLE IF NOT EXISTS repo_facts (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Parsed dependency edges, scoped to the revision they were read from.
-CREATE TABLE IF NOT EXISTS source_edges (
-  revision_id bigint NOT NULL REFERENCES index_revisions (id) ON DELETE CASCADE,
-  from_path text NOT NULL,
-  to_path text NOT NULL,
-  kind text NOT NULL,
-  PRIMARY KEY (revision_id, from_path, to_path)
-);
+-- Dependency edges once fed the repository explorer, which is gone.
+DROP TABLE IF EXISTS source_edges;

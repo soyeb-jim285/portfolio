@@ -29,10 +29,6 @@ const hit = (overrides: Partial<SourceHit> = {}): SourceHit => ({
 // Fake index: the retrieval layer itself is covered in retrieval.test.ts against a real database.
 const fakeRetrieval = (overrides: Partial<Retrieval> = {}) => ({
   indexedRepos: async () => [{ repo: 'hyprfm', commit: 'a'.repeat(40), files: 12, chunks: 40, indexedAt: '2026-09-11T00:00:00.000Z', blurb: 'file manager', stars: 307, language: 'C++', pushedAt: '2026-09-10T00:00:00.000Z' }],
-  fileTree: async () => ({ repo: 'hyprfm', commit: 'a'.repeat(40), url: 'https://github.com/soyeb-jim285/hyprfm', files: [{ path: 'src/FileOps.cpp', lines: 120, language: 'cpp' }] }),
-  readFile: async () => ({ repo: 'hyprfm', path: 'src/FileOps.cpp', language: 'cpp', commit: 'a'.repeat(40), lineCount: 120, truncated: false, url: '', content: 'void FileOps::copy() {}' }),
-  graph: async () => ({ repo: 'hyprfm', commit: 'a'.repeat(40), edgeCount: 3, moduleCount: 2, truncated: false, nodes: [{ id: 'src', files: 12, lines: 900 }], edges: [] }),
-  repoCards: async () => [{ repo: 'hyprfm', description: 'file manager', language: 'C++', topics: ['qt'], stars: 307, openIssues: 9, url: 'https://github.com/soyeb-jim285/hyprfm', pushedAt: '2026-09-10T00:00:00.000Z', commit: 'a'.repeat(40), files: 12, chunks: 40, edges: 3 }],
   search: async () => [hit()],
   read: async () => ({ repo: 'hyprfm', path: 'src/FileOps.cpp', language: 'cpp', commit: 'a'.repeat(40), startLine: 10, endLine: 40, lineCount: 120, url: hit().url, content: 'void FileOps::copy() {}' }),
   listFiles: async () => [{ path: 'src/FileOps.cpp', lines: 120 }],
@@ -91,7 +87,7 @@ test('documents the real routes and streams a session-grounded answer', async ()
   const spec = await (await app.request('/openapi.json')).json();
   assert.ok(spec.paths['/v1/chat'].post.responses['200'].content['text/event-stream']);
   assert.ok(spec.components.schemas.ChatEvent);
-  assert.deepEqual(Object.keys(spec.paths).sort(), ['/health', '/v1/actions/{id}', '/v1/artifacts/{id}', '/v1/bookings', '/v1/chat', '/v1/contact', '/v1/proposals', '/v1/repos', '/v1/repos/{repo}/file', '/v1/repos/{repo}/files', '/v1/repos/{repo}/graph', '/v1/sessions']);
+  assert.deepEqual(Object.keys(spec.paths).sort(), ['/health', '/v1/actions/{id}', '/v1/artifacts/{id}', '/v1/bookings', '/v1/chat', '/v1/contact', '/v1/proposals', '/v1/sessions']);
   const token = await newSession(app);
   const response = await app.fetch(ask(token));
   assert.equal(response.headers.get('access-control-allow-origin'), config.SITE_ORIGIN);

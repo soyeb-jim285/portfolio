@@ -29,7 +29,7 @@ Without an endpoint the form falls back to opening the mail client with the mess
 
 ## Portfolio assistant (initial integration)
 
-The site includes a slim full-height assistant side panel, docked beside the page on wide screens and full-screen on mobile. Its left edge is a drag handle (also arrow keys when focused, double-click to reset); the width is clamped to 340-760px, kept inside the viewport on resize, and remembered per browser in `localStorage`. It uses an Astro-persisted React island, adapted shadcn Sheet/Button and AI Elements Message components, styled with the portfolio's navy/orange theme. A separate Node.js 22+ Hono API streams answers from OpenRouter using explicitly selected public portfolio fields, stores each anonymous conversation in PostgreSQL, answers code questions from an index of Jim's repositories with citations pinned to the indexed commit, can take the visitor to a section of this site, can draft a message for the visitor to send, can write downloadable documents, can put a real calendar slot in front of the visitor to confirm, and answers a pasted job description as an evidence table with explicit gaps. `/assistant/` explains all of this to visitors. See `CHATBOT_PLAN.md` for what remains.
+The site includes a slim full-height assistant side panel, docked beside the page on wide screens and full-screen on mobile. Its left edge is a drag handle (also arrow keys when focused, double-click to reset); the width is clamped to 340-760px, kept inside the viewport on resize, and remembered per browser in `localStorage`. It uses an Astro-persisted React island, adapted shadcn Sheet/Button and AI Elements Message components, styled with the portfolio's navy/orange theme. A separate Node.js 22+ Hono API streams answers from OpenRouter using explicitly selected public portfolio fields, stores each anonymous conversation in PostgreSQL, answers code questions from an index of Jim's repositories with citations pinned to the indexed commit, can take the visitor to a section of this site, can draft a message for the visitor to send, can write downloadable documents, can put a real calendar slot in front of the visitor to confirm, and answers a pasted job description as an evidence table with explicit gaps. `/assistant/` explains all of this to visitors.
 
 ### Local setup
 
@@ -111,11 +111,7 @@ The assistant can put one of the portfolio's own screenshots on screen with `sho
 
 A visitor can attach an image by button, paste or drag. The browser downscales it to 1400px on the long edge and re-encodes it as JPEG, which also strips camera and location metadata, then sends it as a data URL with that one question. The server validates the media type and the data URL shape before the model sees it. Attachments are never stored: the conversation keeps the question with a note that a picture came with it, so reloading later shows the text without the bytes. This needs a model that accepts images; the configured one does.
 
-### Exploring the code
-
-The panel is not only a chat. `GET /v1/repos` lists every indexed repository with its stars, language, file and edge counts; `GET /v1/repos/{repo}/files` and `.../file` back an in-panel browser with a filter and a viewer; `GET /v1/repos/{repo}/graph` returns a module dependency graph. All four are session-authenticated and read only what was indexed, so a path outside the indexed revision answers 404.
-
-Graph edges are parsed at index time in `src/edges.ts`, never inferred: a C++ `#include`, a relative TypeScript import, a QML `import` or a component used by name. An edge exists only when the target resolves to another indexed file, and an ambiguous name is dropped rather than guessed. Files collapse into their directory so the picture is modules rather than hundreds of nodes, and the busiest fourteen are drawn.
+### Citations
 
 A citation in an answer links to the cited lines on GitHub at the indexed commit. Any element on the site can open the panel with a question by carrying `data-assistant-ask="question"`, which is how the project sheets offer "Ask about this project".
 

@@ -134,7 +134,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     c.set('sessionId', sessionId);
     await next();
   };
-  for (const path of ['/v1/chat', '/v1/actions/*', '/v1/artifacts/*', '/v1/repos', '/v1/repos/*', '/v1/bookings', '/v1/proposals']) app.use(path, authenticate);
+  for (const path of ['/v1/chat', '/v1/actions/*', '/v1/artifacts/*', '/v1/bookings', '/v1/proposals']) app.use(path, authenticate);
 
   app.openapi(createRoute({ method: 'get', path: '/health', responses: { 200: { description: 'Process is running', content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } } } } }),
     c => c.json({ status: 'ok' as const }));
@@ -453,70 +453,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     if (!artifact) return c.json({ error: 'That document is not available.' }, 404);
     const url = await storage.signedUrl(artifact.object_key, config.ARTIFACT_URL_TTL_SECONDS);
     return c.json({ url, title: artifact.title, expiresInSeconds: config.ARTIFACT_URL_TTL_SECONDS }, 200);
-  });
-
-  const repoCard = z.object({
-    repo: z.string(), description: z.string(), language: z.string(), topics: z.array(z.string()),
-    stars: z.number(), openIssues: z.number(), url: z.string(), pushedAt: z.string(), commit: z.string(),
-    files: z.number(), chunks: z.number(), edges: z.number(),
-  }).openapi('RepoCard');
-
-  app.openapi(createRoute({
-    method: 'get', path: '/v1/repos', summary: 'Every indexed repository with its facts',
-    description: 'Powers the repository overview: what is indexed, how large, how recently pushed, and how many dependency edges were parsed. Read-only and identical for every visitor.',
-    request: { headers: authHeader },
-    responses: { 200: { description: 'Indexed repositories', content: { 'application/json': { schema: z.object({ repos: z.array(repoCard) }) } } }, ...authFailure, ...guardFailures },
-  }), async c => c.json({ repos: await retrieval.repoCards() }, 200));
-
-  app.openapi(createRoute({
-    method: 'get', path: '/v1/repos/{repo}/files', summary: 'The indexed file list of one repository',
-    request: { headers: authHeader, params: z.object({ repo: z.string() }) },
-    responses: {
-      200: { description: 'File list', content: { 'application/json': { schema: z.object({
-        repo: z.string(), commit: z.string(), url: z.string(),
-        files: z.array(z.object({ path: z.string(), lines: z.number(), language: z.string() })),
-      }) } } },
-      404: { description: 'Not indexed', content: { 'application/json': { schema: errorSchema } } },
-      ...authFailure, ...guardFailures,
-    },
-  }), async c => {
-    const tree = await retrieval.fileTree(c.req.valid('param').repo);
-    return tree ? c.json(tree, 200) : c.json({ error: 'That repository is not indexed.' }, 404);
-  });
-
-  app.openapi(createRoute({
-    method: 'get', path: '/v1/repos/{repo}/file', summary: 'One indexed file, for reading in the panel',
-    description: 'Returns the stored copy of a file at the indexed commit, capped at 2000 lines. Only files that were indexed exist here, so a path outside the repository returns 404.',
-    request: { headers: authHeader, params: z.object({ repo: z.string() }), query: z.object({ path: z.string().min(1).max(400) }) },
-    responses: {
-      200: { description: 'File content', content: { 'application/json': { schema: z.object({
-        repo: z.string(), path: z.string(), language: z.string(), commit: z.string(),
-        lineCount: z.number(), truncated: z.boolean(), url: z.string(), content: z.string(),
-      }) } } },
-      404: { description: 'No such indexed file', content: { 'application/json': { schema: errorSchema } } },
-      ...authFailure, ...guardFailures,
-    },
-  }), async c => {
-    const file = await retrieval.readFile(c.req.valid('param').repo, c.req.valid('query').path);
-    return file ? c.json(file, 200) : c.json({ error: 'That file is not in the indexed revision.' }, 404);
-  });
-
-  app.openapi(createRoute({
-    method: 'get', path: '/v1/repos/{repo}/graph', summary: 'Module dependency graph of one repository',
-    description: 'Directories collapsed into modules, with edge weights counted from imports and includes parsed at index time. Nothing here is inferred by a model.',
-    request: { headers: authHeader, params: z.object({ repo: z.string() }) },
-    responses: {
-      200: { description: 'Module graph', content: { 'application/json': { schema: z.object({
-        repo: z.string(), commit: z.string(), edgeCount: z.number(), moduleCount: z.number(), truncated: z.boolean(),
-        nodes: z.array(z.object({ id: z.string(), files: z.number(), lines: z.number() })),
-        edges: z.array(z.object({ from: z.string(), to: z.string(), weight: z.number() })),
-      }) } } },
-      404: { description: 'Not indexed', content: { 'application/json': { schema: errorSchema } } },
-      ...authFailure, ...guardFailures,
-    },
-  }), async c => {
-    const graph = await retrieval.graph(c.req.valid('param').repo);
-    return graph ? c.json(graph, 200) : c.json({ error: 'That repository is not indexed.' }, 404);
   });
 
   app.openapi(createRoute({

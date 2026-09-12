@@ -159,7 +159,7 @@ test('a failed reindex keeps the previous revision live', async () => {
   const after = await retrieval.indexedRepos();
   assert.equal(after.length, 1);
   assert.equal(after[0].commit, before.commit, 'the live revision must not move');
-  assert.equal(await retrieval.readFile('hyprfm', 'src/Newcomer.cpp'), null, 'the failed run must publish nothing');
+  assert.equal(await retrieval.read('hyprfm', 'src/Newcomer.cpp'), null, 'the failed run must publish nothing');
   // The half-built revision is kept so the next run can reuse the vectors it already paid for.
   // Nothing reads it: every query filters on status = 'live'.
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM index_revisions WHERE repo = 'hyprfm' AND status = 'live'")).rows[0].n, 1);
