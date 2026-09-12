@@ -1,0 +1,6 @@
+---
+import ChatPanel from './chat/ChatPanel';
+import '../styles/assistant.css';
+const endpoint = import.meta.env.PUBLIC_API_URL || '';
+---
+<ChatPanel client:load transition:persist="portfolio-assistant" endpoint={endpoint} />

@@ -1,0 +1,22 @@
+---
+import { research } from '../../data/content';
+const box = (x: number, y: number, w: number, h: number) => `M${x} ${y}h${w}v${h}h${-w}z`;
+const r = research[0].results;
+const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
+---
+<svg class="diag draw r" viewBox="0 0 650 330" role="img" aria-label="Two-stage pain classifier: physiological segments to subject-normalised features, stage one pain versus no-pain at 0.895 AUC, stage two arm versus hand at 0.55 AUC">
+  <path class="box draw-me" d={box(10, 40, 120, 110)} />
+  <text x="70" y="70" text-anchor="middle">BVP  EDA</text><text x="70" y="90" text-anchor="middle">RESP  SpO2</text><text class="s" x="70" y="115" text-anchor="middle">65 subjects</text><text class="s" x="70" y="132" text-anchor="middle">segments</text>
+  <path class="draw-me o" d="M130 95 H175" />
+  <path class="box draw-me" d={box(175, 60, 140, 70)} /><text x="245" y="88" text-anchor="middle">features</text><text class="s" x="245" y="106" text-anchor="middle">subject-normalised</text><text class="s" x="245" y="120" text-anchor="middle">effect-size ranked</text>
+  <path class="draw-me o" d="M315 95 H360" />
+  <path class="box draw-me" d={box(360, 40, 120, 110)} /><text x="420" y="70" text-anchor="middle">stage 1</text><text class="s" x="420" y="90" text-anchor="middle">pain vs no-pain</text><text class="n" x="420" y="128" text-anchor="middle">{v('Detection AUC')}</text><text class="s" x="420" y="141" text-anchor="middle">AUC</text>
+  <path class="draw-me o" d="M480 95 H530" />
+  <path class="box draw-me" d={box(530, 40, 110, 110)} /><text x="585" y="70" text-anchor="middle">stage 2</text><text class="s" x="585" y="90" text-anchor="middle">arm vs hand</text><text class="n" x="585" y="128" text-anchor="middle">{v('Localisation AUC')}</text><text class="s" x="585" y="141" text-anchor="middle">AUC, chance</text>
+  <path class="d" d="M10 200 H640" />
+  <text class="s" x="10" y="190">official test set, 432 segments</text>
+  <text class="n" x="10" y="250">{v('Test accuracy')}</text><text class="s" x="10" y="270">accuracy, ours</text>
+  <text class="n" x="200" y="250">{v('Official baseline')}</text><text class="s" x="200" y="270">official SVM baseline</text>
+  <text class="n" x="400" y="250">{v('CV estimate')}</text><text class="s" x="400" y="270">5x5 subject-fold CV</text>
+  <text class="s" x="10" y="310">L2 logistic regression, isotonic calibration, paired significance tests</text>
+</svg>

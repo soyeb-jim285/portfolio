@@ -1,0 +1,26 @@
+---
+import Layout from '../../layouts/SchematicLayout.astro';
+import { projects } from '../../data/content';
+---
+<Layout title="Projects, Soyeb Pervez Jim" description="Seven open-source projects, from a Qt file manager to a browser CNN visualiser." sheet="4" big="Projects" stamp={{ k: 'Items', v: `${projects.length} projects` }}>
+  <section class="head r" data-anchor="projects-list">
+    <h1 class="title">Projects</h1>
+    <p class="sub">Seven projects. Items with a figure have their own detail sheet with callouts; the rest get a plain sheet.</p>
+  </section>
+  <div class="tw r">
+    <table>
+      <thead><tr><th>Item</th><th>Fig.</th><th>Project</th><th>Description</th><th>Stack</th></tr></thead>
+      <tbody>
+        {projects.map((p, i) => (
+          <tr>
+            <td class="i">{i + 1}</td>
+            <td>{p.image ? <a href={`/projects/${p.slug}/`}><img class="thumb" src={p.thumb ?? p.image} alt={`${p.name} screenshot`} loading="lazy" width="150" height="94" /></a> : <span class="small">no fig.</span>}</td>
+            <td><a href={`/projects/${p.slug}/`}>{p.name}</a><small>{p.kicker}{p.stars ? `, ${p.stars} stars` : ''}</small></td>
+            <td>{p.summary}</td>
+            <td class="m">{p.stack.join(', ')}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Layout>

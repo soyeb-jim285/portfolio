@@ -1,0 +1,17 @@
+{
+  "note": "Retrieval evaluation. Each case must surface at least one expected path in the top results. Paths are checked against the live index, so a rename should fail this suite until the case is updated.",
+  "cases": [
+    { "question": "How does HyprFM copy files without blocking the interface?", "expectAnyPath": ["src/services/fileoperations.cpp", "src/services/giotransferworker.cpp"] },
+    { "question": "Where is undo and redo of file operations implemented?", "expectAnyPath": ["src/services/undomanager.cpp", "src/services/undomanager.h"] },
+    { "question": "How are TOML themes loaded and reloaded at runtime?", "expectAnyPath": ["src/services/themeloader.cpp", "src/services/themeloader.h"] },
+    { "question": "Which code generates image and video thumbnails?", "expectAnyPath": ["src/providers/thumbnailprovider.cpp", "src/providers/thumbnailprovider.h"] },
+    { "question": "How does the Miller column view work?", "expectAnyPath": ["src/qml/views/FileMillerView.qml"] },
+    { "question": "How are devices mounted through udisks2?", "expectAnyPath": ["src/models/devicemodel.cpp", "src/services/cloudmounts.h", "src/models/devicemodel.h"] },
+    { "question": "Where does bulk rename with regular expressions happen?", "expectAnyPath": ["src/qml/components/BulkRenameDialog.qml"] },
+    { "question": "How are files moved to the trash?", "expectAnyPath": ["src/services/xdgtrash.cpp", "src/services/xdgtrash.h"] },
+    { "question": "What tests cover file operations?", "expectAnyPath": ["tests/tst_fileoperations.cpp", "tests/tst_giotransferworker.cpp"] },
+    { "question": "How is the quill Button component styled?", "expectAnyPath": ["components/Button.qml"], "repo": "quill" },
+    { "question": "Where are quill's theme colours defined?", "expectAnyPath": ["Theme.qml"], "repo": "quill" },
+    { "question": "Does quill provide a dropdown component?", "expectAnyPath": ["components/Dropdown.qml"], "repo": "quill" }
+  ]
+}

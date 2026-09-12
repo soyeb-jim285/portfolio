@@ -1,0 +1,35 @@
+{
+  "name": "portfolio-assistant-api",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run export:knowledge && node --env-file=.env --import tsx --watch src/index.ts",
+    "start": "node --env-file=.env --import tsx src/index.ts",
+    "check": "tsc --noEmit",
+    "test": "node --env-file-if-exists=.env --test --import tsx src/*.test.ts",
+    "index": "node --env-file=.env --import tsx src/index-repos.ts",
+    "eval:retrieval": "node --env-file=.env --import tsx src/eval-retrieval.ts",
+    "export:knowledge": "node --import tsx src/export-knowledge.ts",
+    "eval:answers": "node --env-file=.env --import tsx src/eval-answers.ts",
+    "google:auth": "node --env-file=.env --import tsx src/google-auth.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "@hono/zod-openapi": "^1.6.3",
+    "@scalar/hono-api-reference": "^0.12.1",
+    "aws4fetch": "^1.0.20",
+    "hono": "^4.13.7",
+    "openai": "^7.15.0",
+    "pg": "^8.23.0",
+    "zod": "^4.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}

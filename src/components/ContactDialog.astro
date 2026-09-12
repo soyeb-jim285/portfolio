@@ -1,0 +1,45 @@
+---
+/**
+ * Contact dialog shared by every variant. Unstyled on purpose: each variant styles
+ * `.cd-*` classes in its own stylesheet. Any element with `data-contact` opens it.
+ * Submission goes to the assistant API's /v1/contact, the same route the chat draft uses,
+ * falling back to PUBLIC_FORM_ENDPOINT and then to a prefilled mailto: link.
+ */
+const api = import.meta.env.PUBLIC_API_URL ?? '';
+const endpoint = api ? `${api.replace(/\/$/, '')}/v1/contact` : import.meta.env.PUBLIC_FORM_ENDPOINT ?? '';
+const email = 'soyeb.jim@gmail.com';
+---
+<dialog class="cd" id="contact-dialog" aria-labelledby="cd-title" data-endpoint={endpoint} data-email={email}>
+  <form class="cd-form" method="dialog" novalidate>
+    <header class="cd-head">
+      <h2 class="cd-title" id="cd-title">Send a message</h2>
+      <button type="button" class="cd-close" aria-label="Close" data-cd-close>&times;</button>
+    </header>
+    <p class="cd-lede">Replies usually within a day. Or write directly to <a href={`mailto:${email}`}>{email}</a>.</p>
+    <div class="cd-field">
+      <label for="cd-name">Name</label>
+      <input id="cd-name" name="name" type="text" autocomplete="name" required maxlength="120">
+      <span class="cd-err" data-err-for="name"></span>
+    </div>
+    <div class="cd-field">
+      <label for="cd-email">Email</label>
+      <input id="cd-email" name="email" type="email" autocomplete="email" required maxlength="200">
+      <span class="cd-err" data-err-for="email"></span>
+    </div>
+    <div class="cd-field">
+      <label for="cd-msg">Message</label>
+      <textarea id="cd-msg" name="message" rows="5" required maxlength="4000"></textarea>
+      <span class="cd-err" data-err-for="message"></span>
+    </div>
+    <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="cd-hp" aria-hidden="true">
+    <footer class="cd-foot">
+      <button type="submit" class="cd-send" data-cd-send><span data-label>Send</span></button>
+      <span class="cd-status" role="status" aria-live="polite" data-cd-status></span>
+    </footer>
+  </form>
+</dialog>
+<script>
+  import { initContact } from '../scripts/contact';
+  initContact();
+  document.addEventListener('astro:page-load', initContact);
+</script>

@@ -1,0 +1,453 @@
+{
+  "$comment": "Structured CV source data for Soyeb Pervez Jim. Every fact carries `src` (source ids) and `conf` (verified|reported|inferred). Companion to cv-facts.md.",
+  "generated": "2026-09-02",
+  "subject": "Soyeb Pervez Jim",
+
+  "sources": {
+    "user": {
+      "kind": "direct",
+      "detail": "Stated by Soyeb in conversation, 2026-09-02"
+    },
+    "gitconfig": {
+      "kind": "local",
+      "path": "/home/jim/.gitconfig"
+    },
+    "old-cv-pdf": {
+      "kind": "document",
+      "path": "/home/jim/Downloads/Soyeb Pervez Jim.pdf",
+      "detail": "Previous CV, appears to date from 2024/2025. Known to contain at least one wrong value (CGPA)."
+    },
+    "gh-profile": {
+      "kind": "web",
+      "url": "https://github.com/soyeb-jim285",
+      "detail": "Profile README, self-authored"
+    },
+    "gh-api-user": {
+      "kind": "api",
+      "url": "https://api.github.com/users/soyeb-jim285"
+    },
+    "gh-api-repos": {
+      "kind": "api",
+      "url": "https://api.github.com/users/soyeb-jim285/repos?per_page=100&sort=updated"
+    },
+    "gh-hyprfm": {
+      "kind": "web",
+      "url": "https://github.com/soyeb-jim285/hyprfm"
+    },
+    "cf-api": {
+      "kind": "api",
+      "url": "https://codeforces.com/api/user.info?handles=soyeb.jim",
+      "detail": "Also user.status and user.rating for the same handle"
+    },
+    "hf-api": {
+      "kind": "api",
+      "url": "https://huggingface.co/api/models?author=soyeb-jim285"
+    },
+    "gitlab-api": {
+      "kind": "api",
+      "url": "https://gitlab.com/api/v4/users?username=soyeb.jim"
+    },
+    "site-soyebjim": {
+      "kind": "web",
+      "url": "https://soyebjim.me"
+    },
+    "linuxlinks": {
+      "kind": "web",
+      "url": "https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/"
+    },
+    "wayfile": {
+      "kind": "web",
+      "url": "https://github.com/blackbartblues/Wayfile"
+    },
+    "studocu": {
+      "kind": "web",
+      "url": "https://www.studocu.com/row/document/university-of-dhaka/modern-physics/modern-physics-full-note/60378264"
+    },
+    "bdmo-forum": {
+      "kind": "web",
+      "url": "https://matholympiad.org.bd/forum/viewtopic.php?t=5658"
+    },
+    "search-fuego": {
+      "kind": "web",
+      "url": "https://fuego.io/"
+    },
+    "local-ai4pain": {
+      "kind": "local",
+      "path": "/home/jim/AI4Pain 2026 Dataset/paper_2026/main.tex"
+    },
+    "local-mumidc": {
+      "kind": "local",
+      "path": "/stuff/Study/projects/MUMIDC/CLAUDE.md"
+    },
+    "local-tex-grep": {
+      "kind": "local",
+      "detail": "grep for \\title across /stuff/Study/projects/**/*.tex"
+    },
+    "local-projects-ls": {
+      "kind": "local",
+      "path": "/stuff/Study/projects/",
+      "detail": "Directory listing only — folder names, contents not inspected"
+    },
+    "local-4thyear": {
+      "kind": "local",
+      "path": "/stuff/Study/projects/4th year project/"
+    },
+    "session-context": {
+      "kind": "harness",
+      "detail": "Account email supplied by the Claude Code session context"
+    }
+  },
+
+  "identity": {
+    "full_name": { "v": "Soyeb Pervez Jim", "src": ["gh-api-user", "gitconfig", "old-cv-pdf"], "conf": "verified" },
+    "aliases": { "v": ["Soyeb Jim", "soyeb-jim285", "soyeb.jim"], "src": ["gitlab-api", "gh-api-user", "cf-api"], "conf": "verified" },
+    "email_personal": { "v": "soyeb.jim@gmail.com", "src": ["gitconfig", "gh-profile", "old-cv-pdf"], "conf": "verified" },
+    "email_academic": { "v": "soyebpervez-2020515843@eee.du.ac.bd", "src": ["session-context"], "conf": "verified" },
+    "phone": { "v": "+8801718007639", "src": ["user"], "conf": "verified", "note": "Old CV shows +8801987490252 — superseded." },
+    "location": { "v": "Ulon, Dhaka, Bangladesh", "src": ["old-cv-pdf"], "conf": "reported" },
+    "links": {
+      "github": { "v": "https://github.com/soyeb-jim285", "src": ["gh-api-user"], "conf": "verified" },
+      "linkedin": { "v": "https://www.linkedin.com/in/soyebjim", "src": ["gh-profile", "old-cv-pdf"], "conf": "reported", "note": "Never fetched — LinkedIn blocks automated access." },
+      "gitlab": { "v": "https://gitlab.com/soyeb.jim", "src": ["gitlab-api"], "conf": "verified" },
+      "huggingface": { "v": "https://huggingface.co/soyeb-jim285", "src": ["hf-api"], "conf": "verified" },
+      "codeforces": { "v": "https://codeforces.com/profile/soyeb.jim", "src": ["cf-api"], "conf": "verified" },
+      "website": { "v": "https://soyebjim.me", "src": ["site-soyebjim"], "conf": "verified" },
+      "project_site": { "v": "https://hyprfm.soyebjim.me", "src": ["gh-api-repos"], "conf": "reported" }
+    }
+  },
+
+  "education": {
+    "degree": { "v": "BSc, Electrical and Electronic Engineering", "src": ["old-cv-pdf"], "conf": "verified" },
+    "institution": { "v": "University of Dhaka", "src": ["old-cv-pdf", "gh-profile"], "conf": "verified" },
+    "start": { "v": "2021-01", "src": ["old-cv-pdf"], "conf": "verified" },
+    "session": { "v": "2020-2021", "src": ["old-cv-pdf"], "conf": "verified" },
+    "student_id": { "v": "2020515843", "src": ["session-context"], "conf": "verified" },
+    "cgpa": { "v": null, "src": [], "conf": "missing", "note": "OUTSTANDING. Old CV says 3.08; Soyeb states that is wrong. Do not use 3.08." },
+    "graduation": { "v": null, "src": [], "conf": "missing", "note": "Final-year project and defense materials exist on disk, so completion is near — but no confirmed date." }
+  },
+
+  "test_scores": {
+    "gre_verbal": { "v": 155, "src": ["user"], "conf": "verified" },
+    "gre_quant": { "v": 170, "src": ["user"], "conf": "verified", "note": "Perfect score." },
+    "gre_total": { "v": 325, "src": ["user"], "conf": "verified" },
+    "ielts_overall": { "v": 8.0, "src": ["user"], "conf": "verified" },
+    "english_cefr": { "v": "C1", "src": ["user"], "conf": "verified", "note": "Old CV says 'moderate' — outdated, must be corrected." }
+  },
+
+  "languages": [
+    { "lang": "Bengali", "level": "Native", "src": ["old-cv-pdf"], "conf": "verified" },
+    { "lang": "English", "level": "C1 / IELTS 8.0", "src": ["user"], "conf": "verified" },
+    { "lang": "Hindi", "level": "Moderate", "src": ["old-cv-pdf"], "conf": "reported" }
+  ],
+
+  "employment": [
+    {
+      "employer": "Fuego.io (Fuego Studios, Inc.)",
+      "title": "Software Engineer",
+      "start": "2025-07",
+      "end": null,
+      "remote": true,
+      "src": ["old-cv-pdf", "gh-api-user", "gh-profile"],
+      "conf": "verified",
+      "work": {
+        "v": [
+          "AI agents and agentic workflows for e-commerce",
+          "Tool-calling chat systems",
+          "Semantic product search with RAG",
+          "Multi-model LLM pipelines"
+        ],
+        "src": ["gh-profile"],
+        "conf": "verified"
+      },
+      "employer_context": {
+        "v": "Platform converting Shopify stores into native mobile apps; customers include True Classic, Cuts Clothing, Dossier, Kitsch, MaryRuth's.",
+        "src": ["search-fuego"],
+        "conf": "reported",
+        "note": "Company marketing copy — client list is their claim, not independently checked."
+      }
+    }
+  ],
+
+  "research": [
+    {
+      "id": "ai4pain-2026",
+      "title": "Detecting Pain Without Localising It: A Hierarchical Physiological Classifier and the Arm-Hand Localisation Ceiling on AI4Pain 2026",
+      "venue": "ACII 2026, Grand Challenge Track",
+      "status": "under double-blind review",
+      "src": ["local-ai4pain"],
+      "conf": "verified",
+      "results": {
+        "test_accuracy": 0.572,
+        "test_correct": "247/432",
+        "baseline_accuracy": 0.398,
+        "improvement_points": 17.4,
+        "stage1_auc": 0.895,
+        "stage2_auc": 0.55,
+        "cv_estimate": "0.575 ± 0.024"
+      },
+      "method": "Two-stage hierarchical classifier; L2-regularised logistic regression on subject-normalised, effect-size-ranked features with isotonic calibration, decoded under known balanced prior. 5x5 repeated subject-fold CV with paired significance testing.",
+      "data": "BVP, EDA, respiration, SpO2 from 65 subjects; labels No-Pain / Pain-Arm / Pain-Hand",
+      "contribution_note": "Includes a negative result: arm-vs-hand localisation is an informational limit of peripheral signals, not a modelling failure. Survives three targeted interventions plus an oracle variant."
+    },
+    {
+      "id": "mumidc-abc2026",
+      "title": "MUMIDC — Multimodal Upper-limb Movement Intent Detection Challenge",
+      "venue": "ABC2026 Challenge",
+      "status": "results recorded locally",
+      "src": ["local-mumidc"],
+      "conf": "verified",
+      "results": {
+        "accuracy": 0.8748,
+        "macro_f1": 0.8786,
+        "macro_auc": 0.980,
+        "protocol": "Mixed LOSO, 16-fold cross-validation"
+      },
+      "method": "CNN2D-TCN with late fusion of statistical EEG features",
+      "data": "EEG, EMG, IMU from 16 subjects; 7 motor tasks (T1-T7)",
+      "known_weakness": "T6-Release task persistently 68-78% F1"
+    },
+    {
+      "id": "pc-e2co",
+      "title": "PINN-E2CO V19: A Physics-Informed Embed-to-Control Surrogate for CO2 Storage",
+      "status": "write-up on disk; public repo CCS_E2CO-RL",
+      "src": ["local-tex-grep", "gh-api-repos"],
+      "conf": "verified",
+      "note": "A second local doc covers 'V19: Per-Well MLP Observation Heads' for the same project."
+    },
+    {
+      "id": "physionet-ecg",
+      "title": "PhysioNet ECG Image Digitization — a comprehensive deep learning pipeline",
+      "status": "guide/write-up on disk",
+      "src": ["local-tex-grep"],
+      "conf": "reported",
+      "note": "Document self-describes as an educational guide based on a PhysioNet Challenge implementation. Soyeb's authorship of the underlying implementation is implied by location, not stated in the file."
+    },
+    {
+      "id": "isas-abc-2025",
+      "title": "ISAS / ABC 2025 Challenge",
+      "status": "unknown",
+      "src": ["local-projects-ls", "gh-api-repos"],
+      "conf": "inferred",
+      "note": "UNVERIFIED. Inferred from directory 'iasa_challenges_2025' containing ABC_paper.md and ABC_2025.pdf, plus repos isas_challange and ISAS-Challage-2025. File contents never read."
+    },
+    {
+      "id": "final-year-thesis",
+      "title": "Abnormal activity recognition",
+      "status": "defense report and slides completed",
+      "src": ["local-4thyear"],
+      "conf": "inferred",
+      "note": "PARTIALLY VERIFIED. Directory contains a defense report, slides, and a full classical-model record (RF/XGB/KNN/SVM under LOSO with confusion matrices and ablations). The title itself comes from a zip filename, not from the report."
+    },
+    {
+      "id": "unverified-folders",
+      "title": "Additional research folders",
+      "items": ["battery-soh-mamba", "dga-tabpfn", "LeakNet", "Na-Battery", "Bacteria Project", "New bacteria", "RET-lab", "uci", "AlignPoint", "HOLMES-IV"],
+      "src": ["local-projects-ls"],
+      "conf": "inferred",
+      "note": "FOLDER NAMES ONLY. Contents never inspected. Any description of these is a guess. Inspect before putting on a CV."
+    }
+  ],
+
+  "open_source": [
+    {
+      "name": "HyprFM",
+      "repo": "https://github.com/soyeb-jim285/hyprfm",
+      "stars": 285,
+      "language": "C++",
+      "src": ["gh-hyprfm", "gh-api-repos", "linuxlinks"],
+      "conf": "verified",
+      "summary": "Fast keyboard-driven Qt6/QML file manager for Hyprland and Wayland.",
+      "features": [
+        "Grid, detail and Miller-column views",
+        "Split panes, image/video thumbnails, space-key preview",
+        "Vim-style keyboard navigation, type-ahead search, breadcrumb bar",
+        "Bookmarks sidebar, device mounting via udisks2",
+        "Async copy/move with progress; drag-and-drop across panes and apps",
+        "Regex bulk rename with undo/redo",
+        "TOML theme system with live reload; 90+ built-in Lucide-style SVG icons"
+      ],
+      "architecture": "QML frontend separated from C++ backend services",
+      "packaging": ["AUR (hyprfm-git)", "Flatpak", "AppImage", "Nix flake"],
+      "external_validation": [
+        { "what": "LinuxLinks review", "src": ["linuxlinks"] },
+        { "what": "Downstream fork/overhaul 'Wayfile'", "src": ["wayfile"] }
+      ]
+    },
+    {
+      "name": "ocr-visualization / Neural Network X-Ray",
+      "repo": "https://github.com/soyeb-jim285/ocr-visualization-",
+      "demo": "https://soyebjim.me",
+      "src": ["site-soyebjim", "hf-api", "gh-api-repos"],
+      "conf": "verified",
+      "summary": "Interactive in-browser visualisation of a 13-layer CNN classifying handwritten characters, drawn live by the user.",
+      "stack": ["Next.js 16", "React 19", "TypeScript", "ONNX Runtime (WebAssembly)"],
+      "model": {
+        "training_data": ["EMNIST ByMerge", "BanglaLekha-Isolated"],
+        "classes": 146,
+        "images": "~980,000",
+        "epochs": 75,
+        "scripts": ["Latin A-Z a-z 0-9", "Bengali ক-হ plus compound characters"]
+      },
+      "artifacts": [
+        "https://huggingface.co/soyeb-jim285/ocr-visualization-models",
+        "https://huggingface.co/datasets/soyeb-jim285/ocr-handwriting-data"
+      ]
+    },
+    { "name": "hyprpdf", "stars": 1, "language": "C++", "desc": "Qt6/QML PDF and office viewer with annotations", "src": ["gh-api-repos"], "conf": "verified" },
+    { "name": "quill", "language": "QML", "desc": "Themed QML component library for Qt Quick — buttons, toggles, dropdowns, cards", "src": ["gh-api-repos"], "conf": "verified" },
+    { "name": "quill-icons", "language": "QML", "desc": "60 stroke-based PathSvg icons derived from Lucide", "src": ["gh-api-repos"], "conf": "verified" },
+    { "name": "quill-polkit", "language": "QML", "desc": null, "src": ["gh-api-repos"], "conf": "inferred", "note": "No repo description. Name implies a polkit authentication agent." },
+    { "name": "soydots", "language": "QML", "desc": "Arch Linux + Hyprland dotfiles with Quickshell desktop shell", "src": ["gh-api-repos"], "conf": "verified" },
+    { "name": "distrostrap", "language": "Python", "desc": "Install any Linux distro onto a target partition from a running host system", "src": ["gh-api-repos"], "conf": "verified" },
+    { "name": "gre-vocab-trainer", "language": "Swift", "desc": "iOS GRE vocabulary trainer; user types definition and sentence, AI grades both, FSRS-6 schedules review", "src": ["gh-api-repos"], "conf": "verified" },
+    { "name": "codeforces_user_total_difficulty", "stars": 2, "language": "Python", "desc": "Plots users against a weighted sum of solved-problem difficulties", "src": ["gh-api-repos"], "conf": "verified" },
+    { "name": "doodle-decoder", "language": "TypeScript", "desc": null, "src": ["gh-api-repos"], "conf": "inferred", "note": "No description on GitHub." },
+    { "name": "transformer-attention-visualizer", "desc": null, "src": ["local-projects-ls"], "conf": "inferred", "note": "Local directory only." },
+    { "name": "book-map-reviewer", "language": "TypeScript", "desc": null, "src": ["gh-api-repos"], "conf": "inferred", "note": "No description on GitHub." },
+    { "name": "aidlink / charity-fund", "language": "TypeScript", "desc": "Transparent donations platform", "src": ["gh-api-repos", "old-cv-pdf"], "conf": "verified" },
+    { "name": "aichat / gemini-ai-chatbot", "language": "TypeScript", "desc": null, "src": ["gh-api-repos"], "conf": "reported" }
+  ],
+
+  "github_stats": {
+    "account_created": { "v": "2018-04-30", "src": ["gh-api-user"], "conf": "verified" },
+    "public_repos": { "v": 57, "src": ["gh-api-user"], "conf": "verified" },
+    "non_fork_repos": { "v": 39, "src": ["gh-api-repos"], "conf": "verified" },
+    "total_stars": { "v": 25, "src": ["gh-profile"], "conf": "reported", "note": "Profile README figure; the repo API shows 285 on hyprfm alone, so this number is stale." },
+    "followers": { "v": 3, "src": ["gh-api-user"], "conf": "verified" },
+    "achievements": { "v": ["Pull Shark", "Arctic Code Vault Contributor"], "src": ["gh-profile"], "conf": "reported" }
+  },
+
+  "competitive_programming": {
+    "codeforces": {
+      "handle": "soyeb.jim",
+      "rating": 1658,
+      "max_rating": 1658,
+      "rank": "Expert",
+      "max_rank": "Expert",
+      "rated_contests": 30,
+      "problems_solved": 99,
+      "submissions": 211,
+      "registered": "2018-03",
+      "src": ["cf-api"],
+      "conf": "verified"
+    },
+    "codechef": { "v": "active", "src": ["gh-profile"], "conf": "reported", "note": "Self-reported on profile README; no handle found." },
+    "contests": [
+      {
+        "event": "ICPC Dhaka Regional Site",
+        "year": 2024,
+        "team": "DU_Oblivion",
+        "results": [
+          { "stage": "Preliminary", "rank": 16, "of": 2489 },
+          { "stage": "Main", "rank": 37, "of": 308 }
+        ],
+        "src": ["old-cv-pdf"], "conf": "reported"
+      },
+      {
+        "event": "ICPC Dhaka Regional Site",
+        "year": 2023,
+        "team": "DU_HoneyNuts",
+        "results": [
+          { "stage": "Preliminary", "rank": 35, "of": 2460 },
+          { "stage": "Main", "rank": 37, "of": 225 }
+        ],
+        "src": ["old-cv-pdf"], "conf": "reported"
+      },
+      {
+        "event": "National Collegiate Programming Contest",
+        "year": 2024,
+        "team": "DU_3Musketeers",
+        "results": [
+          { "stage": "Preliminary", "rank": 31, "of": 1099 },
+          { "stage": "Main", "rank": 27, "of": 196 }
+        ],
+        "src": ["old-cv-pdf"], "conf": "reported"
+      },
+      {
+        "event": "Meta Hacker Cup",
+        "year": 2024,
+        "team": null,
+        "results": [
+          { "stage": "Round 1", "rank": 2359, "of": 22494 },
+          { "stage": "Round 2", "rank": 962, "of": 5000 }
+        ],
+        "src": ["old-cv-pdf"], "conf": "reported"
+      },
+      {
+        "event": "Meta Hacker Cup",
+        "year": 2023,
+        "team": null,
+        "results": [
+          { "stage": "Round 1", "rank": 1760, "of": 20324 },
+          { "stage": "Round 2", "rank": 2425, "of": 6193 }
+        ],
+        "src": ["old-cv-pdf"], "conf": "reported"
+      },
+      {
+        "event": "BUET CSE Fest",
+        "year": 2024,
+        "team": "DU_oblivion",
+        "results": [ { "stage": "Final", "rank": 25, "of": 113 } ],
+        "src": ["old-cv-pdf"], "conf": "reported"
+      }
+    ],
+    "standings_links_note": "The old CV hyperlinks each standings page. Those links were not opened or verified."
+  },
+
+  "mathematics_olympiad": [
+    { "event": "Bangladesh Mathematical Olympiad, National", "year": 2017, "result": "First Runner-up", "src": ["old-cv-pdf"], "conf": "reported" },
+    { "event": "Bangladesh Mathematical Olympiad, National", "year": 2016, "result": "Second Runner-up", "src": ["old-cv-pdf"], "conf": "reported" },
+    { "event": "BdMO National Secondary 2018", "year": 2018, "result": "Published full solutions on the official BdMO forum", "src": ["bdmo-forum"], "conf": "verified" }
+  ],
+
+  "publications_other": [
+    {
+      "type": "book",
+      "title": "গণিত অলিম্পিয়াডের হাতেখড়ি",
+      "title_translit": "Ganit Olympiader Hatekhori (Introduction to Math Olympiad)",
+      "publisher": "স্বপ্ন '৭১ (Swapno '71)",
+      "year": 2024,
+      "src": ["old-cv-pdf"], "conf": "reported"
+    },
+    {
+      "type": "study-notes",
+      "title": "Modern Physics — Full Note",
+      "host": "Studocu, University of Dhaka",
+      "src": ["studocu"], "conf": "verified"
+    }
+  ],
+
+  "club_work": [
+    { "org": "IEEE Computer Society", "role": "Publicity Coordinator", "period": "2022-2024", "src": ["old-cv-pdf"], "conf": "reported" },
+    { "org": "IEEE Robotics Society", "role": "Web Master", "period": "2022-2024", "src": ["old-cv-pdf"], "conf": "reported" },
+    { "org": "Bangladesh Mathematical Olympiad", "role": "Academic Team Member", "period": "2021-2024", "src": ["old-cv-pdf"], "conf": "reported" }
+  ],
+
+  "earlier_projects": [
+    { "name": "TravelExpress", "desc": "Traveler platform with AI-driven spot recommendations and text-based photo search", "src": ["old-cv-pdf"], "conf": "reported" },
+    { "name": "AI TutorMatch", "desc": "Recommends tutors from user behaviour and skill gaps", "src": ["old-cv-pdf"], "conf": "reported" },
+    { "name": "AidLink", "desc": "Transparent charity platform connecting donors with recipients", "src": ["old-cv-pdf", "gh-api-repos"], "conf": "verified" },
+    { "name": "CodeRankBot", "desc": "Discord bot tracking Codeforces rankings and solved-problem stats", "src": ["old-cv-pdf"], "conf": "reported" }
+  ],
+
+  "skills": {
+    "languages": { "v": ["C++", "C", "Python", "TypeScript", "JavaScript", "QML", "Swift", "Lua", "Bash", "TeX"], "src": ["gh-api-repos", "gh-profile", "old-cv-pdf"], "conf": "verified" },
+    "ml": { "v": ["PyTorch", "CNN", "TCN", "LSTM", "Mamba/SSM", "PINNs", "TabPFN", "ONNX", "scikit-learn", "biosignal processing (EEG/EMG/IMU/EDA/BVP/RESP/PPG)", "LOSO and subject-fold CV", "probability calibration"], "src": ["local-ai4pain", "local-mumidc", "gh-api-repos", "gh-profile"], "conf": "verified" },
+    "llm_engineering": { "v": ["agentic workflows", "tool calling", "RAG / semantic search", "Vercel AI SDK", "OpenAI API"], "src": ["gh-profile"], "conf": "verified" },
+    "web": { "v": ["Next.js", "React", "Astro", "HTML"], "src": ["gh-api-repos", "old-cv-pdf"], "conf": "verified" },
+    "systems": { "v": ["Qt6/QML", "Wayland", "Hyprland", "Arch Linux", "AUR", "Flatpak", "AppImage", "Nix"], "src": ["gh-hyprfm", "gh-profile"], "conf": "verified" },
+    "other": { "v": ["LaTeX / IEEEtran", "web scraping", "reproducible experiment protocols"], "src": ["old-cv-pdf", "local-ai4pain"], "conf": "verified" }
+  },
+
+  "interests": { "v": ["Electronics", "Programming", "AI", "Arts", "Video games"], "src": ["old-cv-pdf"], "conf": "reported" },
+
+  "open_questions": [
+    "Actual CGPA — 3.08 in the old CV is confirmed wrong.",
+    "Graduation date.",
+    "What the unverified research folders actually contain (battery-soh-mamba, dga-tabpfn, LeakNet, Na-Battery, bacteria projects, RET-lab, AlignPoint, HOLMES-IV).",
+    "Confirmed title of the final-year thesis.",
+    "Status of the ISAS/ABC 2025 work — submitted, published, or abandoned.",
+    "Whether the AI4Pain paper has been accepted since submission.",
+    "Current Fuego compensation, for benchmarking against the remote market."
+  ]
+}

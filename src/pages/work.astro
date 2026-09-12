@@ -1,0 +1,50 @@
+---
+import Layout from '../layouts/SchematicLayout.astro';
+import FuegoDiagram from '../components/schematic/FuegoDiagram.astro';
+import { work, skills, clubs } from '../data/content';
+const keys = ['platform', 'tools', 'retrieval', 'multimodal', 'reliability'];
+const groups = [
+  ['Languages', skills.languages], ['ML', skills.ml], ['LLM', skills.llm], ['Web', skills.web], ['Systems', skills.systems],
+] as const;
+---
+<Layout title="Work, Soyeb Pervez Jim" description="Apa, the conversational shopping agent Soyeb built at Fuego.io for native Shopify apps." sheet="2" big="Apa / Work" stamp={{ k: 'Status', v: 'in production' }}>
+  <section class="head r" data-anchor="work-intro">
+    <h1 class="title">Work</h1>
+    <p class="sub">At {work.employer}, I built <span class="ora">{work.product}</span>, {work.context}. {work.title}, remote, {work.period}.</p>
+  </section>
+
+  <section data-anchor="work-architecture">
+    <div class="r">
+      <ul class="specs tight">
+        {work.bullets.map((b, i) => <li data-blk={keys[i]}><span>{keys[i]}</span><span>{b}</span></li>)}
+        <li><span>stack</span><span>{work.stack.join(', ')}</span></li>
+      </ul>
+      <p class="cap hover-hint" style="margin-top:14px">Hover a block to find its row.</p>
+    </div>
+    <div class="diag-wide"><FuegoDiagram /></div>
+  </section>
+
+  <section class="r" data-anchor="work-skills">
+    <h2 class="t2" style="margin-bottom:16px">Skills</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Group</th><th>Items</th></tr></thead>
+        <tbody>
+          {groups.map(([g, items]) => <tr><td class="q">{g}</td><td>{items.join(', ')}</td></tr>)}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="r">
+    <h2 class="t2" style="margin-bottom:16px">Clubs</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Organisation</th><th>Role</th><th>Period</th></tr></thead>
+        <tbody>
+          {clubs.map((c) => <tr><td>{c.org}</td><td>{c.role}</td><td class="m nw">{c.period}</td></tr>)}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</Layout>

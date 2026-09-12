@@ -1,0 +1,179 @@
+// Single source of truth for every variant. Facts come from ../cv.json (with provenance);
+// this file shapes them for pages. Do not invent numbers here.
+import cv from './cv.json';
+
+export const person = {
+  name: 'Soyeb Pervez Jim',
+  short: 'SPJ',
+  role: 'Software Engineer at Fuego.io',
+  tagline: 'Apa, a Shopify shopping agent, by day; biosignal classifiers and open-source Qt tools by night.',
+  location: 'Dhaka, Bangladesh',
+  email: 'soyeb.jim@gmail.com',
+  phone: '+8801718007639',
+  education: 'BSc Electrical and Electronic Engineering, University of Dhaka, 2021 to present (final year)',
+  languages: ['Bengali, native', 'English, C1 (IELTS 8.0)', 'Hindi, moderate'],
+  scores: { gre: '155 Verbal, 170 Quant', ielts: '8.0' },
+  links: {
+    github: 'https://github.com/soyeb-jim285',
+    linkedin: 'https://www.linkedin.com/in/soyebjim',
+    codeforces: 'https://codeforces.com/profile/soyeb.jim',
+    huggingface: 'https://huggingface.co/soyeb-jim285',
+    site: 'https://soyebjim.me',
+  },
+  portrait: '/assets/portrait.jpg',
+} as const;
+
+export const work = {
+  employer: 'Fuego.io',
+  product: 'Apa',
+  title: 'Software Engineer',
+  period: 'July 2025 to present',
+  remote: true,
+  context: 'a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps',
+  bullets: [
+    'Built a multi-tenant shopping agent with a streamed Next.js interface, Express API, persistent conversations and per-brand tools, context and model settings.',
+    'Implemented structured tools for semantic and Shopify-native search, collections, product details, reviews, recommendations, customer orders and storefront actions.',
+    'Developed hybrid catalog retrieval with embeddings, vector search, commerce filters and live Shopify revalidation for price, availability and matching variants.',
+    'Shipped multimodal interactions including image upload, product visualisation, virtual try-on, speech transcription and rich streamed result cards.',
+    'Added bounded tool loops, answer deduplication, background catalog refreshes, latency and cost instrumentation, rate limiting and failure recovery.',
+  ],
+  stack: ['TypeScript', 'Next.js', 'React', 'Express', 'Vercel AI SDK', 'OpenRouter', 'Shopify', 'Sequelize', 'TurboPuffer'],
+} as const;
+
+export type Project = {
+  slug: string; name: string; kicker: string; summary: string; body: string[];
+  image?: string; thumb?: string; images?: string[]; stars?: number; stack: string[];
+  links: { label: string; href: string }[]; facts?: { label: string; value: string }[];
+};
+
+export const projects: Project[] = [
+  {
+    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', stars: 285,
+    summary: 'Qt6/QML file manager with Miller columns, split panes, async transfers and live-reloading TOML themes. Packaged for AUR, Flatpak, AppImage and Nix.',
+    body: [
+      'HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.',
+      'Grid, detail and Miller-column views; image and video thumbnails with a Space-key quick preview; split panes for two-directory workflows; a bookmarks sidebar that mounts devices through udisks2; regex bulk rename with undo and redo; drag and drop across panes and to other apps.',
+      'Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it.',
+    ],
+    image: '/assets/miller-view.jpg', thumb: '/assets/miller-view-720.jpg', images: ['/assets/grid-view.jpg', '/assets/miller-view.jpg', '/assets/quick-preview.jpg'],
+    stack: ['C++', 'Qt 6', 'QML', 'Wayland', 'udisks2', 'Flatpak', 'Nix'],
+    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/hyprfm' }, { label: 'Site', href: 'https://hyprfm.soyebjim.me' }, { label: 'LinuxLinks review', href: 'https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/' }],
+    facts: [{ label: 'Stars', value: '285' }, { label: 'Packages', value: 'AUR, Flatpak, AppImage, Nix' }, { label: 'Language', value: 'C++ and QML' }],
+  },
+  {
+    slug: 'neural-network-x-ray', name: 'Neural Network X-Ray', kicker: 'Draw a character, watch 13 CNN layers fire',
+    summary: 'Interactive CNN visualiser running entirely in the browser through ONNX Runtime on WebAssembly. Latin and Bengali scripts, 146 classes, about 980K training images.',
+    body: [
+      'You draw a letter or digit on a canvas and every layer of the network lights up as it processes the stroke: convolution, ReLU, pooling, the dense layers and the final softmax. Inference runs in the browser with ONNX Runtime Web, so nothing is uploaded.',
+      'The model was trained on EMNIST ByMerge merged with BanglaLekha-Isolated: 146 classes covering A to Z, a to z, 0 to 9 and Bengali ka to ha plus compound characters, from roughly 980,000 images over 75 epochs. Weights and the merged dataset are published on Hugging Face.',
+      'Built with Next.js 16, React 19 and TypeScript.',
+    ],
+    image: '/assets/nnxray.jpg', thumb: '/assets/nnxray-720.jpg',
+    stack: ['Next.js 16', 'React 19', 'TypeScript', 'ONNX Runtime', 'WebAssembly', 'PyTorch'],
+    links: [{ label: 'Live', href: 'https://soyebjim.me' }, { label: 'GitHub', href: 'https://github.com/soyeb-jim285/ocr-visualization-' }, { label: 'Model weights', href: 'https://huggingface.co/soyeb-jim285/ocr-visualization-models' }, { label: 'Dataset', href: 'https://huggingface.co/datasets/soyeb-jim285/ocr-handwriting-data' }],
+    facts: [{ label: 'Classes', value: '146' }, { label: 'Training images', value: '~980K' }, { label: 'Epochs', value: '75' }],
+  },
+  {
+    slug: 'hyprpdf', name: 'hyprpdf', kicker: 'PDF and office viewer with annotations',
+    summary: 'Qt6/QML document viewer with tabs, page thumbnails, outline navigation, search, split views and annotation tools.',
+    body: ['Built to sit next to HyprFM on the same desktop, with Poppler rendering, QML chrome and keyboard-driven navigation across PDF and office documents.'],
+    image: '/assets/hyprpdf.jpg', thumb: '/assets/hyprpdf-720.jpg',
+    stack: ['C++', 'Qt 6', 'QML', 'Poppler'],
+    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/hyprpdf' }],
+    facts: [{ label: 'Renderer', value: 'Poppler' }, { label: 'Interface', value: 'Qt 6 and QML' }, { label: 'Tools', value: 'Annotations, search, split views' }],
+  },
+  {
+    slug: 'quill', name: 'quill', kicker: 'Themed QML component library',
+    summary: 'Buttons, toggles, dropdowns, cards and more for Qt Quick, plus quill-icons (60 stroke-based PathSvg icons derived from Lucide) and quill-polkit.',
+    body: ['Extracted from HyprFM so the same components could be reused across hyprpdf, the Quickshell desktop shell and the polkit agent.'],
+    stack: ['QML', 'Qt Quick'],
+    links: [{ label: 'quill', href: 'https://github.com/soyeb-jim285/quill' }, { label: 'quill-icons', href: 'https://github.com/soyeb-jim285/quill-icons' }],
+  },
+  {
+    slug: 'distrostrap', name: 'distrostrap', kicker: 'Install any Linux distro from a running host',
+    summary: 'Bootstrap a distribution onto a target partition without a live USB, from whatever system is already running.',
+    body: ['Python. Handles partition prep, base bootstrap, chroot configuration and bootloader entries.'],
+    stack: ['Python', 'Linux'],
+    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/distrostrap' }],
+  },
+  {
+    slug: 'gre-vocab-trainer', name: 'GRE Vocab Trainer', kicker: 'iOS, AI-graded, FSRS-6 scheduled',
+    summary: 'You type the definition and a sentence, an AI grades both, and FSRS-6 schedules the next review. Built during the run to a 170 quant.',
+    body: ['Swift. Grading is done by an LLM against the reference definition; scheduling follows the FSRS-6 spaced-repetition algorithm.'],
+    stack: ['Swift', 'iOS', 'FSRS-6'],
+    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/gre-vocab-trainer' }],
+  },
+  {
+    slug: 'pc-e2co', name: 'PC-E2CO', kicker: 'Physics-constrained surrogate for CO2 storage',
+    summary: 'A physics-informed Embed-to-Control model for CO2 storage reservoirs, with per-well MLP observation heads (version 19).',
+    body: ['Latent dynamics learned under physical constraints so the surrogate stays plausible outside the training distribution. PyTorch, Jupyter.'],
+    stack: ['Python', 'PyTorch'],
+    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/CCS_E2CO-RL' }],
+  },
+];
+
+export const research = [
+  {
+    slug: 'ai4pain-2026',
+    title: 'Detecting Pain Without Localising It: A Hierarchical Physiological Classifier and the Arm-Hand Localisation Ceiling on AI4Pain 2026',
+    short: 'Detecting pain without localising it',
+    venue: 'ACII 2026 Grand Challenge track', status: 'under double-blind review',
+    abstract: 'The AI4Pain 2026 challenge asks a model to label physiological segments from 65 subjects as No-Pain, Pain-Arm or Pain-Hand from BVP, EDA, respiration and SpO2. We present a two-stage hierarchical classifier: stage one separates pain from no-pain, stage two separates arm from hand. Both are L2-regularised logistic regressions on subject-normalised, effect-size-ranked features with isotonic calibration, decoded under the known balanced prior. Every design decision was made under 5x5 repeated subject-fold cross-validation with paired significance testing, not on the leaderboard.',
+    finding: 'Stage-one detection is strong. Stage-two arm-versus-hand localisation sits near chance and stays there through baseline-relative normalisation, respiratory dynamics, modality late-fusion, a sweep of non-linear models and an oracle variant fed ground-truth labels. At the segment level these peripheral signals carry pain intensity, not somatotopic location.',
+    results: [
+      { label: 'Test accuracy', value: '0.572', note: '247 of 432 segments' },
+      { label: 'Official baseline', value: '0.398', note: 'multimodal SVM' },
+      { label: 'Detection AUC', value: '0.895', note: 'stage 1' },
+      { label: 'Localisation AUC', value: '0.55', note: 'stage 2, near chance' },
+      { label: 'CV estimate', value: '0.575 ± 0.024', note: '5x5 subject-fold' },
+    ],
+    keywords: ['pain assessment', 'electrodermal activity', 'photoplethysmography', 'hierarchical classification', 'affective computing'],
+  },
+  {
+    slug: 'mumidc-abc2026',
+    title: 'Upper-limb movement intent from EEG, EMG and IMU', short: 'Movement intent from EEG, EMG and IMU',
+    venue: 'ABC2026 MUMIDC challenge', status: 'challenge submission',
+    abstract: 'A CNN2D-TCN with late fusion of statistical EEG features classifying seven motor tasks across sixteen subjects under mixed leave-one-subject-out evaluation.',
+    finding: 'The release task (T6) is the stubborn one at 68 to 78 percent F1 in every configuration tried; everything else is well above 85.',
+    results: [
+      { label: 'Accuracy', value: '87.5%', note: 'mixed LOSO, 16 folds' },
+      { label: 'Macro F1', value: '87.9%', note: '' },
+      { label: 'Macro AUC', value: '0.980', note: '' },
+    ],
+    keywords: ['EEG', 'EMG', 'IMU', 'temporal convolution', 'motor intent'],
+  },
+  {
+    slug: 'other',
+    title: 'Other work', short: 'Other work', venue: '', status: '',
+    abstract: 'A physics-constrained Embed-to-Control surrogate for CO2 storage with per-well MLP observation heads. An ECG image digitisation pipeline for the PhysioNet challenge. A final-year thesis on abnormal activity recognition, classical and deep models evaluated under leave-one-subject-out.',
+    finding: '', results: [], keywords: [],
+  },
+];
+
+export const record = [
+  { year: '2024', what: 'ICPC Dhaka Regional, team DU_Oblivion', result: '37th of 308', detail: 'preliminary 16th of 2489' },
+  { year: '2023', what: 'ICPC Dhaka Regional, team DU_HoneyNuts', result: '37th of 225', detail: 'preliminary 35th of 2460' },
+  { year: '2024', what: 'National Collegiate Programming Contest, team DU_3Musketeers', result: '27th of 196', detail: 'preliminary 31st of 1099' },
+  { year: '2024', what: 'Meta Hacker Cup, round 2', result: '962nd of 5000', detail: 'round 1: 2359th of 22494' },
+  { year: '2024', what: 'BUET CSE Fest', result: '25th of 113', detail: '' },
+  { year: 'ongoing', what: 'Codeforces, handle soyeb.jim', result: 'Expert, 1658', detail: '30 rated rounds' },
+  { year: '2017', what: 'Bangladesh Mathematical Olympiad, national', result: 'First runner-up', detail: 'second runner-up in 2016' },
+  { year: '2024', what: 'Book: গণিত অলিম্পিয়াডের হাতেখড়ি, Swapno ’71', result: 'Author', detail: 'introduction to olympiad mathematics' },
+  { year: '2026', what: 'GRE and IELTS', result: '155V 170Q, 8.0', detail: 'English C1' },
+];
+
+export const clubs = [
+  { org: 'IEEE Computer Society', role: 'Publicity Coordinator', period: '2022 to 2024' },
+  { org: 'IEEE Robotics Society', role: 'Web Master', period: '2022 to 2024' },
+  { org: 'Bangladesh Mathematical Olympiad', role: 'Academic Team Member', period: '2021 to 2024' },
+];
+
+export const skills = {
+  languages: ['C++', 'Python', 'TypeScript', 'QML', 'Swift', 'Lua', 'Bash'],
+  ml: ['PyTorch', 'ONNX', 'scikit-learn', 'CNN / TCN / LSTM', 'Mamba', 'PINNs', 'biosignal processing', 'LOSO and subject-fold CV', 'calibration'],
+  llm: ['agentic workflows', 'tool calling', 'RAG', 'Vercel AI SDK', 'OpenAI API', 'evals'],
+  web: ['Next.js', 'React', 'Astro'],
+  systems: ['Qt 6', 'Wayland', 'Hyprland', 'Arch Linux', 'Flatpak', 'Nix', 'AppImage'],
+};
+
+export const provenance = cv.sources;

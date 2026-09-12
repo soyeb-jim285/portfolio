@@ -1,0 +1,12 @@
+node_modules
+dist
+.astro
+.env
+.env.*
+!.env.example
+
+# build + runtime caches
+server/.cache
+outputs
+.playwright-mcp
+.astro

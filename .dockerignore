@@ -1,0 +1,11 @@
+node_modules
+server/node_modules
+server/.cache
+dist
+.astro
+outputs
+.playwright-mcp
+.git
+.env
+.env.*
+!.env.example

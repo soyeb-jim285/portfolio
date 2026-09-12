@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/SchematicLayout.astro';
+import PainDiagram from '../components/schematic/PainDiagram.astro';
+import MumidcDiagram from '../components/schematic/MumidcDiagram.astro';
+import { research } from '../data/content';
+const [pain, mumidc, other] = research;
+---
+<Layout title="Research, Soyeb Pervez Jim" description="AI4Pain 2026 hierarchical pain classifier and MUMIDC movement-intent model, with measured results." sheet="3" big="Research" stamp={{ k: 'Status', v: pain.status }}>
+  <section class="head r" data-anchor="research-intro">
+    <h1 class="title">Research</h1>
+    <p class="sub">Two challenge papers on physiological signals, one under review, one submitted. Every number below is from the official test set or from cross-validation, as noted.</p>
+  </section>
+
+  <section data-anchor="research-pain">
+    <div class="head r" style="margin-bottom:24px">
+      <h2 class="t2">{pain.short}</h2>
+      <p class="sub"><span class="ora">{pain.venue}</span>, {pain.status}.</p>
+    </div>
+    <div class="r">
+      <p class="lead">{pain.abstract}</p>
+      <p class="lead"><b>Finding.</b> {pain.finding}</p>
+    </div>
+    <div class="diag-wide"><PainDiagram /></div>
+    <div class="tw r" style="margin-top:32px">
+      <table>
+        <thead><tr><th>Measure</th><th>Value</th><th>Note</th></tr></thead>
+        <tbody>{pain.results.map((x) => <tr><td>{x.label}</td><td class="n">{x.value}</td><td class="m">{x.note || "—"}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <ul class="tags r" style="margin-top:16px">{pain.keywords.map((k) => <li>{k}</li>)}</ul>
+  </section>
+
+  <section data-anchor="research-movement">
+    <div class="head r" style="margin-bottom:24px">
+      <h2 class="t2">{mumidc.short}</h2>
+      <p class="sub"><span class="ora">{mumidc.venue}</span>, {mumidc.status}.</p>
+    </div>
+    <div class="r">
+      <p class="lead">{mumidc.abstract}</p>
+      <p class="lead"><b>Finding.</b> {mumidc.finding}</p>
+    </div>
+    <div class="diag-wide"><MumidcDiagram /></div>
+    <div class="tw r" style="margin-top:32px">
+      <table>
+        <thead><tr><th>Measure</th><th>Value</th><th>Note</th></tr></thead>
+        <tbody>{mumidc.results.map((x) => <tr><td>{x.label}</td><td class="n">{x.value}</td><td class="m">{x.note || "—"}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <ul class="tags r" style="margin-top:16px">{mumidc.keywords.map((k) => <li>{k}</li>)}</ul>
+  </section>
+
+  <section class="split r">
+    <h2 class="t2">{other.title}</h2>
+    <p class="lead">{other.abstract}</p>
+  </section>
+</Layout>

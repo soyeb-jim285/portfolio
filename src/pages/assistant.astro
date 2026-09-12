@@ -1,0 +1,88 @@
+---
+import Layout from '../layouts/SchematicLayout.astro';
+import { person } from '../data/content';
+import { siteTargets } from '../data/site-map';
+
+const tools = [
+  ['search_knowledge', 'Hybrid full-text and vector search over the indexed repositories.'],
+  ['read_source', 'A bounded window of one indexed file, at most 200 lines.'],
+  ['list_files', 'The indexed file list of one repository.'],
+  ['show_section', `Move you to one of ${siteTargets.length} named places on this site.`],
+  ['prepare_contact', 'Draft a message for you to review. It cannot send.'],
+  ['create_artifact', 'Write a Markdown brief, comparison or diagram you can download.'],
+  ['get_availability', 'Read real free slots from Google Calendar.'],
+  ['propose_booking', 'Offer one slot for you to confirm. It cannot book.'],
+];
+const limits = [
+  ['It answers from public material only', 'Public portfolio content plus the source of the indexed repositories. Work done at Fuego.io is described from public write-ups; that code is not indexed and it will say so.'],
+  ['It can be wrong', 'Answers are generated. Citations point at the exact lines read, so check those rather than the prose.'],
+  ['It cannot act alone', 'No tool sends a message or books a call. Both need your own click on a preview you can edit first.'],
+  ['It cannot run code', 'It reads source, it does not execute anything, and it has no access to private systems or data.'],
+  ['It forgets', 'A conversation is deleted seven days after its last use, and Clear chat deletes it at once.'],
+];
+---
+<Layout
+  title="How the assistant works, Soyeb Pervez Jim"
+  description="Architecture, tools, data handling and limitations of the portfolio assistant: retrieval over indexed source, cited answers, and actions that only run when the visitor confirms."
+  sheet="8" big="Assistant" stamp={{ k: 'Source', v: 'public repos' }}>
+
+  <section class="head r">
+    <h1 class="title">The assistant</h1>
+    <p class="sub">It reads my code before it answers, shows you which lines it read, and cannot send or book anything without your click. This sheet is the whole design, including what it will not do.</p>
+  </section>
+
+  <section class="r">
+    <h2 class="t2" style="margin-bottom:16px">Path of a question</h2>
+    <ul class="specs tight">
+      <li><span>1 / session</span><span>The browser asks for an anonymous session token. Only its hash is stored, so a leaked row cannot be replayed.</span></li>
+      <li><span>2 / context</span><span>The API loads that session's history from PostgreSQL. The page sends only the new message, never the transcript.</span></li>
+      <li><span>3 / tools</span><span>The model may search and read indexed source, move you around this site, draft a message, write a document, or read calendar availability. Tool results are labelled untrusted data.</span></li>
+      <li><span>4 / answer</span><span>Tokens stream back as they arrive, with the tool calls that ran, their timings, and the source ranges read.</span></li>
+      <li><span>5 / your move</span><span>Anything outward-facing waits for you: a message is sent, and a call is booked, only when you press the button.</span></li>
+    </ul>
+  </section>
+
+  <section class="r">
+    <h2 class="t2" style="margin-bottom:16px">Tools it can call</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+        <tbody>{tools.map(([name, what]) => <tr><td class="q">{name}</td><td>{what}</td></tr>)}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="r">
+    <h2 class="t2" style="margin-bottom:16px">How the code index works</h2>
+    <p class="lead">An indexing job clones a pinned commit of each allowed repository, skips vendored, generated, binary, oversized and credential-shaped files, then splits the rest into overlapping sixty-line windows with their detected symbols. Each window is embedded and stored alongside a PostgreSQL full-text index.</p>
+    <p class="lead">A search runs both halves and fuses them by reciprocal rank, so an exact identifier and a described behaviour both find the right file. Every citation names the repository, path, line range and commit, and links to that exact revision on GitHub.</p>
+    <p class="lead">The indexer reads every <a href={person.links.github} target="_blank" rel="noopener">public repository</a> on the account, skipping forks, archives and anything vendored, generated or binary. It never downloads a file it will not index, and it re-embeds only the windows whose text changed since the last run. Nothing private is touched, and no repository outside that account is ever fetched.</p>
+  </section>
+
+  <section class="r">
+    <h2 class="t2" style="margin-bottom:16px">Your data</h2>
+    <ul class="specs tight">
+      <li><span>stored</span><span>Your messages and the assistant's answers, in PostgreSQL, tied to an anonymous session. No account, no name, no tracking cookie.</span></li>
+      <li><span>deleted</span><span>A session and its messages are deleted seven days after last use. Clear chat deletes them immediately. Generated documents expire after seven days and their files are deleted with them.</span></li>
+      <li><span>shared</span><span>Message text goes to OpenRouter and the model provider it routes to. A message you send goes to Resend. A call you book becomes an event in Jim's Google Calendar. Nothing else leaves.</span></li>
+      <li><span>never logged</span><span>Message bodies, contact text and credentials stay out of the server logs.</span></li>
+    </ul>
+  </section>
+
+  <section class="split r">
+    <h2 class="t2">What it will not do</h2>
+    <div class="tbl">
+      {limits.map(([title, detail]) => <div><span>{title}</span><b>{detail}</b></div>)}
+    </div>
+  </section>
+
+  <section class="r">
+    <h2 class="t2" style="margin-bottom:16px">Built with</h2>
+    <p class="lead">Astro and a React island on the front, Hono on Node with an OpenAPI schema on the back, PostgreSQL with pgvector for sessions and retrieval, OpenRouter for the model and embeddings, Cloudflare R2 for generated documents, Resend for mail, and the Google Calendar API for scheduling. The API documents itself; every route, event and error shape is in the generated specification.</p>
+    <p class="btns">
+      <button type="button" class="btn fill" data-assistant-ask="How does HyprFM keep file transfers off the UI thread? Cite the code.">Ask it something hard</button>
+      <button type="button" class="btn" data-assistant-repo="hyprfm">Browse the indexed code</button>
+      <button type="button" class="btn" data-contact>Send a message</button>
+    </p>
+  </section>
+</Layout>

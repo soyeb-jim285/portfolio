@@ -1,0 +1,109 @@
+---
+// Schematic variant: every route is one sheet in a seven-sheet drawing set.
+import '@fontsource-variable/big-shoulders-display';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/400-italic.css';
+import '../styles/schematic.css';
+import { ClientRouter } from 'astro:transitions';
+import ContactDialog from '../components/ContactDialog.astro';
+import Assistant from '../components/Assistant.astro';
+import { person } from '../data/content';
+
+interface Props {
+  title: string; description: string;
+  sheet: string;            // "2" or "5.1"
+  big: string;              // title block name
+  stamp: { k: string; v: string }; // page specific title block cell
+}
+const { title, description, sheet, big, stamp } = Astro.props;
+const index = [
+  { n: '1', name: 'Title', href: '/' },
+  { n: '2', name: 'Work', href: '/work/' },
+  { n: '3', name: 'Research', href: '/research/' },
+  { n: '4', name: 'Projects', href: '/projects/' },
+  { n: '5', name: 'Details', href: '/projects/hyprfm/' },
+  { n: '6', name: 'Record', href: '/record/' },
+  { n: '7', name: 'Contact', href: '/contact/' },
+  { n: '8', name: 'Assistant', href: '/assistant/' },
+];
+const cur = sheet.split('.')[0];
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL('/assets/og.png', Astro.site);
+// flip to the next drawing: old sheet slides off left, new one slides in from the right
+const flip = {
+  forwards: {
+    old: { name: 'sheetOut', duration: '.22s', easing: 'cubic-bezier(.4,0,1,1)', fillMode: 'forwards' },
+    new: { name: 'sheetIn', duration: '.36s', easing: 'cubic-bezier(.16,1,.3,1)', fillMode: 'backwards' },
+  },
+  backwards: {
+    old: { name: 'sheetOutBack', duration: '.22s', easing: 'cubic-bezier(.4,0,1,1)', fillMode: 'forwards' },
+    new: { name: 'sheetInBack', duration: '.36s', easing: 'cubic-bezier(.16,1,.3,1)', fillMode: 'backwards' },
+  },
+};
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <meta name="theme-color" content="#0f1f3a">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href={canonical}>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content={person.name}>
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta property="og:url" content={canonical}>
+  <meta property="og:image" content={ogImage}>
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Title sheet of the drawing set: Soyeb Pervez Jim, soyebjim.me">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- reveal animations hide their targets first; only do that when the script can bring them back -->
+  <script is:inline>document.documentElement.classList.add('js');</script>
+  <ClientRouter />
+</head>
+<body>
+  <a class="skip" href="#field">Skip to content</a>
+  <div class="stack">
+    <main class="sheet" transition:name="sheet" transition:animate={flip}>
+      <nav class="idx" aria-label="Sheet index">
+        {index.map((s) => (
+          <a href={s.href} aria-current={s.n === cur ? 'page' : undefined}><span>{s.n}</span>{s.name}</a>
+        ))}
+      </nav>
+      <div class="field" id="field"><slot /></div>
+      <div class="tb">
+        <div>DRAWN BY<b>S. P. Jim</b></div>
+        <div>SHEET<b>{sheet} of 8</b></div>
+        <div>REV<b>2026-09</b></div>
+        <div>{stamp.k}<b>{stamp.v}</b></div>
+        <div class="big">{big}</div>
+      </div>
+    </main>
+    <footer class="foot">
+      <span>{person.name}, {person.location}</span>
+      <span class="foot-links">
+        <a href={person.links.github} target="_blank" rel="noopener">GitHub</a>
+        <a href={person.links.linkedin} target="_blank" rel="noopener">LinkedIn</a>
+        <a href={person.links.codeforces} target="_blank" rel="noopener">Codeforces</a>
+        <a href={person.links.huggingface} target="_blank" rel="noopener">Hugging Face</a>
+        <button type="button" class="lnk" data-contact>Send a message</button>
+      </span>
+    </footer>
+  </div>
+  <ContactDialog />
+  <Assistant />
+  <script>
+    import { init } from '../scripts/schematic';
+    import { initAssistantAsk } from '../scripts/assistant-ask';
+    init();
+    initAssistantAsk();
+    document.addEventListener('astro:page-load', init);
+  </script>
+</body>
+</html>

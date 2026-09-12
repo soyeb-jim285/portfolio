@@ -1,0 +1,46 @@
+---
+const { owner, repo, stars, forks, contributors } = Astro.props;
+---
+<li data-github-stats data-owner={owner} data-repo={repo}>
+  <span>GitHub stars</span><span class="gh-value" data-gh-stars aria-live="polite">{stars}</span>
+</li>
+<li data-github-stat-row>
+  <span>Forks</span><span class="gh-value" data-gh-forks aria-live="polite">{forks}</span>
+</li>
+<li data-github-stat-row>
+  <span>Contributors</span><span class="gh-value" data-gh-contributors aria-live="polite">{contributors}</span>
+</li>
+
+<script>
+  async function loadGitHubStats() {
+    const root = document.querySelector<HTMLElement>('[data-github-stats]');
+    if (!root || root.dataset.loaded) return;
+    root.dataset.loaded = 'true';
+
+    const { owner, repo } = root.dataset;
+    try {
+      const [repoResponse, contributorsResponse] = await Promise.all([
+        fetch(`https://api.github.com/repos/${owner}/${repo}`),
+        fetch(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=1&anon=1`),
+      ]);
+      if (!repoResponse.ok || !contributorsResponse.ok) throw new Error('GitHub request failed');
+
+      const repository = await repoResponse.json();
+      const contributorPage = await contributorsResponse.json();
+      const lastPage = contributorsResponse.headers.get('link')?.match(/[?&]page=(\d+)>; rel="last"/)?.[1];
+      const set = (selector: string, value: number) => {
+        const target = document.querySelector<HTMLElement>(selector);
+        if (target) target.textContent = value.toLocaleString();
+      };
+
+      set('[data-gh-stars]', repository.stargazers_count);
+      set('[data-gh-forks]', repository.forks_count);
+      set('[data-gh-contributors]', lastPage ? Number(lastPage) : contributorPage.length);
+    } catch {
+      root.dataset.loaded = 'fallback';
+    }
+  }
+
+  loadGitHubStats();
+  document.addEventListener('astro:page-load', loadGitHubStats);
+</script>

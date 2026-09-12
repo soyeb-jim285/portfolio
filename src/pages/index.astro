@@ -1,0 +1,81 @@
+---
+import Layout from '../layouts/SchematicLayout.astro';
+import { person, work, projects, research } from '../data/content';
+const featured = projects.slice(0, 3);
+const pain = research[0].results;
+const v = (l: string) => pain.find((x) => x.label === l)!;
+---
+<Layout title="Soyeb Pervez Jim, drawing set" description="Portfolio of Soyeb Pervez Jim, software engineer at Fuego.io, drawn as a seven-sheet engineering set." sheet="1" big="Title sheet" stamp={{ k: 'Scale', v: 'NTS' }}>
+  <section class="hero" data-anchor="home-hero">
+    <div>
+      <div class="dim">
+        <h1>Soyeb<br>Pervez Jim</h1>
+        <span class="dl">overall width</span>
+      </div>
+      <p class="sub">{person.tagline}</p>
+      <div class="btns">
+        <button type="button" class="btn fill" data-contact>Send a message</button>
+        <a class="btn" href="/work/">See the work</a>
+      </div>
+    </div>
+    <div class="fig">
+      <span class="lab">FIG. A</span>
+      <img src={person.portrait} alt="Soyeb Pervez Jim" width="781" height="1075" />
+      <div class="cap">Subject, Dhaka. Not to scale.</div>
+    </div>
+  </section>
+
+  <section class="split r">
+    <h2>What I do</h2>
+    <div>
+      <p class="sub">At <span class="ora">{work.employer}</span>, I built {work.product}, {work.context}: streamed chat, commerce tools, hybrid retrieval and multimodal input.</p>
+      <p class="sub">On the side: biosignal classifiers for affective-computing challenges, and Linux desktop tooling in C++ and QML.</p>
+      <ul class="specs">
+        <li><span>day job</span><span>LLM agents, retrieval, model routing, evals</span></li>
+        <li><span>research</span><span>Pain and motor-intent classification from physiological signals</span></li>
+        <li><span>open source</span><span>HyprFM, hyprpdf, quill, distrostrap, a browser CNN visualiser</span></li>
+        <li><span>study</span><span>{person.education}</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="r" data-anchor="home-parts">
+    <div class="head" style="margin-bottom:24px">
+      <h2>Projects, selected</h2>
+      <p class="sub">Three of seven. The full list is on <a href="/projects/">sheet 4</a>.</p>
+    </div>
+    <div class="parts">
+      {featured.map((p, i) => (
+        <a class={`part${p.image ? '' : ' plain'}`} href={`/projects/${p.slug}/`}>
+          <span class="lab">ITEM {i + 1}{p.stars ? `, ${p.stars} stars` : ''}</span>
+          {p.image ? <img src={p.thumb ?? p.image} alt={`${p.name} screenshot`} loading="lazy" width="480" height="300" /> : <div class="blk" aria-hidden="true">{p.name.slice(0, 2).toUpperCase()}</div>}
+          <b>{p.name}</b>
+          <span>{p.kicker}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="r">
+    <div class="head" style="margin-bottom:24px">
+      <h2>Measured values</h2>
+      <p class="sub">AI4Pain 2026 test set, two-stage hierarchical classifier. Detail on <a href="/research/">sheet 3</a>.</p>
+    </div>
+    <div class="nums">
+      <div><strong>{v('Test accuracy').value}</strong><span>test accuracy, {v('Test accuracy').note}</span></div>
+      <div><strong>{v('Official baseline').value}</strong><span>official baseline, {v('Official baseline').note}</span></div>
+      <div><strong>{v('Detection AUC').value}</strong><span>pain detection AUC, {v('Detection AUC').note}</span></div>
+    </div>
+  </section>
+
+  <section class="split r">
+    <h2>Contact</h2>
+    <div>
+      <p class="sub">Email <a href={`mailto:${person.email}`}>{person.email}</a>, or use the form. Replies usually within a day.</p>
+      <div class="btns" style="margin-top:20px">
+        <button type="button" class="btn fill" data-contact>Send a message</button>
+        <a class="btn" href="/contact/">Sheet 7, contact</a>
+      </div>
+    </div>
+  </section>
+</Layout>

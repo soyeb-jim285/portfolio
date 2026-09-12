@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/SchematicLayout.astro';
+import { person } from '../data/content';
+---
+<Layout title="Contact, Soyeb Pervez Jim" description="Email, location and links for Soyeb Pervez Jim, plus a message form." sheet="7" big="Contact" stamp={{ k: 'Mail', v: person.email }}>
+  <section class="head r" data-anchor="contact-form">
+    <h1 class="title">Contact</h1>
+    <p class="sub">Email is fastest. The form goes to the same inbox.</p>
+  </section>
+  <section class="cgrid r">
+    <div class="tbl">
+      <div><span>Email</span><b><a href={`mailto:${person.email}`}>{person.email}</a></b></div>
+      <div><span>Phone</span><b><a href={`tel:${person.phone}`}>{person.phone}</a></b></div>
+      <div><span>Location</span><b>{person.location}</b></div>
+      <div><span>GitHub</span><b><a href={person.links.github} target="_blank" rel="noopener">soyeb-jim285</a></b></div>
+      <div><span>LinkedIn</span><b><a href={person.links.linkedin} target="_blank" rel="noopener">soyebjim</a></b></div>
+      <div><span>Codeforces</span><b><a href={person.links.codeforces} target="_blank" rel="noopener">soyeb.jim</a></b></div>
+      <div><span>Hugging Face</span><b><a href={person.links.huggingface} target="_blank" rel="noopener">soyeb-jim285</a></b></div>
+      <div><span>Site</span><b><a href={person.links.site} target="_blank" rel="noopener">soyebjim.me</a></b></div>
+    </div>
+    <div>
+      <p class="lead">Open to research collaborations on physiological signal classification, LLM agent work, and Qt or Wayland tooling. Say what you need and where you are; I reply within a day.</p>
+      <div class="btns" style="margin-top:24px">
+        <button type="button" class="btn fill" data-contact>Open the form</button>
+        <a class="btn" href={`mailto:${person.email}`}>Email directly</a>
+      </div>
+    </div>
+  </section>
+</Layout>

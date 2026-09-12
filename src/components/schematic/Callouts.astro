@@ -1,0 +1,25 @@
+---
+// HyprFM Miller-column screenshot with numbered leader-line callouts. Overlay shares the image's 1600x954 box, so no stretching.
+interface Props { src: string; alt: string }
+const { src, alt } = Astro.props;
+const notes = [
+  { n: 1, px: 110, py: 500, lx: 300, ly: 760, w: 470, text: 'bookmarks and udisks2 mounts' },
+  { n: 2, px: 830, py: 300, lx: 700, ly: 700, w: 440, text: 'Miller columns, async transfers' },
+  { n: 3, px: 1320, py: 420, lx: 960, ly: 620, w: 400, text: 'preview pane, Space key' },
+];
+---
+<div class="shot r">
+  <img src={src} alt={alt} width="1600" height="954" loading="eager" />
+  <svg viewBox="0 0 1600 954" class="draw" aria-hidden="true">
+    {notes.map((c) => (
+      <>
+        <line class="draw-me" x1={c.px} y1={c.py} x2={c.lx} y2={c.ly} />
+        <circle cx={c.px} cy={c.py} r="16" /><text class="num" x={c.px} y={c.py + 8}>{c.n}</text>
+        <rect x={c.lx} y={c.ly - 22} width={c.w} height="44" /><text x={c.lx + 14} y={c.ly + 8}>{c.n}  {c.text}</text>
+      </>
+    ))}
+  </svg>
+</div>
+<ol class="notes">
+  {notes.map((c) => <li><b>{c.n}</b>{c.text}</li>)}
+</ol>
