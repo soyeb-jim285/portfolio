@@ -16,6 +16,10 @@ RUN npm ci
 # src/knowledge.json is committed, so no build step is needed here.
 COPY server/ ./
 
+# tools.ts imports the site map from the frontend source at runtime, so those
+# files ship with the API even though nothing here builds the frontend.
+COPY src/ /app/src/
+
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3001
