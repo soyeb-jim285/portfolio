@@ -48,7 +48,7 @@ docker run -d --name portfolio-pg -p 55432:5432 \
 
 ### Code index
 
-`server/src/repos.ts` decides which repositories the assistant may read: every public repository of `GITHUB_OWNER` that is not a fork, archived, disabled or empty, minus the names in `EXCLUDED`. Nothing outside that set is ever fetched, indexed or quoted.
+`server/src/repos.ts` decides which repositories the assistant may read: the names listed in `INCLUDED`, and nothing else. Adding a name there is the single step that lets the assistant talk about a repository; removing one prunes what was already indexed under it on the next indexing run. Nothing outside the list is ever fetched, indexed or quoted.
 
 ```sh
 cd server && npm run index          # all allowed repositories

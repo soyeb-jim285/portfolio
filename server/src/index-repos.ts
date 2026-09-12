@@ -6,7 +6,7 @@ import { applySchema } from './db';
 import { createEmbedder } from './embeddings';
 import { createGitHub } from './github';
 import { indexRepo } from './indexer';
-import { selectRepos } from './repos';
+import { INCLUDED, selectRepos } from './repos';
 
 const config = configSchema.parse(process.env);
 const requested = process.argv.slice(2).filter(argument => !argument.startsWith('--'));
@@ -27,6 +27,14 @@ try {
     throw new Error(`Unknown repository: ${missing.join(', ')}. Available: ${discovered.map(repo => repo.name).join(', ')}`);
   }
   console.log(`${targets.length} repositories to consider${config.GITHUB_TOKEN ? '' : ' (no GITHUB_TOKEN: 60 requests per hour)'}`);
+  if (!dryRun) {
+    // Dropping a name from the allowlist must also drop what was already indexed under it,
+    // or retrieval keeps quoting a repository the site no longer talks about.
+    const names = [...INCLUDED];
+    const dropped = await pool.query('DELETE FROM index_revisions WHERE repo <> ALL($1::text[]) RETURNING repo', [names]);
+    await pool.query('DELETE FROM repo_facts WHERE repo <> ALL($1::text[])', [names]);
+    if (dropped.rowCount) console.log(`Pruned ${dropped.rowCount} revision(s) for repositories off the allowlist: ${[...new Set(dropped.rows.map(row => row.repo))].join(', ')}`);
+  }
   if (dryRun) {
     for (const repo of targets) console.log(`  ${repo.name} — ${repo.blurb}`);
     process.exit(0);

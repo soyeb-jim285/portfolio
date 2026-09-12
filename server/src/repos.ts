@@ -4,11 +4,18 @@ import type { RemoteRepo } from './github';
 
 export type Repo = { name: string; owner: string; url: string; branch: string; blurb: string; language?: string; topics?: string[]; stars?: number; openIssues?: number; pushedAt?: string };
 
-// Repositories to leave out by name, whatever GitHub reports.
-export const EXCLUDED = new Set(['hyprfm-flatpak-repo']);
+// The allowlist: only these repositories are ever fetched, indexed or quoted. Adding a name here
+// is the single step that lets the assistant talk about a repository; everything else stays private.
+export const INCLUDED = [
+  'hyprfm', 'hyprpdf', 'hyprfm-site',
+  'soydots', 'quill', 'quill-icons', 'quill-polkit',
+  'distrostrap', 'gre-vocab-trainer', 'portfolio',
+  'ai4pain-2026-analysis',
+] as const;
+const allowed = new Set<string>(INCLUDED);
 
 export const selectRepos = (remote: RemoteRepo[]): (Repo & { pushedAt: string })[] => remote
-  .filter(repo => !EXCLUDED.has(repo.name))
+  .filter(repo => allowed.has(repo.name))
   .map(repo => ({
     name: repo.name, owner: repo.owner, url: repo.url, branch: repo.branch,
     blurb: repo.description || `${repo.language || 'Source'} repository`,
