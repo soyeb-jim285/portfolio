@@ -133,7 +133,10 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     return () => removeEventListener('assistant:ask', onAsk);
   });
 
-  useEffect(() => { if (open) void preloadResponse(); }, [open]);
+  // The panel stays mounted while closed, so it would play its closing slide on page load. It only
+  // animates closed once it has actually been open.
+  const [shown, setShown] = useState(false);
+  useEffect(() => { if (open) { setShown(true); void preloadResponse(); } }, [open]);
   // The conversation is read from this browser at mount, so opening the panel never waits on the network.
   useEffect(() => {
     token.current = readToken();
@@ -408,7 +411,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           <MessageSquare size={16} aria-hidden="true" /> Ask about my work
         </Button>
       </SheetTrigger>
-      <SheetContent container={portal}
+      <SheetContent container={portal} data-shown={shown || undefined}
         onOpenAutoFocus={event => { event.preventDefault(); input.current?.focus(); }}
         onInteractOutside={event => { if (!mobile) event.preventDefault(); }}>
         {!mobile && <div className="assistant-resizer" role="separator" aria-orientation="vertical" aria-label="Resize assistant panel"
