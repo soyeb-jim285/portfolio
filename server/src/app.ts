@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { apiReference } from '@scalar/hono-api-reference';
 import { bodyLimit } from 'hono/body-limit';
@@ -15,6 +16,10 @@ import { AmbiguousBookingError, type EventType, type Scheduler } from './schedul
 import { buildToolDefinitions, runTool } from './tools';
 
 const MAX_CONTEXT_CHARS = 24000;
+// A cached answer is reused when this many of the newest turns, the new question included, match.
+const CACHE_TURNS = 5;
+// These events carry ids owned by the session that asked, or depend on the clock: never replayed to another.
+const SESSION_BOUND_EVENTS = new Set(['draft', 'proposal', 'artifact', 'action', 'slots']);
 export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone'];
 // An attached image travels as a data URL and is never stored: it is passed to the model for
 // this turn only, and later turns carry a note in its place.
@@ -54,6 +59,7 @@ const proposalSchema = z.object({
 }).openapi('BookingProposal');
 const usageSchema = z.object({
   ms: z.number(), model: z.string(), promptTokens: z.number().optional(), completionTokens: z.number().optional(), costUsd: z.number().optional(),
+  cached: z.boolean().optional().openapi({ description: 'True when a stored answer was replayed instead of generated.' }),
 }).openapi('Usage');
 const eventSchema = z.discriminatedUnion('type', [
   z.object({ version: z.literal(1), type: z.literal('delta'), text: z.string() }),
@@ -139,7 +145,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
 
   app.openapi(createRoute({
     method: 'post', path: '/v1/chat', summary: 'Stream a portfolio answer',
-    description: 'Requires the configured site Origin and a session bearer token. The browser keeps the conversation and sends its recent turns as history; the server stores none of it, keeps the newest MAX_MESSAGES_PER_SESSION turns and trims the oldest to fit the context budget. An optional image attachment is passed to the model for this turn only. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. OpenAPI describes each event, not the whole stream.',
+    description: 'Requires the configured site Origin and a session bearer token. The browser keeps the conversation and sends its recent turns as history; the server keeps the newest MAX_MESSAGES_PER_SESSION turns and trims the oldest to fit the context budget. When the last five turns, model, prompt and indexed commits match a finished answer from the last ANSWER_CACHE_TTL_HOURS, that answer is replayed with usage.cached set, without calling the model or spending the daily budget. An optional image attachment is passed to the model for this turn only. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. OpenAPI describes each event, not the whole stream.',
     request: { headers: authHeader, body: { required: true, content: { 'application/json': { schema: chatSchema } } } },
     responses: {
       200: { description: 'SSE frames containing versioned ChatEvent JSON', content: { 'text/event-stream': { schema: eventSchema } } },
@@ -150,21 +156,45 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
   }), async c => {
     const { message, history: sent, attachment } = c.req.valid('json');
     const sessionId = c.get('sessionId');
-    if (active >= config.MAX_CONCURRENT_REQUESTS) return c.json({ error: 'Assistant is busy. Please try again shortly.' }, 429);
-    if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
     const history = sent.slice(-config.MAX_MESSAGES_PER_SESSION);
     while (history.length && history.reduce((sum, entry) => sum + entry.content.length, message.length) > MAX_CONTEXT_CHARS) history.splice(0, 2);
     const indexed = await retrieval.indexedRepos().catch(() => []);
-    active++;
+    const systemPrompt = buildSystemPrompt(indexed, mailer.configured, storage.configured, scheduler.configured ? scheduler.eventTypes : []);
     c.header('Cache-Control', 'no-cache, no-transform');
     c.header('X-Accel-Buffering', 'no');
+
+    // The same last turns against the same model, prompt and indexed commits get the same answer, so
+    // it is replayed instead of generated. A reindex or prompt change moves the key and misses on its own.
+    const cacheKey = attachment || !config.ANSWER_CACHE_TTL_HOURS ? undefined : createHash('sha256').update(JSON.stringify({
+      model: config.OPENROUTER_MODEL, system: systemPrompt,
+      commits: indexed.map(entry => `${entry.repo}@${entry.commit}`),
+      turns: [...history, { role: 'user', content: message }].slice(-CACHE_TURNS).map(({ role, content }) => [role, content]),
+    })).digest();
+    const cached = cacheKey && await db.cachedAnswer(cacheKey).catch(() => undefined);
+    // A replay costs no model call, so it spends neither the daily budget nor a concurrency slot.
+    if (cached) return streamSSE(c, async stream => {
+      const startedAt = Date.now();
+      for (const event of cached) await stream.writeSSE({ data: JSON.stringify({ version: 1, ...event }) });
+      await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'usage', usage: { ms: Date.now() - startedAt, model: config.OPENROUTER_MODEL, cached: true } }) });
+      await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'done', finishReason: 'stop' }) });
+    });
+
+    if (active >= config.MAX_CONCURRENT_REQUESTS) return c.json({ error: 'Assistant is busy. Please try again shortly.' }, 429);
+    if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
+    active++;
     return streamSSE(c, async stream => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT_MS);
       stream.onAbort(() => controller.abort());
-      const send = (event: Record<string, unknown>) => stream.writeSSE({ data: JSON.stringify({ version: 1, ...event }) });
+      // Every event is recorded while it may still be cached; a session-bound event or a failed tool rules it out.
+      let recorded: Record<string, unknown>[] | undefined = cacheKey ? [] : undefined;
+      const send = (event: Record<string, unknown>) => {
+        if (recorded && SESSION_BOUND_EVENTS.has(String(event.type))) recorded = undefined;
+        recorded?.push(event);
+        return stream.writeSSE({ data: JSON.stringify({ version: 1, ...event }) });
+      };
       const conversation: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: 'system', content: buildSystemPrompt(indexed, mailer.configured, storage.configured, scheduler.configured ? scheduler.eventTypes : []) },
+        { role: 'system', content: systemPrompt },
         ...history.map(entry => ({ role: entry.role, content: entry.content })),
         attachment
           ? { role: 'user' as const, content: [{ type: 'text' as const, text: message }, { type: 'image_url' as const, image_url: { url: attachment.dataUrl } }] }
@@ -232,9 +262,10 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
             try { outcome = await runTool(toolContext, call.name, call.arguments); }
             catch (error) {
               console.error('Tool failed:', call.name, error instanceof Error ? error.message : error);
-              outcome = { summary: 'tool failed', result: 'The tool could not run. Say so instead of guessing.', sources: [] };
+              outcome = { summary: 'tool failed', result: 'The tool could not run. Say so instead of guessing.', sources: [], failed: true as const };
             }
             const ms = Date.now() - started;
+            if (outcome.failed) recorded = undefined;
             await send({ type: 'tool', id: call.id, name: call.name, summary: outcome.summary, status: outcome.summary.startsWith('tool failed') ? 'error' : 'done', ms });
             if (outcome.image) await send({ type: 'image', image: outcome.image });
             if (outcome.slots) {
@@ -293,6 +324,10 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
         }
         if (finish !== 'stop' && finish !== 'length') throw new Error('Incomplete provider response');
         if (!answer.trim()) throw new Error('Empty provider response');
+        // Only a whole answer is reused; one cut off at the length limit is not.
+        if (cacheKey && recorded && finish === 'stop') {
+          await db.cacheAnswer(cacheKey, recorded, config.ANSWER_CACHE_TTL_HOURS).catch(error => console.error('Could not cache answer:', error.message));
+        }
         await send({ type: 'usage', usage: { ms: Date.now() - startedAt, model: config.OPENROUTER_MODEL, ...usage } });
         await send({ type: 'done', finishReason: finish });
       } catch {

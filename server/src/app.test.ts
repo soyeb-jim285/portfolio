@@ -13,11 +13,13 @@ import { Pool } from 'pg';
 // TEST_DATABASE_URL only, never DATABASE_URL: these tests TRUNCATE every table.
 const url = process.env.TEST_DATABASE_URL;
 if (!url) throw new Error('Set TEST_DATABASE_URL to a disposable PostgreSQL database. These tests delete all rows, so never point it at a database you care about.');
-const config = configSchema.parse({ OPENROUTER_API_KEY: 'test-key', OPENROUTER_MODEL: 'test-model', SITE_ORIGIN: 'http://localhost:4321', DATABASE_URL: url, MAX_MESSAGES_PER_SESSION: 4 });
+const config = configSchema.parse({ OPENROUTER_API_KEY: 'test-key', OPENROUTER_MODEL: 'test-model', SITE_ORIGIN: 'http://localhost:4321', DATABASE_URL: url, MAX_MESSAGES_PER_SESSION: 4, ANSWER_CACHE_TTL_HOURS: 0 });
+// The answer cache is off by default here so repeated questions keep reaching the provider; its own tests turn it on.
+const cachedConfig = { ...config, ANSWER_CACHE_TTL_HOURS: 24 };
 const db: Db = await createDb(url, config.SESSION_TTL_DAYS);
 const pool = new Pool({ connectionString: url });
 after(async () => { await db.close(); await pool.end(); });
-beforeEach(async () => { sentMail.length = 0; stored.clear(); booked.length = 0; await pool.query('TRUNCATE sessions, usage_daily CASCADE'); });
+beforeEach(async () => { sentMail.length = 0; stored.clear(); booked.length = 0; await pool.query('TRUNCATE sessions, usage_daily, answer_cache CASCADE'); });
 
 const hit = (overrides: Partial<SourceHit> = {}): SourceHit => ({
   repo: 'hyprfm', path: 'src/FileOps.cpp', language: 'cpp', symbols: ['copy'], startLine: 10, endLine: 40,
@@ -948,4 +950,73 @@ test('show_image can only display one of the portfolio images', async () => {
   const frames = events(await (await second.fetch(ask(await newSession(second), 'show me evil'))).text());
   assert.equal(frames.some(event => event.type === 'image'), false);
   assert.match(refused.sent[1].messages.at(-1).content, /Unknown image/);
+});
+
+test('the same last five turns replay the stored answer without calling the model or spending budget', async () => {
+  let calls = 0;
+  const client = mockClient(async () => { calls++; return new Response(sse(`Answer ${calls}.`), { headers: { 'Content-Type': 'text/event-stream' } }); });
+  const app = createApp({ ...cachedConfig, MAX_REQUESTS_PER_DAY: 1 }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const token = await newSession(app);
+  const turns = (first: string) => [first, 'a1', 'q2', 'a2', 'q3', 'a3'].map((content, index) => ({ role: index % 2 ? 'assistant' : 'user', content }));
+
+  const fresh = events(await (await app.fetch(ask(token, 'q4', config.SITE_ORIGIN, turns('q1')))).text());
+  assert.equal(calls, 1);
+  assert.equal(fresh.find(event => event.type === 'usage').usage.cached, undefined);
+
+  // Only the newest five turns count: a different first question still matches, from another session too.
+  const otherToken = await newSession(app);
+  const replay = events(await (await app.fetch(ask(otherToken, 'q4', config.SITE_ORIGIN, turns('something else')))).text());
+  assert.equal(calls, 1, 'a cache hit must not call the model');
+  assert.deepEqual(replay.filter(event => event.type === 'delta'), fresh.filter(event => event.type === 'delta'));
+  assert.equal(replay.find(event => event.type === 'usage').usage.cached, true);
+  assert.equal(replay.at(-1).type, 'done');
+
+  // The daily budget of one was spent by the first answer; anything that misses the cache is refused.
+  assert.equal((await app.fetch(ask(token, 'q4', config.SITE_ORIGIN, turns('q1').slice(0, 5)))).status, 429);
+  assert.equal((await pool.query('SELECT hits FROM answer_cache')).rows[0].hits, 1);
+});
+
+test('the cache misses on a new index, an attachment or a disabled cache', async () => {
+  let calls = 0;
+  const client = mockClient(async () => { calls++; return new Response(sse('Answer.'), { headers: { 'Content-Type': 'text/event-stream' } }); });
+  const token = await newSession(createApp(cachedConfig, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client));
+  const run = async (app: ReturnType<typeof createApp>, request: Request) => { await (await app.fetch(request)).text(); };
+  const app = createApp(cachedConfig, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  await run(app, ask(token, 'Same question'));
+  await run(app, ask(token, 'Same question'));
+  assert.equal(calls, 1);
+
+  const reindexed = fakeRetrieval({ indexedRepos: async () => [{ ...(await fakeRetrieval().indexedRepos())[0], commit: 'b'.repeat(40) }] });
+  await run(createApp(cachedConfig, db, reindexed, fakeMailer(), fakeStorage(), fakeScheduler(), client), ask(token, 'Same question'));
+  assert.equal(calls, 2, 'a new indexed commit must miss');
+
+  const dataUrl = `data:image/png;base64,${Buffer.from('png').toString('base64')}`;
+  const withImage = () => new Request('http://localhost/v1/chat', {
+    method: 'POST', body: JSON.stringify({ message: 'What is this?', attachment: { mediaType: 'image/png', dataUrl } }),
+    headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` },
+  });
+  await run(app, withImage());
+  await run(app, withImage());
+  assert.equal(calls, 4, 'an attachment is never cached');
+
+  const off = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  await run(off, ask(token, 'Uncached question'));
+  await run(off, ask(token, 'Uncached question'));
+  assert.equal(calls, 6);
+});
+
+test('answers carrying session-bound events, failed tools or a length cut are never cached', async () => {
+  const cases = [
+    { name: 'draft', responses: [draftCall('{"name":"Ada","email":"ada@example.com","message":"I am hiring for Qt work."}'), sse('Here is a draft.')] },
+    { name: 'failed tool', responses: [toolFrame([{ index: 0, id: 'call_bad', name: 'read_source', args: '{not json' }], 'tool_calls') + 'data: [DONE]\n\n', sse('I could not read it.')] },
+    { name: 'length', responses: [sse('Cut off', 'length')] },
+  ];
+  for (const { name, responses } of cases) {
+    await pool.query('TRUNCATE answer_cache');
+    const { client } = scripted(...responses);
+    const app = createApp(cachedConfig, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+    const token = await newSession(app);
+    await (await app.fetch(ask(token, `Question for ${name}`))).text();
+    assert.equal((await pool.query('SELECT count(*)::int AS n FROM answer_cache')).rows[0].n, 0, `${name} must not be cached`);
+  }
 });

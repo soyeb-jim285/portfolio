@@ -12,6 +12,17 @@ CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at);
 -- them in a messages table; dropping it erases every stored transcript.
 DROP TABLE IF EXISTS messages;
 
+-- Finished answers, replayed when the same last five turns arrive again. The key is a hash of the
+-- model, system prompt, indexed commits and those turns, so the question text itself is not kept.
+CREATE TABLE IF NOT EXISTS answer_cache (
+  key bytea PRIMARY KEY,
+  events jsonb NOT NULL,
+  hits integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS answer_cache_expires_idx ON answer_cache (expires_at);
+
 -- Request budget that survives restarts and is shared by every process on this database.
 CREATE TABLE IF NOT EXISTS usage_daily (
   day date PRIMARY KEY,

@@ -125,7 +125,7 @@ A citation in an answer links to the cited lines on GitHub at the indexed commit
 
 The site's own contact dialog posts to the same endpoint, so both paths share the validation, limits and delivery. Set `RESEND_API_KEY`, `CONTACT_FROM` (on a domain verified in Resend) and `CONTACT_TO` to switch delivery on; without all three the assistant says delivery is off and points at the contact page, the endpoint answers 503, and the dialog falls back to the visitor's mail client. A 202 means the provider accepted the message, not that it reached the inbox.
 
-Every `/v1` route requires the configured site Origin. `POST /v1/sessions` issues a bearer token for one anonymous visitor; `POST /v1/chat` streams an answer. The server keeps no conversation: the browser sends its recent turns as `history`, and the server keeps the newest `MAX_MESSAGES_PER_SESSION` and trims the oldest to fit the context budget. Scalar documents the contract; the API docs page has a different origin, so use the site or curl:
+Every `/v1` route requires the configured site Origin. `POST /v1/sessions` issues a bearer token for one anonymous visitor; `POST /v1/chat` streams an answer. The server keeps no conversation: the browser sends its recent turns as `history`, and the server keeps the newest `MAX_MESSAGES_PER_SESSION` and trims the oldest to fit the context budget. A finished answer is cached for `ANSWER_CACHE_TTL_HOURS` (default 24, 0 turns it off) under a SHA-256 hash of the model, system prompt, indexed commits and the last five turns; the same five turns from any visitor replay it with `usage.cached` set, without a model call or a daily-budget request. Answers with an attachment, a failed tool, a length cut, or a draft, booking, document, slot list or navigation are never cached, because those belong to one session or one moment. A reindex changes the commits in the key, so stale answers miss on their own. Scalar documents the contract; the API docs page has a different origin, so use the site or curl:
 
 ```sh
 TOKEN=$(curl -s -X POST http://localhost:3001/v1/sessions \
@@ -173,8 +173,8 @@ The API rate-limits by socket peer, which behind a proxy is the proxy itself, so
 
 ### Data handling
 
-- Stored on the server: an anonymous session whose token's SHA-256 hash is what the database holds, plus the drafts, bookings and documents it created. Conversations are kept only in the visitor's browser. No account, no name, no tracking cookie.
-- Deleted: a session seven days after last use, and artifacts with their R2 objects after seven days. The sweep runs hourly and at boot. Clear chat erases the browser's copy of the conversation.
+- Stored on the server: an anonymous session whose token's SHA-256 hash is what the database holds, plus the drafts, bookings and documents it created, and cached answers keyed by a hash of the turns that produced them. The question text is not stored, but an answer can quote it. Conversations are kept only in the visitor's browser. No account, no name, no tracking cookie.
+- Deleted: a session seven days after last use, cached answers after `ANSWER_CACHE_TTL_HOURS`, and artifacts with their R2 objects after seven days. The sweep runs hourly and at boot. Clear chat erases the browser's copy of the conversation.
 - Shared: message text goes to OpenRouter and whichever provider it routes to; a sent message goes to Resend; a booking goes to Cal.com. Nothing else leaves the server.
 - Logged: error text only. No message bodies, no contact content, no credentials. Provider errors are reduced to a status before logging.
 

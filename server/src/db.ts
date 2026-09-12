@@ -53,6 +53,17 @@ export async function createDb(url: string, ttlDays: number) {
          WHERE token_hash = $1 AND expires_at > now() RETURNING id`, [hash(token), ttl]);
       return rows[0]?.id;
     },
+    async cachedAnswer(key: Buffer) {
+      const { rows } = await pool.query<{ events: Record<string, unknown>[] }>(
+        `UPDATE answer_cache SET hits = hits + 1 WHERE key = $1 AND expires_at > now() RETURNING events`, [key]);
+      return rows[0]?.events;
+    },
+    async cacheAnswer(key: Buffer, events: Record<string, unknown>[], ttlHours: number) {
+      await pool.query(
+        `INSERT INTO answer_cache (key, events, expires_at) VALUES ($1, $2::jsonb, now() + make_interval(secs => $3))
+         ON CONFLICT (key) DO UPDATE SET events = EXCLUDED.events, created_at = now(), expires_at = EXCLUDED.expires_at, hits = 0`,
+        [key, JSON.stringify(events), ttlHours * 3600]);
+    },
     // Recorded when requested and updated only by the session that owns it.
     async recordAction(id: string, sessionId: string, target: string) {
       await pool.query('INSERT INTO ui_actions (id, session_id, target) VALUES ($1, $2, $3)', [id, sessionId, target]);
@@ -152,6 +163,7 @@ export async function createDb(url: string, ttlDays: number) {
       await pool.query(`DELETE FROM bookings WHERE status = 'pending' AND expires_at <= now()`);
       const { rowCount } = await pool.query(`DELETE FROM sessions WHERE expires_at <= now()`);
       await pool.query(`DELETE FROM usage_daily WHERE day < CURRENT_DATE - 30`);
+      await pool.query(`DELETE FROM answer_cache WHERE expires_at <= now()`);
       return rowCount ?? 0;
     },
     close: () => pool.end(),

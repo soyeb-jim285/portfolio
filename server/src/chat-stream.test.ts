@@ -13,7 +13,7 @@ test('browser stream consumer handles fragmented UTF-8 and CRLF frames', async t
     controller.close();
   } }), { headers: { 'content-type': 'text/event-stream' } }));
   const updates: string[] = [];
-  const result = await streamAnswer('http://localhost', 'token', question, new AbortController().signal, { ...noop, text: text => updates.push(text) });
+  const result = await streamAnswer('http://localhost', 'token', question, [], new AbortController().signal, { ...noop, text: text => updates.push(text) });
   assert.deepEqual(result, { text: '**Qt** → বাংলা', finishReason: 'length' });
   assert.deepEqual(updates, ['**Qt** → বাংলা']);
 });
@@ -26,22 +26,22 @@ test('browser stream consumer rejects truncated, empty and invalid completion ev
     frame({ version: 2, type: 'delta', text: 'Wrong version' }),
   ]) {
     t.mock.method(globalThis, 'fetch', async () => new Response(output, { headers: { 'content-type': 'text/event-stream' } }));
-    await assert.rejects(streamAnswer('http://localhost', 'token', question, new AbortController().signal, noop));
+    await assert.rejects(streamAnswer('http://localhost', 'token', question, [], new AbortController().signal, noop));
     t.mock.restoreAll();
   }
 });
 
 test('browser stream consumer surfaces an expired session as its own error', async t => {
   t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ error: 'Session is missing or expired.' }), { status: 401 }));
-  await assert.rejects(streamAnswer('http://localhost', 'stale', question, new AbortController().signal, noop), SessionExpired);
+  await assert.rejects(streamAnswer('http://localhost', 'stale', question, [], new AbortController().signal, noop), SessionExpired);
 });
 
 test('browser stream consumer reports HTTP and streamed errors', async t => {
   t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ error: 'Try later' }), { status: 429 }));
-  await assert.rejects(streamAnswer('http://localhost', 'token', question, new AbortController().signal, noop), /Try later/);
+  await assert.rejects(streamAnswer('http://localhost', 'token', question, [], new AbortController().signal, noop), /Try later/);
   t.mock.restoreAll();
   t.mock.method(globalThis, 'fetch', async () => new Response(frame({ version: 1, type: 'error', message: 'Provider timed out' }), { headers: { 'content-type': 'text/event-stream' } }));
-  await assert.rejects(streamAnswer('http://localhost', 'token', question, new AbortController().signal, noop), /Provider timed out/);
+  await assert.rejects(streamAnswer('http://localhost', 'token', question, [], new AbortController().signal, noop), /Provider timed out/);
 });
 
 test('browser stream consumer surfaces tool activity and citations, and ignores unknown events', async t => {
@@ -55,7 +55,7 @@ test('browser stream consumer surfaces tool activity and citations, and ignores 
   t.mock.method(globalThis, 'fetch', async () => new Response(body, { headers: { 'content-type': 'text/event-stream' } }));
   const tools: unknown[] = [];
   const cited: unknown[] = [];
-  const result = await streamAnswer('http://localhost', 'token', question, new AbortController().signal,
+  const result = await streamAnswer('http://localhost', 'token', question, [], new AbortController().signal,
     { ...noop, tool: activity => tools.push(activity), sources: sources => cited.push(...sources) });
   assert.equal(result.text, 'Transfers run on a worker pool.');
   assert.deepEqual(tools.map((tool: any) => [tool.status, tool.ms]), [['running', undefined], ['done', 42]]);

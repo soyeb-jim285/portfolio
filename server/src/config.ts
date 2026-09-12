@@ -90,6 +90,8 @@ export const configSchema = z.object({
   BOOKINGS_PER_DAY: z.coerce.number().int().min(1).default(5),
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(7),
   MAX_MESSAGES_PER_SESSION: z.coerce.number().int().min(2).max(200).default(40),
+  // Finished answers are reused for this long when the last five turns match; 0 turns the cache off.
+  ANSWER_CACHE_TTL_HOURS: z.coerce.number().min(0).max(720).default(24),
 });
 
 export type Config = z.infer<typeof configSchema>;

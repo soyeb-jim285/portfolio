@@ -1,5 +1,5 @@
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
-export type Usage = { ms: number; model: string; promptTokens?: number; completionTokens?: number; costUsd?: number };
+export type Usage = { ms: number; model: string; promptTokens?: number; completionTokens?: number; costUsd?: number; cached?: boolean };
 export type ToolActivity = { id: string; name: string; summary: string; status: 'running' | 'done' | 'error'; ms?: number };
 export type SourceCitation = { repo: string; path: string; language: string; symbols: string[]; startLine: number; endLine: number; commit: string; url: string; snippet: string };
 export type RequestedUiAction = { id: string; target: string; route: string; anchor: string; label: string; action: 'reveal' | 'contact' };
