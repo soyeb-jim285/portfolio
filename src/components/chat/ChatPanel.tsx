@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, FolderTree, ImagePlus, Mail, MessageSquare, RotateCcw, Send, Square, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, FolderTree, ImagePlus, Mail, MessageSquare, RotateCcw, Send, Square, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
 import Diagram from './Diagram';
 import Explorer, { type ExplorerTarget } from './Explorer';
 import { Button } from '../ui/button';
@@ -18,6 +18,7 @@ type Entry = {
   availability?: Availability[];
   proposals?: (BookingProposal & { state?: 'confirming' | 'confirmed' | 'failed'; error?: string })[];
   usage?: Usage;
+  error?: string;
   images?: ShownImage[];
   attachment?: { dataUrl: string; name: string };
 };
@@ -65,7 +66,9 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const [question, setQuestion] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
-  const [retry, setRetry] = useState<{ question: string; ids: string[] } | null>(null);
+  // Only failures the message list cannot show sit above the composer; progress stays in the live region.
+  const [alert, setAlert] = useState('');
+  const [votes, setVotes] = useState<Record<string, 'up' | 'down'>>({});
   const [copied, setCopied] = useState('');
   const [atBottom, setAtBottom] = useState(true);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -81,6 +84,11 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const performed = useRef(new Set<string>());
   const controller = useRef<AbortController | null>(null);
   const follow = useRef(true);
+  // Id of the user message pinned to the top of the viewport for the current turn.
+  const anchor = useRef('');
+  const spacer = useRef<HTMLDivElement>(null);
+  // True while the running turn owns the scroll position; any manual scroll hands it back.
+  const pinned = useRef(false);
 
   useEffect(() => {
     const media = matchMedia('(max-width: 767px)');
@@ -128,11 +136,30 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         artifacts: message.artifacts, proposals: message.proposals, usage: message.usage, images: message.images,
         actions: message.actions.map(action => { performed.current.add(action.id); return { ...action, anchor: '', action: 'reveal' as const, status: 'done' as const }; }),
       }))))
-      .catch(error => { if (error instanceof SessionExpired) { token.current = undefined; writeToken(); } else setStatus('Earlier messages could not be loaded.'); });
+      .catch(error => { if (error instanceof SessionExpired) { token.current = undefined; writeToken(); } else setAlert('Earlier messages could not be loaded.'); });
   }, [open, endpoint]);
+  // The pinned turn needs empty room beneath it, or the scroller cannot lift it to the top.
+  const fit = useCallback(() => {
+    const box = viewport.current, pad = spacer.current;
+    if (!box || !pad) return;
+    const top = anchor.current && box.querySelector(`[data-entry="${anchor.current}"]`);
+    const last = pad.previousElementSibling;
+    if (!top || !last || last === pad) { pad.style.height = '0px'; return; }
+    const turn = last.getBoundingClientRect().bottom - top.getBoundingClientRect().top;
+    pad.style.height = `${Math.max(0, box.clientHeight - turn - 36)}px`;
+  }, []);
+  const toAnchor = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const box = viewport.current;
+    const top = anchor.current && box?.querySelector(`[data-entry="${anchor.current}"]`);
+    if (!box || !top) return;
+    box.scrollTo({ top: box.scrollTop + top.getBoundingClientRect().top - box.getBoundingClientRect().top - 12, behavior });
+  }, []);
   useEffect(() => {
-    if (follow.current && viewport.current) viewport.current.scrollTop = entries.length ? viewport.current.scrollHeight : 0;
-  }, [entries, open]);
+    fit();
+    // The spacer shrinks as the answer grows, so the pin is re-asserted until the visitor scrolls.
+    if (pinned.current) toAnchor();
+    else if (follow.current && viewport.current) viewport.current.scrollTop = entries.length ? viewport.current.scrollHeight : 0;
+  }, [entries, open, fit, toAnchor]);
 
   const drag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
@@ -152,6 +179,13 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     viewport.current?.scrollTo({ top: viewport.current.scrollHeight });
   };
 
+  // Any answer can be re-asked: the question is simply the user message before it.
+  const retryOf = (id: string) => {
+    const index = entries.findIndex(entry => entry.id === id);
+    const asked = index > 0 ? entries[index - 1] : undefined;
+    return asked?.role === 'user' ? { question: asked.content, ids: [asked.id, id] } : null;
+  };
+
   async function session() {
     if (!token.current) { token.current = await createSession(endpoint); writeToken(token.current); }
     return token.current;
@@ -160,7 +194,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   async function ask(value: string, replacing?: string[]) {
     const prompt = value.trim();
     if (controller.current || !prompt || prompt.length > 4000) return;
-    if (!endpoint) { setStatus('Assistant is not connected yet. Use the contact button to reach Jim.'); return; }
+    if (!endpoint) { setAlert('Assistant is not connected yet. Use the contact button to reach Jim.'); return; }
     const userId = crypto.randomUUID(); const answerId = crypto.randomUUID();
     const sending = attachment;
     setEntries(previous => [...previous.filter(entry => !replacing?.includes(entry.id)),
@@ -169,7 +203,10 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     setAttachment(null);
     const abort = new AbortController(); controller.current = abort;
     const timer = setTimeout(() => abort.abort('timeout'), 125000);
-    setQuestion(''); setBusy(true); setRetry(null); setStatus('Connecting…'); toBottom();
+    setQuestion(''); setBusy(true); setAlert(''); setStatus('Connecting…');
+    // The question rides to the top of the viewport and stays put: the answer grows below it.
+    anchor.current = userId; follow.current = false; pinned.current = true; setAtBottom(false);
+    requestAnimationFrame(() => { fit(); toAnchor('smooth'); });
     const patch = (change: (entry: Entry) => Entry) => setEntries(previous => previous.map(entry => entry.id === answerId ? change(entry) : entry));
     const handlers = {
       text: (text: string) => { setStatus('Receiving answer…'); patch(entry => ({ ...entry, content: text })); },
@@ -212,10 +249,10 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
       setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, content: result.text, state: 'complete' } : entry));
       setStatus(result.finishReason === 'length' ? 'Length limit reached. Ask a follow-up to continue.' : 'Answer complete.');
     } catch (error) {
-      setStatus(abort.signal.aborted ? (abort.signal.reason === 'timeout' ? 'Response timed out. Retry when ready.' : 'Stopped. You can retry this question.') : error instanceof Error ? error.message : 'Could not connect to the assistant.');
-      setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, state: 'incomplete' } : entry));
-      setRetry({ question: prompt, ids: [userId, answerId] });
-    } finally { clearTimeout(timer); controller.current = null; setBusy(false); }
+      const reason = abort.signal.aborted ? (abort.signal.reason === 'timeout' ? 'Response timed out. Retry when ready.' : 'Stopped. You can retry this question.') : error instanceof Error ? error.message : 'Could not connect to the assistant.';
+      setStatus(reason);
+      setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, state: 'incomplete', error: reason } : entry));
+    } finally { clearTimeout(timer); controller.current = null; pinned.current = false; setBusy(false); }
   }
 
   const editDraft = (id: string, change: Partial<Entry['draft']>) =>
@@ -282,7 +319,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           ? { ...entry, availability: [...(entry.availability ?? []).filter(other => other.key !== availability.key), { ...availability, slots }] }
           : entry));
       }
-      setStatus(error instanceof Error ? error.message : 'That time could not be held.');
+      setAlert(error instanceof Error ? error.message : 'That time could not be held.');
     }
   }
 
@@ -307,7 +344,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
       window.open(link.url, '_blank', 'noopener,noreferrer');
       setStatus(`Download link opened. It expires in ${link.expiresInSeconds} seconds.`);
     } catch (error) {
-      setStatus(error instanceof SessionExpired ? 'That document belonged to an older session.' : error instanceof Error ? error.message : 'The download could not be prepared.');
+      setAlert(error instanceof SessionExpired ? 'That document belonged to an older session.' : error instanceof Error ? error.message : 'The download could not be prepared.');
     }
   }
 
@@ -315,12 +352,12 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     if (!file) return;
     setStatus('Preparing the image…');
     try { setAttachment(await prepareAttachment(file)); setStatus('Image ready. Add a question and send.'); }
-    catch (error) { setStatus(error instanceof Error ? error.message : 'That image could not be attached.'); }
+    catch (error) { setAlert(error instanceof Error ? error.message : 'That image could not be attached.'); }
   }
 
   async function copy(entry: Entry) {
     try { await navigator.clipboard.writeText(entry.content); setCopied(entry.id); setStatus('Answer copied.'); }
-    catch { setStatus('Could not copy. Select the answer text to copy it manually.'); }
+    catch { setAlert('Could not copy. Select the answer text to copy it manually.'); }
   }
 
   return <div className="assistant-root" ref={setPortal}>
@@ -346,7 +383,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
             <Button size="icon" variant="ghost" aria-label="Browse the indexed code" title="Browse the indexed code"
               aria-pressed={Boolean(explorer)} onClick={() => setExplorer(explorer ? null : {})}><FolderTree size={15} aria-hidden="true" /></Button>
             <Button size="icon" variant="ghost" aria-label="Clear chat" title="Clear chat" disabled={busy || !entries.length} onClick={() => {
-              setEntries([]); setQuestion(''); setRetry(null); setCopied(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; input.current?.focus();
+              setEntries([]); setQuestion(''); setCopied(''); setVotes({}); setAlert(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; pinned.current = false; anchor.current = ''; input.current?.focus();
               if (token.current) void clearMessages(endpoint, token.current).catch(error => { if (error instanceof SessionExpired) { token.current = undefined; writeToken(); } });
             }}><Trash2 size={15} aria-hidden="true" /></Button>
             <SheetClose asChild><Button size="icon" variant="ghost" aria-label="Close assistant"><X size={17} aria-hidden="true" /></Button></SheetClose>
@@ -356,7 +393,11 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         {explorer ? <Explorer endpoint={endpoint} token={token.current} target={explorer}
           onClose={() => setExplorer(null)}
           onAsk={question => { setExplorer(null); void ask(question); }} />
-        : <div className="assistant-body" ref={viewport} onScroll={() => {
+        : <div className="assistant-body" ref={viewport}
+          onWheel={() => { pinned.current = false; }} onTouchMove={() => { pinned.current = false; }}
+          onScroll={() => {
+          // While a turn is running the pinned question owns the scroll position; scrolling must not re-arm follow.
+          if (busy) return;
           const el = viewport.current!; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; setAtBottom(follow.current);
         }}>
           {!entries.length && <div className="assistant-empty">
@@ -367,7 +408,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
             )}</div>
           </div>}
           <div className="assistant-messages" role="log" aria-label="Conversation" aria-live="off" aria-busy={busy}>
-            {entries.map(entry => <Message key={entry.id} from={entry.role}>
+            {entries.map(entry => <Message key={entry.id} from={entry.role} data-entry={entry.id}>
               <div className="chat-message-label"><span>{entry.role === 'user' ? 'You' : 'Assistant'}</span>{entry.state === 'streaming' && <span className="chat-live-label">Responding</span>}</div>
               <MessageContent>
                 {entry.role === 'user' ? <>
@@ -510,21 +551,37 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                 <p className="chat-draft-note" role="status">{draft.error ?? (draft.state === 'sent' ? '' : 'Edit anything above. Nothing is sent until you press Send.')}</p>
               </form>;
               })()}
-              {entry.state === 'incomplete' && <small className="chat-incomplete">Incomplete answer</small>}
-              {entry.role === 'assistant' && entry.content && entry.state !== 'streaming' && <MessageActions>
-                <Button type="button" variant="ghost" onClick={() => void copy(entry)}>
-                  {copied === entry.id ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
-                  {copied === entry.id ? 'Copied' : 'Copy'}
-                </Button>
-                {retry?.ids.includes(entry.id) && <Button type="button" variant="ghost" onClick={() => void ask(retry.question, retry.ids)}>
-                  <RotateCcw size={13} aria-hidden="true" /> Retry
-                </Button>}
-              </MessageActions>}
+              {entry.state === 'incomplete' && <p className="chat-incomplete" role="alert">{entry.error ?? 'Incomplete answer'}</p>}
+              {entry.role === 'assistant' && entry.state !== 'streaming' && (() => {
+                const again = retryOf(entry.id);
+                const vote = votes[entry.id];
+                return <MessageActions>
+                  {entry.content && <Button type="button" variant="ghost" title="Copy answer" onClick={() => void copy(entry)}>
+                    {copied === entry.id ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                    {copied === entry.id ? 'Copied' : 'Copy'}
+                  </Button>}
+                  {again && <Button type="button" variant="ghost" title="Ask again" disabled={busy} onClick={() => void ask(again.question, again.ids)}>
+                    <RotateCcw size={13} aria-hidden="true" /> Retry
+                  </Button>}
+                  {entry.content && <>
+                    <Button type="button" size="icon" variant="ghost" aria-label="Good answer" title="Good answer" aria-pressed={vote === 'up'}
+                      onClick={() => setVotes(current => ({ ...current, [entry.id]: current[entry.id] === 'up' ? undefined : 'up' } as typeof current))}>
+                      <ThumbsUp size={13} aria-hidden="true" />
+                    </Button>
+                    <Button type="button" size="icon" variant="ghost" aria-label="Bad answer" title="Bad answer" aria-pressed={vote === 'down'}
+                      onClick={() => setVotes(current => ({ ...current, [entry.id]: current[entry.id] === 'down' ? undefined : 'down' } as typeof current))}>
+                      <ThumbsDown size={13} aria-hidden="true" />
+                    </Button>
+                  </>}
+                </MessageActions>;
+              })()}
             </Message>)}
+            <div className="chat-tailspace" ref={spacer} aria-hidden="true" />
           </div>
         </div>}
-        {!explorer && !atBottom && <Button className="assistant-jump" onClick={toBottom}><ArrowDown size={14} aria-hidden="true" /> Latest</Button>}
+        {!explorer && !atBottom && !busy && <Button className="assistant-jump" onClick={toBottom}><ArrowDown size={14} aria-hidden="true" /> Latest</Button>}
         <footer className="assistant-footer">
+          {alert && <p className="assistant-alert" role="alert">{alert}</p>}
           {attachment && <div className="assistant-attachment">
             <img src={attachment.dataUrl} alt={`Attached ${attachment.name}`} />
             <span>{attachment.name}</span>
@@ -545,9 +602,8 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
             {busy ? <Button type="button" size="icon" aria-label="Stop response" title="Stop response" onClick={() => controller.current?.abort()}><Square size={14} aria-hidden="true" /></Button> :
               <Button type="submit" variant="default" size="icon" aria-label="Send message" title="Send message" disabled={!question.trim()}><ArrowUp size={16} aria-hidden="true" /></Button>}
           </form>
-          <p className="assistant-status" role="status" aria-live="polite">{status}</p>
-          {retry && !busy && <Button className="assistant-retry" variant="ghost" onClick={() => void ask(retry.question, retry.ids)}><RotateCcw size={13} aria-hidden="true" /> Retry</Button>}
-          <p id="assistant-privacy" className="assistant-privacy">Enter sends, Shift + Enter adds a line.</p>
+          <p className="assistant-sr-only" role="status" aria-live="polite">{status}</p>
+          <p id="assistant-privacy" className="assistant-sr-only">Enter sends, Shift + Enter adds a line.</p>
         </footer>
       </SheetContent>
     </Sheet>

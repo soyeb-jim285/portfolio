@@ -159,9 +159,15 @@
 .chat-source-meta { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
 .chat-sources .chat-response { margin-top: 6px; font-size: 11px; }
 .chat-sources [data-streamdown=code-block-header] { display: none; }
-.chat-message-actions { display: flex; align-items: center; gap: 4px; margin: 8px 0 0 -10px; }
+/* Answer controls live with the answer; they stay quiet until the message is hovered or focused. */
+.chat-message-actions { display: flex; align-items: center; gap: 2px; margin: 6px 0 0 -10px; opacity: .45; }
+.chat-message:hover .chat-message-actions, .chat-message-actions:focus-within { opacity: 1; }
 .chat-message-actions .chat-button { gap: 6px; padding: 5px 10px; font-size: 10px; }
-.chat-incomplete { color: var(--accent); font-size: 11px; }
+.chat-message-actions .chat-button[data-size=icon] { width: 28px; height: 28px; padding: 0; }
+.chat-message-actions .chat-button[aria-pressed=true] { color: var(--accent); }
+.chat-incomplete { color: #e8663f; font-size: 11px; }
+/* Room under the newest turn so it can sit at the top of the viewport while the answer streams. */
+.chat-tailspace { flex-shrink: 0; }
 .chat-loading { display: flex; gap: 5px; padding: 10px 0; }
 .chat-loading span { width: 5px; height: 5px; background: var(--muted); }
 .assistant-jump { align-self: center; margin-bottom: 10px; }
@@ -215,10 +221,7 @@
 .assistant-form:focus-within { border-color: var(--accent); }
 .assistant-form textarea { flex: 1; min-width: 0; resize: none; field-sizing: content; min-height: 34px; max-height: 30dvh; border: 0; outline: none; border-radius: 0; background: transparent; color: var(--ink); font: 13px/1.55 var(--mono); padding: 7px 0; }
 .assistant-form textarea::placeholder { color: var(--muted); }
-.assistant-status { color: var(--accent); font-size: 11px; overflow-wrap: anywhere; }
-.assistant-status:not(:empty) { padding-top: 8px; }
-.assistant-retry { margin-top: 4px; margin-left: -8px; padding-inline: 8px; }
-.assistant-privacy { color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 8px; }
+.assistant-alert { color: #e8663f; font-size: 11px; line-height: 1.5; margin-bottom: 8px; overflow-wrap: anywhere; }
 .assistant-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 @media (min-width: 1280px) {
