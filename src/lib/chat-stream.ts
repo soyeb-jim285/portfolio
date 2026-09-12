@@ -2,7 +2,6 @@ export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 export type Usage = { ms: number; model: string; promptTokens?: number; completionTokens?: number; costUsd?: number };
 export type ToolActivity = { id: string; name: string; summary: string; status: 'running' | 'done' | 'error'; ms?: number };
 export type SourceCitation = { repo: string; path: string; language: string; symbols: string[]; startLine: number; endLine: number; commit: string; url: string; snippet: string };
-export type StoredMessage = ChatMessage & { sources: SourceCitation[]; tools: { name: string; summary: string; ms: number }[]; actions: { id: string; target: string; label: string; route: string }[]; artifacts: Omit<Artifact, 'markdown'>[]; proposals: BookingProposal[]; images: ShownImage[]; usage?: Usage };
 export type RequestedUiAction = { id: string; target: string; route: string; anchor: string; label: string; action: 'reveal' | 'contact' };
 export type ContactDraft = { id: string; name: string; email: string; message: string; to: string };
 export type ShownImage = { id: string; src: string; alt: string; caption: string };
@@ -57,35 +56,12 @@ export async function createSession(endpoint: string) {
   return token;
 }
 
-export async function loadMessages(endpoint: string, token: string): Promise<StoredMessage[]> {
-  const response = await fetch(`${base(endpoint)}/v1/messages`, { headers: auth(token) });
-  if (!response.ok) await fail(response);
-  const { messages } = await response.json();
-  if (!Array.isArray(messages)) return [];
-  return messages
-    .filter(entry => (entry?.role === 'user' || entry?.role === 'assistant') && typeof entry.content === 'string')
-    .map(entry => ({
-      role: entry.role, content: entry.content,
-      sources: Array.isArray(entry.metadata?.sources) ? entry.metadata.sources : [],
-      actions: Array.isArray(entry.metadata?.actions) ? entry.metadata.actions : [],
-      artifacts: Array.isArray(entry.metadata?.artifacts) ? entry.metadata.artifacts : [],
-      images: Array.isArray(entry.metadata?.images) ? entry.metadata.images : [],
-      proposals: Array.isArray(entry.metadata?.proposals) ? entry.metadata.proposals : [],
-      usage: entry.metadata?.usage,
-      tools: Array.isArray(entry.metadata?.tools) ? entry.metadata.tools : [],
-    }));
-}
-
-export async function clearMessages(endpoint: string, token: string) {
-  const response = await fetch(`${base(endpoint)}/v1/messages`, { method: 'DELETE', headers: auth(token) });
-  if (!response.ok) await fail(response);
-}
-
-export async function streamAnswer(endpoint: string, token: string, message: string, signal: AbortSignal, handlers: StreamHandlers, attachment?: Attachment) {
+// The server keeps no conversation, so the recent turns travel with every question.
+export async function streamAnswer(endpoint: string, token: string, message: string, history: ChatMessage[], signal: AbortSignal, handlers: StreamHandlers, attachment?: Attachment) {
   const response = await fetch(`${base(endpoint)}/v1/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Time-Zone': browserTimeZone(), ...auth(token) },
-    body: JSON.stringify(attachment ? { message, attachment: { mediaType: attachment.mediaType, dataUrl: attachment.dataUrl } } : { message }), signal,
+    body: JSON.stringify({ message, history, ...(attachment ? { attachment: { mediaType: attachment.mediaType, dataUrl: attachment.dataUrl } } : {}) }), signal,
   });
   if (!response.ok) await fail(response);
   if (!response.body || !response.headers.get('content-type')?.includes('text/event-stream')) throw new Error('The server did not return an answer stream.');

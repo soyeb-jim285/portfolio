@@ -8,15 +8,9 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at);
 
--- Messages die with their session, so deleting the session is a complete erasure.
-CREATE TABLE IF NOT EXISTS messages (
-  id bigserial PRIMARY KEY,
-  session_id uuid NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS messages_session_idx ON messages (session_id, id);
+-- Conversations live in the visitor's browser and are never stored here. Earlier deployments kept
+-- them in a messages table; dropping it erases every stored transcript.
+DROP TABLE IF EXISTS messages;
 
 -- Request budget that survives restarts and is shared by every process on this database.
 CREATE TABLE IF NOT EXISTS usage_daily (
@@ -77,8 +71,6 @@ CREATE TABLE IF NOT EXISTS source_chunks (
 );
 CREATE INDEX IF NOT EXISTS source_chunks_search_idx ON source_chunks USING gin (search);
 CREATE INDEX IF NOT EXISTS source_chunks_revision_idx ON source_chunks (revision_id);
-
-ALTER TABLE messages ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb;
 
 -- Phase 3: UI actions the assistant requested, and what the browser reported back.
 CREATE TABLE IF NOT EXISTS ui_actions (

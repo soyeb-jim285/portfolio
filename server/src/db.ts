@@ -1,7 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
-import type { ChatMessage } from './types';
 
 const schemaPath = new URL('./schema.sql', import.meta.url);
 const hash = (token: string) => createHash('sha256').update(token).digest();
@@ -20,7 +19,7 @@ export async function applySchema(pool: Pool) {
 
 export type Db = Awaited<ReturnType<typeof createDb>>;
 
-export async function createDb(url: string, ttlDays: number, maxMessages: number) {
+export async function createDb(url: string, ttlDays: number) {
   const pool = new Pool({ connectionString: url, max: 10, connectionTimeoutMillis: 20000 });
   pool.on('error', error => console.error('Database pool error:', error.message));
   await applySchema(pool);
@@ -53,31 +52,6 @@ export async function createDb(url: string, ttlDays: number, maxMessages: number
         `UPDATE sessions SET last_seen_at = now(), expires_at = now() + $2::interval
          WHERE token_hash = $1 AND expires_at > now() RETURNING id`, [hash(token), ttl]);
       return rows[0]?.id;
-    },
-    async listMessages(sessionId: string) {
-      const { rows } = await pool.query<ChatMessage & { metadata: Record<string, unknown> }>(
-        `SELECT role, content, metadata FROM (
-           SELECT role, content, metadata, id FROM messages WHERE session_id = $1 ORDER BY id DESC LIMIT $2
-         ) recent ORDER BY id`, [sessionId, maxMessages]);
-      return rows;
-    },
-    // One transaction so a conversation never contains a question without its answer.
-    async saveExchange(sessionId: string, question: string, answer: string, metadata: Record<string, unknown> = {}) {
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        await client.query(
-          `INSERT INTO messages (session_id, role, content, metadata) VALUES ($1, 'user', $2, '{}'::jsonb), ($1, 'assistant', $3, $4::jsonb)`,
-          [sessionId, question, answer, JSON.stringify(metadata)]);
-        await client.query(
-          `DELETE FROM messages WHERE session_id = $1 AND id < COALESCE(
-             (SELECT min(id) FROM (SELECT id FROM messages WHERE session_id = $1 ORDER BY id DESC LIMIT $2) keep), 0)`, [sessionId, maxMessages]);
-        await client.query('COMMIT');
-      } catch (error) { await client.query('ROLLBACK').catch(() => {}); throw error; }
-      finally { client.release(); }
-    },
-    async clearMessages(sessionId: string) {
-      await pool.query('DELETE FROM messages WHERE session_id = $1', [sessionId]);
     },
     // Recorded when requested and updated only by the session that owns it.
     async recordAction(id: string, sessionId: string, target: string) {

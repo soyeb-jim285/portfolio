@@ -12,7 +12,7 @@ import { createCalScheduler } from './cal-calendar';
 import { createRetrieval } from './retrieval';
 
 const config = configSchema.parse(process.env);
-const db = await createDb(config.DATABASE_URL, config.SESSION_TTL_DAYS, config.MAX_MESSAGES_PER_SESSION);
+const db = await createDb(config.DATABASE_URL, config.SESSION_TTL_DAYS);
 
 const retrieval = createRetrieval(db.pool, createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS));
 const indexed = await retrieval.indexedRepos().catch(error => { console.error('Could not read the code index:', error.message); return []; });

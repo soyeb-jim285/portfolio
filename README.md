@@ -117,7 +117,7 @@ The panel is not only a chat. `GET /v1/repos` lists every indexed repository wit
 
 Graph edges are parsed at index time in `src/edges.ts`, never inferred: a C++ `#include`, a relative TypeScript import, a QML `import` or a component used by name. An edge exists only when the target resolves to another indexed file, and an ambiguous name is dropped rather than guessed. Files collapse into their directory so the picture is modules rather than hundreds of nodes, and the busiest fourteen are drawn.
 
-A citation in an answer opens that file in the browser; the icon beside it still goes to GitHub at the indexed commit. Any element on the site can open the panel by carrying `data-assistant-ask="question"` or `data-assistant-repo="name"`, which is how the project sheets offer "Ask about this project" and "Browse the source".
+A citation in an answer links to the cited lines on GitHub at the indexed commit. Any element on the site can open the panel with a question by carrying `data-assistant-ask="question"`, which is how the project sheets offer "Ask about this project".
 
 ### Contact
 
@@ -125,7 +125,7 @@ A citation in an answer opens that file in the browser; the icon beside it still
 
 The site's own contact dialog posts to the same endpoint, so both paths share the validation, limits and delivery. Set `RESEND_API_KEY`, `CONTACT_FROM` (on a domain verified in Resend) and `CONTACT_TO` to switch delivery on; without all three the assistant says delivery is off and points at the contact page, the endpoint answers 503, and the dialog falls back to the visitor's mail client. A 202 means the provider accepted the message, not that it reached the inbox.
 
-Every `/v1` route requires the configured site Origin. `POST /v1/sessions` issues a bearer token for one anonymous conversation; `GET` and `DELETE /v1/messages` read and erase it; `POST /v1/chat` streams an answer. History lives on the server, so chat carries only the new message. Scalar documents the contract; the API docs page has a different origin, so use the site or curl:
+Every `/v1` route requires the configured site Origin. `POST /v1/sessions` issues a bearer token for one anonymous visitor; `POST /v1/chat` streams an answer. The server keeps no conversation: the browser sends its recent turns as `history`, and the server keeps the newest `MAX_MESSAGES_PER_SESSION` and trims the oldest to fit the context budget. Scalar documents the contract; the API docs page has a different origin, so use the site or curl:
 
 ```sh
 TOKEN=$(curl -s -X POST http://localhost:3001/v1/sessions \
@@ -142,8 +142,8 @@ Each SSE frame has a `data:` field containing version-1 JSON: `delta` with `text
 
 ### Current behavior and deployment
 
-- Conversations are stored per anonymous session and survive reloads and restarts. The session token is a 32-byte random value held in `localStorage`; only its SHA-256 hash is stored, so a stolen database row cannot be replayed as a token and one session can never read another's messages. An expired or unknown token is refused with 401, and the panel silently starts a new session and resends the question once.
-- Retention: a session and its messages are deleted `SESSION_TTL_DAYS` (default 7) after its last use, swept hourly and at boot. Each session keeps at most `MAX_MESSAGES_PER_SESSION` (default 40) messages, older ones are dropped. Clear chat deletes the rows immediately. An exchange is written only when the answer completes, so a failed or stopped answer stores nothing. OpenRouter and its selected provider still receive message content under their own retention policies.
+- Conversations live in the visitor's browser, in IndexedDB, and survive reloads without a network round trip. The server stores none of it; each question carries the finished exchanges before it, and a picture is sent only with its own question. History is the visitor's own transcript, so a forged turn can only steer that visitor's answer, and every tool that reaches the outside world still waits for their click. Clear chat deletes the local copy.
+- The session token is a 32-byte random value held in `localStorage`; only its SHA-256 hash is stored. It scopes drafts, bookings, documents and navigation acknowledgements, not the conversation. An expired or unknown token is refused with 401, and the panel silently starts a new session and resends the question once. A session and what it owns are deleted `SESSION_TTL_DAYS` (default 7) after its last use, swept hourly and at boot. OpenRouter and its selected provider still receive message content under their own retention policies.
 - Answers use Streamdown for streamed Markdown, code blocks, tables and links, with sanitized output and images disabled. The renderer is a lazy chunk preloaded when the panel opens, so no raw Markdown is shown while it loads. Message/code copying, stop/retry, scroll-to-latest, Enter-to-send and Shift+Enter newlines are supported. The assistant explicitly states it has no repository access or action tools yet.
 - The panel shows the tool calls that ran with their timings, an expandable source list linking each cited range to GitHub at the indexed commit, a line per navigation with what actually happened, an editable message card that sends only when the visitor presses Send, a document card with an inline preview and a download button, and a slot picker with a confirmation card that books only when the visitor confirms. Snippets render as inert text.
 - Chat UI: `src/components/chat/ChatPanel.tsx`; adapted registry primitives: `src/components/ui/` and `src/components/ai-elements/message.tsx`; styling: `src/styles/assistant.css`. Tailwind generates Streamdown utilities only, without a global preflight reset. Component attribution is in `THIRD_PARTY_NOTICES.md`.
@@ -173,8 +173,8 @@ The API rate-limits by socket peer, which behind a proxy is the proxy itself, so
 
 ### Data handling
 
-- Stored: visitor messages and answers in PostgreSQL, tied to an anonymous session token whose SHA-256 hash is what the database holds. No account, no name, no tracking cookie.
-- Deleted: a session and its messages seven days after last use, immediately on Clear chat, and artifacts with their R2 objects after seven days. The sweep runs hourly and at boot.
+- Stored on the server: an anonymous session whose token's SHA-256 hash is what the database holds, plus the drafts, bookings and documents it created. Conversations are kept only in the visitor's browser. No account, no name, no tracking cookie.
+- Deleted: a session seven days after last use, and artifacts with their R2 objects after seven days. The sweep runs hourly and at boot. Clear chat erases the browser's copy of the conversation.
 - Shared: message text goes to OpenRouter and whichever provider it routes to; a sent message goes to Resend; a booking goes to Cal.com. Nothing else leaves the server.
 - Logged: error text only. No message bodies, no contact content, no credentials. Provider errors are reduced to a status before logging.
 

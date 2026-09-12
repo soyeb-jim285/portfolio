@@ -12,23 +12,27 @@ import type { Retrieval, SourceHit } from './retrieval';
 import type { Mailer } from './mailer';
 import type { Storage } from './storage';
 import { AmbiguousBookingError, type EventType, type Scheduler } from './scheduler';
-import { buildToolDefinitions, runTool, type UiAction } from './tools';
+import { buildToolDefinitions, runTool } from './tools';
 
 const MAX_CONTEXT_CHARS = 24000;
 export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone'];
 // An attached image travels as a data URL and is never stored: it is passed to the model for
-// this turn only, so a conversation reloaded later shows the question without the picture.
+// this turn only, and later turns carry a note in its place.
 const attachmentSchema = z.object({
   mediaType: z.enum(['image/png', 'image/jpeg', 'image/webp', 'image/gif']),
   dataUrl: z.string().max(4_000_000).regex(/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/, 'Attachment must be a base64 image data URL'),
 }).strict();
+// The browser owns the conversation and sends its recent turns with each question. It is the
+// visitor's own transcript, so a forged turn only steers that visitor's answer; every tool that
+// reaches the outside world still waits for the visitor's click.
+const historySchema = z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(MAX_CONTEXT_CHARS) }).strict()).max(200);
 const chatSchema = z.object({
   message: z.string().trim().min(1).max(8000),
+  history: historySchema.default([]),
   attachment: attachmentSchema.optional(),
 }).strict();
 const errorSchema = z.object({ error: z.string() });
 const sessionSchema = z.object({ token: z.string(), expiresAt: z.string() });
-const messagesSchema = z.object({ messages: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string(), metadata: z.record(z.string(), z.unknown()) })) });
 const sourceSchema = z.object({
   repo: z.string(), path: z.string(), language: z.string(), symbols: z.array(z.string()),
   startLine: z.number(), endLine: z.number(), commit: z.string(), url: z.string(), snippet: z.string(),
@@ -122,32 +126,20 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     c.set('sessionId', sessionId);
     await next();
   };
-  for (const path of ['/v1/chat', '/v1/messages', '/v1/actions/*', '/v1/artifacts/*', '/v1/repos', '/v1/repos/*', '/v1/bookings', '/v1/proposals']) app.use(path, authenticate);
+  for (const path of ['/v1/chat', '/v1/actions/*', '/v1/artifacts/*', '/v1/repos', '/v1/repos/*', '/v1/bookings', '/v1/proposals']) app.use(path, authenticate);
 
   app.openapi(createRoute({ method: 'get', path: '/health', responses: { 200: { description: 'Process is running', content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } } } } }),
     c => c.json({ status: 'ok' as const }));
 
   app.openapi(createRoute({
     method: 'post', path: '/v1/sessions', summary: 'Start an anonymous conversation',
-    description: 'Returns a bearer token identifying one anonymous conversation. Store it client-side and send it on every /v1 call. Expiry slides forward on each use; after that the session and its messages are deleted.',
+    description: 'Returns a bearer token identifying one anonymous conversation. Store it client-side and send it on every /v1 call. Expiry slides forward on each use; after that the session and what it owns are deleted. Conversations are not stored on the server.',
     responses: { 201: { description: 'Session created', content: { 'application/json': { schema: sessionSchema } } }, ...guardFailures },
   }), async c => c.json(await db.createSession(), 201));
 
   app.openapi(createRoute({
-    method: 'get', path: '/v1/messages', summary: 'Read this session’s conversation',
-    request: { headers: authHeader },
-    responses: { 200: { description: 'Stored messages, oldest first', content: { 'application/json': { schema: messagesSchema } } }, ...authFailure, ...guardFailures },
-  }), async c => c.json({ messages: await db.listMessages(c.get('sessionId')) }, 200));
-
-  app.openapi(createRoute({
-    method: 'delete', path: '/v1/messages', summary: 'Erase this session’s conversation',
-    request: { headers: authHeader },
-    responses: { 204: { description: 'Conversation deleted' }, ...authFailure, ...guardFailures },
-  }), async c => { await db.clearMessages(c.get('sessionId')); return c.body(null, 204); });
-
-  app.openapi(createRoute({
     method: 'post', path: '/v1/chat', summary: 'Stream a portfolio answer',
-    description: 'Requires the configured site Origin and a session bearer token. History comes from the session on the server, so only the new message is sent. An optional image attachment is passed to the model for this turn and never stored. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. The exchange is stored only when the answer completes. OpenAPI describes each event, not the whole stream.',
+    description: 'Requires the configured site Origin and a session bearer token. The browser keeps the conversation and sends its recent turns as history; the server stores none of it, keeps the newest MAX_MESSAGES_PER_SESSION turns and trims the oldest to fit the context budget. An optional image attachment is passed to the model for this turn only. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. OpenAPI describes each event, not the whole stream.',
     request: { headers: authHeader, body: { required: true, content: { 'application/json': { schema: chatSchema } } } },
     responses: {
       200: { description: 'SSE frames containing versioned ChatEvent JSON', content: { 'text/event-stream': { schema: eventSchema } } },
@@ -156,11 +148,11 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       ...authFailure, ...guardFailures,
     },
   }), async c => {
-    const { message, attachment } = c.req.valid('json');
+    const { message, history: sent, attachment } = c.req.valid('json');
     const sessionId = c.get('sessionId');
     if (active >= config.MAX_CONCURRENT_REQUESTS) return c.json({ error: 'Assistant is busy. Please try again shortly.' }, 429);
     if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
-    const history = await db.listMessages(sessionId);
+    const history = sent.slice(-config.MAX_MESSAGES_PER_SESSION);
     while (history.length && history.reduce((sum, entry) => sum + entry.content.length, message.length) > MAX_CONTEXT_CHARS) history.splice(0, 2);
     const indexed = await retrieval.indexedRepos().catch(() => []);
     active++;
@@ -188,11 +180,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
           : undefined,
       };
       const sources: SourceHit[] = [];
-      const actions: (UiAction & { id: string })[] = [];
-      const artifacts: { id: string; kind: string; title: string; bytes: number; markdown: string; expiresAt: string }[] = [];
-      const images: { id: string; src: string; alt: string; caption: string }[] = [];
-      const proposals: { id: string; start: string; end: string; timeZone: string; durationMinutes: number; label: string; key: string; name: string; email: string; notes: string }[] = [];
-      const toolLog: { name: string; summary: string; ms: number }[] = [];
       let answer = '';
       const startedAt = Date.now();
       const usage: { promptTokens?: number; completionTokens?: number; costUsd?: number } = {};
@@ -248,12 +235,8 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
               outcome = { summary: 'tool failed', result: 'The tool could not run. Say so instead of guessing.', sources: [] };
             }
             const ms = Date.now() - started;
-            toolLog.push({ name: call.name, summary: outcome.summary, ms });
             await send({ type: 'tool', id: call.id, name: call.name, summary: outcome.summary, status: outcome.summary.startsWith('tool failed') ? 'error' : 'done', ms });
-            if (outcome.image) {
-              images.push(outcome.image);
-              await send({ type: 'image', image: outcome.image });
-            }
+            if (outcome.image) await send({ type: 'image', image: outcome.image });
             if (outcome.slots) {
               const { eventType, timeZone, slots: free } = outcome.slots;
               await send({ type: 'slots', availability: { timeZone, durationMinutes: eventType.minutes, label: eventType.label, key: eventType.key, slots: free } });
@@ -265,7 +248,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
                 id, start, end: new Date(new Date(start).getTime() + eventType.minutes * 60000).toISOString(),
                 timeZone: visitorTimeZone, durationMinutes: eventType.minutes, label: eventType.label, key: eventType.key, name, email, notes,
               };
-              proposals.push(proposal);
               await send({ type: 'proposal', proposal });
             }
             if (outcome.artifact) {
@@ -279,7 +261,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
                 await storage.put(objectKey, document, 'text/markdown; charset=utf-8');
                 await db.createArtifact({ id, sessionId, kind, title, objectKey, bytes, sources }, config.ARTIFACT_TTL_DAYS);
                 const artifact = { id, kind, title, bytes, markdown: document, expiresAt: new Date(Date.now() + config.ARTIFACT_TTL_DAYS * 86400000).toISOString() };
-                artifacts.push(artifact);
                 await send({ type: 'artifact', artifact });
               } catch (error) {
                 console.error('Could not store artifact:', error instanceof Error ? error.message : error);
@@ -295,7 +276,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
               const actionId = crypto.randomUUID();
               // Recorded before it is sent so an acknowledgement always has a row to update.
               await db.recordAction(actionId, sessionId, outcome.action.target).catch(error => console.error('Could not record action:', error.message));
-              actions.push({ id: actionId, ...outcome.action });
               await send({ type: 'action', action: { id: actionId, ...outcome.action } });
             }
             for (const hit of outcome.sources) {
@@ -313,13 +293,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
         }
         if (finish !== 'stop' && finish !== 'length') throw new Error('Incomplete provider response');
         if (!answer.trim()) throw new Error('Empty provider response');
-        // Persistence failure must not discard an answer the visitor already read.
-        // The question is stored with a note, not the bytes.
-        await db.saveExchange(sessionId, attachment ? `${message}\n\n[image attached]` : message, answer, {
-          sources, tools: toolLog, actions, artifacts: artifacts.map(({ markdown, ...rest }) => rest), proposals, images,
-          usage: { ms: Date.now() - startedAt, model: config.OPENROUTER_MODEL, ...usage },
-        })
-          .catch(error => console.error('Could not store exchange:', error.message));
         await send({ type: 'usage', usage: { ms: Date.now() - startedAt, model: config.OPENROUTER_MODEL, ...usage } });
         await send({ type: 'done', finishReason: finish });
       } catch {

@@ -4,7 +4,8 @@ import Diagram from './Diagram';
 import { Button } from '../ui/button';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Message, MessageActions, MessageContent, MessageResponse, preloadResponse } from '../ai-elements/message';
-import { artifactLink, clearMessages, confirmBooking, createSession, loadMessages, prepareAttachment, SessionExpired, proposeSlot, sendContact, streamAnswer, type Artifact, type Availability, type BookingProposal, type ContactDraft, type RequestedUiAction, type Slot, type SourceCitation, type Attachment, type ShownImage, type ToolActivity, type Usage } from '../../lib/chat-stream';
+import { artifactLink, confirmBooking, createSession, prepareAttachment, SessionExpired, proposeSlot, sendContact, streamAnswer, type Artifact, type Availability, type BookingProposal, type ContactDraft, type RequestedUiAction, type Slot, type SourceCitation, type Attachment, type ShownImage, type ToolActivity, type Usage, type ChatMessage } from '../../lib/chat-stream';
+import { clearConversation, loadConversation, saveConversation } from '../../lib/chat-history';
 import { acknowledgeAction, runAction, type ActionStatus } from '../../lib/site-actions';
 
 type Entry = {
@@ -18,6 +19,7 @@ type Entry = {
   proposals?: (BookingProposal & { state?: 'confirming' | 'confirmed' | 'failed'; error?: string })[];
   usage?: Usage;
   error?: string;
+  vote?: 'up' | 'down';
   images?: ShownImage[];
   attachment?: { dataUrl: string; name: string };
 };
@@ -53,6 +55,9 @@ const starters = [
 ];
 // Good enough to catch a typo before a round trip; the server validates properly.
 const validEmail = (value: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim());
+// Mirrors the server's defaults (MAX_MESSAGES_PER_SESSION, MAX_CONTEXT_CHARS); it trims again either way.
+const HISTORY_TURNS = 40;
+const HISTORY_CHARS = 24000;
 const MIN_WIDTH = 340;
 const DEFAULT_WIDTH = 420;
 const clampWidth = (value: number) => Math.round(Math.min(Math.max(value, MIN_WIDTH), Math.max(MIN_WIDTH, Math.min(760, window.innerWidth - 96))));
@@ -67,7 +72,6 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const [status, setStatus] = useState('');
   // Only failures the message list cannot show sit above the composer; progress stays in the live region.
   const [alert, setAlert] = useState('');
-  const [votes, setVotes] = useState<Record<string, 'up' | 'down'>>({});
   const [copied, setCopied] = useState('');
   const [atBottom, setAtBottom] = useState(true);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -77,7 +81,8 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const input = useRef<HTMLTextAreaElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const token = useRef<string | undefined>(undefined);
-  const hydrated = useRef(false);
+  // Saving waits for the stored conversation to load, so an empty first render never overwrites it.
+  const loaded = useRef(false);
   // Actions run exactly once: replaying a stored conversation must not navigate the visitor again.
   const performed = useRef(new Set<string>());
   const controller = useRef<AbortController | null>(null);
@@ -113,23 +118,29 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     return () => removeEventListener('assistant:ask', onAsk);
   });
 
+  useEffect(() => { if (open) void preloadResponse(); }, [open]);
+  // The conversation is read from this browser at mount, so opening the panel never waits on the network.
   useEffect(() => {
-    if (!open) return;
-    void preloadResponse();
-    if (hydrated.current || !endpoint) return;
-    hydrated.current = true;
     token.current = readToken();
-    if (!token.current) return;
-    // Restore the conversation this browser already owns; a dead token is simply dropped.
-    void loadMessages(endpoint, token.current)
-      .then(messages => setEntries(messages.map(message => ({
-        id: crypto.randomUUID(), role: message.role, content: message.content, state: 'complete' as const,
-        sources: message.sources, tools: message.tools.map((tool, index) => ({ id: `${index}`, name: tool.name, summary: tool.summary, status: 'done' as const, ms: tool.ms })),
-        artifacts: message.artifacts, proposals: message.proposals, usage: message.usage, images: message.images,
-        actions: message.actions.map(action => { performed.current.add(action.id); return { ...action, anchor: '', action: 'reveal' as const, status: 'done' as const }; }),
-      }))))
-      .catch(error => { if (error instanceof SessionExpired) { token.current = undefined; writeToken(); } else setAlert('Earlier messages could not be loaded.'); });
-  }, [open, endpoint]);
+    void loadConversation<Entry>()
+      .then(saved => setEntries(current => current.length ? current : saved.map(entry => {
+        // A replayed action has already moved the page once; an interrupted turn cannot resume.
+        entry.actions?.forEach(action => performed.current.add(action.id));
+        return {
+          ...entry,
+          state: entry.state === 'streaming' ? 'incomplete' : entry.state,
+          draft: entry.draft?.state === 'sending' ? { ...entry.draft, state: 'editing' } : entry.draft,
+          proposals: entry.proposals?.map(proposal => proposal.state === 'confirming' ? { ...proposal, state: undefined } : proposal),
+        };
+      })))
+      .catch(() => {})
+      .finally(() => { loaded.current = true; });
+  }, []);
+  // Written once a turn settles rather than on every streamed token.
+  useEffect(() => {
+    if (!loaded.current || entries.some(entry => entry.state === 'streaming')) return;
+    void (entries.length ? saveConversation(entries) : clearConversation()).catch(() => {});
+  }, [entries]);
   // The pinned turn needs empty room beneath it, or the scroller cannot lift it to the top.
   const fit = useCallback(() => {
     const box = viewport.current, pad = spacer.current;
@@ -187,6 +198,17 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     const prompt = value.trim();
     if (controller.current || !prompt || prompt.length > 4000) return;
     if (!endpoint) { setAlert('Assistant is not connected yet. Use the contact button to reach Jim.'); return; }
+    // Finished exchanges become the model's context, newest last, within the server's character budget.
+    // A picture is sent once, with its own question; later turns carry a note in its place.
+    const history: ChatMessage[] = entries.flatMap((entry, index) => {
+      const answer = entries[index + 1];
+      if (entry.role !== 'user' || answer?.role !== 'assistant' || answer.state !== 'complete' || replacing?.includes(entry.id)) return [];
+      return [
+        { role: 'user' as const, content: entry.attachment ? `${entry.content}\n\n[image attached]` : entry.content },
+        { role: 'assistant' as const, content: answer.content },
+      ];
+    }).slice(-HISTORY_TURNS);
+    while (history.length && history.reduce((sum, turn) => sum + turn.content.length, prompt.length) > HISTORY_CHARS) history.splice(0, 2);
     const userId = crypto.randomUUID(); const answerId = crypto.randomUUID();
     const sending = attachment;
     setEntries(previous => [...previous.filter(entry => !replacing?.includes(entry.id)),
@@ -232,11 +254,11 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     try {
       // The server owns the history, so an expired session is replaced and the question resent once.
       let result;
-      try { result = await streamAnswer(endpoint, await session(), prompt, abort.signal, handlers, sending ?? undefined); }
+      try { result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, handlers, sending ?? undefined); }
       catch (error) {
         if (!(error instanceof SessionExpired)) throw error;
         token.current = undefined; writeToken();
-        result = await streamAnswer(endpoint, await session(), prompt, abort.signal, handlers, sending ?? undefined);
+        result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, handlers, sending ?? undefined);
       }
       setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, content: result.text, state: 'complete' } : entry));
       setStatus(result.finishReason === 'length' ? 'Length limit reached. Ask a follow-up to continue.' : 'Answer complete.');
@@ -373,8 +395,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           <SheetTitle className="assistant-title">SPJ <span aria-hidden="true">/</span> Assistant</SheetTitle>
           <div className="assistant-header-actions">
             <Button size="icon" variant="ghost" aria-label="Clear chat" title="Clear chat" disabled={busy || !entries.length} onClick={() => {
-              setEntries([]); setQuestion(''); setCopied(''); setVotes({}); setAlert(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; pinned.current = false; anchor.current = ''; input.current?.focus();
-              if (token.current) void clearMessages(endpoint, token.current).catch(error => { if (error instanceof SessionExpired) { token.current = undefined; writeToken(); } });
+              setEntries([]); setQuestion(''); setCopied(''); setAlert(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; pinned.current = false; anchor.current = ''; input.current?.focus();
             }}><Trash2 size={15} aria-hidden="true" /></Button>
             <SheetClose asChild><Button size="icon" variant="ghost" aria-label="Close assistant"><X size={17} aria-hidden="true" /></Button></SheetClose>
           </div>
@@ -539,7 +560,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
               {entry.state === 'incomplete' && <p className="chat-incomplete" role="alert">{entry.error ?? 'Incomplete answer'}</p>}
               {entry.role === 'assistant' && entry.state !== 'streaming' && (() => {
                 const again = retryOf(entry.id);
-                const vote = votes[entry.id];
+                const vote = entry.vote;
                 return <MessageActions>
                   {entry.content && <Button type="button" variant="ghost" title="Copy answer" onClick={() => void copy(entry)}>
                     {copied === entry.id ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
@@ -550,11 +571,11 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                   </Button>}
                   {entry.content && <>
                     <Button type="button" size="icon" variant="ghost" aria-label="Good answer" title="Good answer" aria-pressed={vote === 'up'}
-                      onClick={() => setVotes(current => ({ ...current, [entry.id]: current[entry.id] === 'up' ? undefined : 'up' } as typeof current))}>
+                      onClick={() => setEntries(previous => previous.map(item => item.id === entry.id ? { ...item, vote: item.vote === 'up' ? undefined : 'up' } : item))}>
                       <ThumbsUp size={13} aria-hidden="true" />
                     </Button>
                     <Button type="button" size="icon" variant="ghost" aria-label="Bad answer" title="Bad answer" aria-pressed={vote === 'down'}
-                      onClick={() => setVotes(current => ({ ...current, [entry.id]: current[entry.id] === 'down' ? undefined : 'down' } as typeof current))}>
+                      onClick={() => setEntries(previous => previous.map(item => item.id === entry.id ? { ...item, vote: item.vote === 'down' ? undefined : 'down' } : item))}>
                       <ThumbsDown size={13} aria-hidden="true" />
                     </Button>
                   </>}
