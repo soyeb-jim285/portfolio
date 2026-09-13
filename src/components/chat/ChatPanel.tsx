@@ -405,7 +405,9 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   }
 
   return <div className="assistant-root" ref={setPortal}>
-    <Sheet open={open} onOpenChange={setOpen} modal={mobile}>
+    {/* Modal only while open: the content is force-mounted, and a closed modal would keep its overlay,
+        scroll lock and aria-hidden on the page, leaving it dark and untouchable on mobile. */}
+    <Sheet open={open} onOpenChange={setOpen} modal={mobile && open}>
       <SheetTrigger asChild>
         <Button className="assistant-launch" variant="default" hidden={open} disabled={!portal}>
           <MessageSquare size={16} aria-hidden="true" /> Ask about my work
