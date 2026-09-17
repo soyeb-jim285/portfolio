@@ -188,7 +188,7 @@ export const record = [
   { year: '2023', what: 'Meta Hacker Cup, round 2', result: '2425th of 6193', detail: 'round 1: 1760th of 20324', href: 'https://www.facebook.com/codingcompetitions/hacker-cup/2023/certificate/2005569239823325' },
   { year: '2024', what: 'BUET CSE Fest', result: '25th of 113', detail: '', href: 'https://toph.co/c/inter-university-buet-cse-fest-2024/standings' },
   { year: 'ongoing', what: 'Codeforces, handle soyeb_p_jim', result: 'Peak 1714, Expert', detail: '121 rated rounds, 769 problems solved', href: 'https://codeforces.com/profile/soyeb_p_jim' },
-  { year: 'ongoing', what: 'CodeChef, handle soyebjim', result: 'Peak 2032', detail: '32 rated contests, 229 problems solved', href: 'https://www.codechef.com/users/soyebjim' },
+  { year: 'ongoing', what: 'CodeChef, handle soyebjim', result: 'Peak 2032, Div 1', detail: '32 rated contests, 229 problems solved', href: 'https://www.codechef.com/users/soyebjim' },
   { year: '2017', what: 'Bangladesh Mathematical Olympiad, national', result: 'First runner-up', detail: 'second runner-up in 2016' },
   { year: '2020', what: 'Mathematical Olympiad Problem Solve & Approach, worked olympiad solutions', result: '6.5K followers', detail: 'BdMO national sets across all four categories, IMO problems and other contests', href: 'https://www.facebook.com/mpms.solve' },
   { year: '2024', what: 'Book: গণিত অলিম্পিয়াডের হাতেখড়ি, Swapno ’71', result: 'Author', detail: 'introduction to olympiad mathematics, secondary level', href: 'https://www.rokomari.com/book/288868/gonit-olympiad-er-hate-khori-secondary' },
