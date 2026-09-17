@@ -346,7 +346,7 @@
         "reddit": { "r/hyprland": { "upvotes": 675, "comments": 56, "views": "67K" }, "r/unixporn": { "upvotes": 70, "comments": 9, "views": "18K" } },
         "src": ["gh-traffic", "reddit-threads"],
         "conf": "verified",
-        "note": "Traffic read from the repository Insights page on 2026-09-18 for 09/03-09/16. Cloners run well above visitors because the AUR package clones on every update. Soyeb disclosed AI assistance in the r/hyprland post itself; the thread largely defended it."
+        "release_asset_downloads_lifetime": 436, "note": "Traffic read from the repository Insights page on 2026-09-18 for 09/03-09/16. Do NOT put the cloner figure on a CV: GitHub counts CI, mirrors and AUR helpers as cloners, and the -git package clones on every rebuild, so it is directional only. Release downloads (436 across 28 releases) understate use for the opposite reason, since AUR and the self-hosted Flatpak repo bypass the assets. The contributor count is the clean number. Soyeb disclosed AI assistance in the r/hyprland post itself; the thread largely defended it."
       },
       "external_validation": [
         { "what": "LinuxLinks review", "src": ["linuxlinks"] },
