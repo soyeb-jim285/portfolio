@@ -14,6 +14,7 @@ const heads = [
 ];
 ---
 <svg class="diag draw r" viewBox="0 0 900 530" role="img" aria-label="PCE-PINN: a data path down the left from 27 features through a shared tanh trunk to four task heads and the data loss, a physics path down the right from boundary interpolation through the physics net and field construction to the nondimensional PDE residuals and their penalty, both meeting in one composite objective">
+  <g data-lane="data">
   <text class="s o" x="20" y="22">data path</text>
   <path class="box draw-me" d={box(20, 30, 400, 48)} /><text class="s" x="220" y="50" text-anchor="middle">27 features</text><text class="s" x="220" y="67" text-anchor="middle">12 raw inputs + 15 engineered, robust-scaled</text>
   <path class="draw-me o" d="M220 78 V98" />
@@ -33,6 +34,8 @@ const heads = [
   <path class="draw-me o" d="M220 240 V286" />
   <path class="box draw-me" d={box(20, 286, 400, 48)} /><text class="s" x="220" y="306" text-anchor="middle">data loss</text><text class="s" x="220" y="323" text-anchor="middle">focal + diameter + location, BCE on domain</text>
 
+  </g>
+  <g data-lane="physics">
   <text class="s o" x="480" y="22">physics path</text>
   <path class="box draw-me" d={box(480, 30, 400, 48)} /><text class="s" x="680" y="50" text-anchor="middle">boundary interpolation</text><text class="s" x="680" y="67" text-anchor="middle">P₍bc₎ = P₍in₎(1−ξ) + P₍out₎ξ</text>
   <path class="draw-me o" d="M680 78 V98" />
@@ -44,6 +47,7 @@ const heads = [
   <path class="draw-me o" d="M680 282 V302" />
   <path class="box draw-me" d={box(480, 302, 400, 44)} /><text class="s" x="680" y="329" text-anchor="middle">residual loss, Σ ℛ²</text>
 
+  </g>
   <path class="draw-me o" d="M220 334 V370 H450 V392" />
   <path class="draw-me o" d="M680 346 V370 H450" />
   <path class="box draw-me" d={box(320, 392, 260, 46)} /><text class="s" x="450" y="420" text-anchor="middle">composite objective</text>

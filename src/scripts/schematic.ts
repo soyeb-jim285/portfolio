@@ -27,13 +27,28 @@ export function init() {
     target.classList.add('in');
     const parts = target.querySelectorAll<SVGGeometryElement>('.draw-me');
     if (target.matches('svg.draw')) target.style.setProperty('--label-delay', `${Math.min(1, parts.length * 0.05 + 0.3)}s`);
-    parts.forEach((stroke, index) => {
+    // Strokes inside a [data-lane] group stagger within their own lane, so two columns draw side
+    // by side instead of one after the other. Anything outside a lane starts once the longest
+    // lane has finished, which is where a diagram's converging tail belongs.
+    const lanes = new Map<Element, SVGGeometryElement[]>();
+    const loose: SVGGeometryElement[] = [];
+    parts.forEach(stroke => {
+      const lane = stroke.closest('[data-lane]');
+      if (lane && target.contains(lane)) (lanes.get(lane) ?? lanes.set(lane, []).get(lane)!).push(stroke);
+      else loose.push(stroke);
+    });
+    const longest = Math.max(0, ...[...lanes.values()].map(lane => lane.length));
+    const step = (stroke: SVGGeometryElement) => {
+      const lane = stroke.closest('[data-lane]');
+      return lane && lanes.has(lane) ? lanes.get(lane)!.indexOf(stroke) : longest + loose.indexOf(stroke);
+    };
+    parts.forEach(stroke => {
       // Primed here rather than at load: the scale is only known once the figure has its size.
       stroke.style.removeProperty('opacity');
       prime(stroke);
       void stroke.getBoundingClientRect();
       stroke.style.removeProperty('transition');
-      stroke.style.transitionDelay = `${index * 0.1}s`;
+      stroke.style.transitionDelay = `${step(stroke) * 0.1}s`;
       stroke.style.strokeDashoffset = '0';
       // Drop the dash once drawn, so a later resize cannot reopen a gap in a finished stroke.
       stroke.addEventListener('transitionend', () => { stroke.style.strokeDasharray = 'none'; }, { once: true });

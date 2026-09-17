@@ -7,6 +7,7 @@ const r = research.find((x) => x.slug === 'pinn-e2co-co2')!.results;
 const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
 ---
 <svg class="diag draw r" viewBox="0 0 900 590" role="img" aria-label="PINN-E2CO: a surrogate path down the left from the reservoir state through a CNN encoder to a 20-dimensional latent, a locally linear transition under well controls, then a CNN decoder for the field and per-producer MLP heads for the well rates; a physics path down the right from the decoded field through time terms on a finite-volume stencil to the pressure-diffusion, CO2 mass and Darcy-flux residuals and their penalty; both meet in an eight-term composite loss">
+  <g data-lane="surrogate">
   <text class="s o" x="20" y="22">E2CO surrogate</text>
   <path class="box draw-me" d={box(20, 30, 400, 48)} /><text class="s" x="220" y="50" text-anchor="middle">state x₍t₎ [B, 2, 64, 64] · controls u₍t₎, Δt</text><text class="s" x="220" y="67" text-anchor="middle">CO₂ mole fraction, pressure · 5 producers, 4 injectors</text>
   <path class="draw-me o" d="M220 78 V98" />
@@ -24,6 +25,8 @@ const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
   <path class="draw-me o" d="M220 334 V356" />
   <path class="box draw-me" d={box(20, 356, 400, 48)} /><text class="s" x="220" y="376" text-anchor="middle">data objectives</text><text class="s" x="220" y="393" text-anchor="middle">reconstruction, transition consistency, well-rate MSE</text>
 
+  </g>
+  <g data-lane="physics">
   <text class="s o" x="480" y="22">PINN physics module</text>
   <path class="box draw-me" d={box(480, 30, 400, 48)} /><text class="s" x="680" y="50" text-anchor="middle">physics inputs</text><text class="s" x="680" y="67" text-anchor="middle">decoded x̂₍t+1₎, reference x₍t₎, K, φ, Δt</text>
   <path class="draw-me o" d="M680 78 V98" />
@@ -33,6 +36,7 @@ const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
   <path class="draw-me o" d="M680 232 V252" />
   <path class="box draw-me" d={box(480, 252, 400, 48)} /><text class="s" x="680" y="272" text-anchor="middle">residual penalty</text><text class="s" x="680" y="289" text-anchor="middle">weighted sum of the three residuals</text>
 
+  </g>
   <path class="draw-me o" d="M220 404 V430 H450 V452" />
   <path class="draw-me o" d="M680 300 V430 H450" />
   <path class="box draw-me" d={box(300, 452, 300, 48)} /><text class="s" x="450" y="472" text-anchor="middle">eight-term composite loss</text><text class="s" x="450" y="489" text-anchor="middle">ℒ = Σ λᵢ ℒᵢ, K = 2 rollout</text>
