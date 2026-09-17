@@ -29,6 +29,20 @@ const index = [
 ];
 const cur = sheet.split('.')[0];
 const canonical = new URL(Astro.url.pathname, Astro.site);
+// One Person record on every sheet, so a search engine can tie the name to the site and to the
+// same person's profiles elsewhere instead of treating each as a stranger.
+const personLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: person.name,
+  url: Astro.site?.toString(),
+  jobTitle: 'Software Engineer',
+  worksFor: { '@type': 'Organization', name: 'Fuego.io', url: 'https://fuego.io' },
+  alumniOf: { '@type': 'CollegeOrUniversity', name: 'University of Dhaka' },
+  email: `mailto:${person.email}`,
+  address: { '@type': 'PostalAddress', addressLocality: 'Dhaka', addressCountry: 'BD' },
+  sameAs: [person.links.github, person.links.linkedin, person.links.codeforces, person.links.huggingface],
+});
 const ogImage = new URL('/assets/og.png', Astro.site);
 // Plot the next drawing: a print head sweeps the frame, laying the new sheet down behind it
 // while the old one is pushed back under. Going back plots right to left. The head itself is
@@ -66,6 +80,7 @@ const flip = {
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Title sheet of the drawing set: Soyeb Pervez Jim, soyebjim.me">
   <meta name="twitter:card" content="summary_large_image">
+  <script is:inline type="application/ld+json" set:html={personLd} />
   <!-- reveal animations hide their targets first; only do that when the script can bring them back -->
   <script is:inline>document.documentElement.classList.add('js');</script>
   <ClientRouter />
