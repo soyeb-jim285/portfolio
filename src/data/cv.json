@@ -34,6 +34,10 @@
       "kind": "web",
       "url": "https://github.com/soyeb-jim285/hyprfm"
     },
+    "codechef-profile": {
+      "kind": "web",
+      "url": "https://www.codechef.com/users/soyebjim"
+    },
     "cf-api": {
       "kind": "api",
       "url": "https://codeforces.com/api/user.info?handles=soyeb_p_jim",
@@ -413,7 +417,7 @@
       "src": ["cf-api"],
       "conf": "verified"
     },
-    "codechef": { "v": "active", "src": ["gh-profile"], "conf": "reported", "note": "Self-reported on profile README; no handle found." },
+    "codechef": { "handle": "soyebjim", "url": "https://www.codechef.com/users/soyebjim", "rating": 1982, "max_rating": 2032, "rated_contests": 32, "problems_solved": 229, "src": ["codechef-profile"], "conf": "verified", "note": "Read from the public profile page 2026-09-18. Peak 2032 is the 5-star band. A Global Rank figure of 147 also appears on the page but is unexplained and is not used." },
     "contests": [
       {
         "event": "ICPC Dhaka Regional Site",
