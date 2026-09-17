@@ -105,9 +105,6 @@ h3 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
    same pan-instead-of-shrink treatment on a phone. */
 .diag-wide.wide { max-width: 1100px; }
 @media (max-width: 1000px) { .diag-wide.wide { overflow-x: auto; margin: 8px 0 0; } .diag-wide.wide .diag { min-width: 900px; } }
-/* The trunk is a real mesh: hairline edges so the nodes stay legible through them. */
-.diag .mesh { stroke: var(--line-2); stroke-width: 1; opacity: .55; }
-.diag .node { fill: rgba(232, 147, 63, .18); stroke: var(--accent); stroke-width: 1.2; }
 .diag text.o { fill: var(--accent); }
 
 /* diagrams */
@@ -136,7 +133,9 @@ h3 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
 
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 4vw, 48px); align-items: start; }
 /* a split led by a heading gives the heading the narrow column */
-.split:has(> h2), .split:has(> h3) { grid-template-columns: 4fr 8fr; }
+/* A heading column is a heading column whether or not the heading is wrapped with its
+   standfirst, so both spellings get the same ratio and the tables below line up. */
+.split:has(> h2), .split:has(> h3), .split:has(> div > h2), .split:has(> div > h3) { grid-template-columns: 4fr 8fr; }
 /* a diagram is short next to a tall column: centre it instead of stranding it at the top */
 /* hover is a mouse idea */
 @media (hover: none) { .hover-hint { display: none; } }

@@ -1,100 +1,45 @@
 ---
-// Follows Figure 1 of the manuscript: the E2CO surrogate on the left, the PINN physics module
-// on the right, and the eight-term objective they meet in.
+// Figure 1 of the manuscript as two parallel paths — the surrogate down the left, the physics
+// residuals down the right — meeting in the eight-term loss. Same structure, no crossing lines.
 import { research } from '../../data/content';
 const box = (x: number, y: number, w: number, h: number) => `M${x} ${y}h${w}v${h}h${-w}z`;
 const r = research.find((x) => x.slug === 'pinn-e2co-co2')!.results;
 const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
-
-// The encoder is a stack of near-identical conv blocks; its shape is the point, so it comes
-// from the layer table rather than being written out five times.
-const encoder = [
-  { label: 'conv 3×3 s2, BN + ReLU', shape: '16 × 32²' },
-  { label: 'conv 3×3 s1, BN + ReLU', shape: '32 × 32²' },
-  { label: 'conv 3×3 s2, BN + ReLU', shape: '64 × 16²' },
-  { label: 'residual conv ×3', shape: '128 × 16²' },
-  { label: 'flatten + linear', shape: '→ 20' },
-];
 ---
-<svg class="diag draw r" viewBox="0 0 1120 700" role="img" aria-label="PINN-E2CO architecture: a two-channel 64 by 64 reservoir state passes through a five-stage CNN encoder to a 20-dimensional latent, a transition network produces control-dependent A and B matrices that advance it under well controls, and the next latent is read out by a CNN decoder for the field and by five per-producer MLP heads plus an injector head for 14 well observations; the physics module forms time terms on a finite-volume stencil and evaluates pressure-diffusion, CO2 mass and Darcy-flux residuals that join the data terms in an eight-term composite loss">
-  <text class="s o" x="20" y="22">neural E2CO surrogate</text>
+<svg class="diag draw r" viewBox="0 0 900 590" role="img" aria-label="PINN-E2CO: a surrogate path down the left from the reservoir state through a CNN encoder to a 20-dimensional latent, a locally linear transition under well controls, then a CNN decoder for the field and per-producer MLP heads for the well rates; a physics path down the right from the decoded field through time terms on a finite-volume stencil to the pressure-diffusion, CO2 mass and Darcy-flux residuals and their penalty; both meet in an eight-term composite loss">
+  <text class="s o" x="20" y="22">E2CO surrogate</text>
+  <path class="box draw-me" d={box(20, 30, 400, 48)} /><text class="s" x="220" y="50" text-anchor="middle">state x₍t₎ [B, 2, 64, 64] · controls u₍t₎, Δt</text><text class="s" x="220" y="67" text-anchor="middle">CO₂ mole fraction, pressure · 5 producers, 4 injectors</text>
+  <path class="draw-me o" d="M220 78 V98" />
+  <path class="box draw-me" d={box(20, 98, 400, 48)} /><text class="s" x="220" y="118" text-anchor="middle">CNN encoder</text><text class="s" x="220" y="135" text-anchor="middle">4 conv blocks + residual conv → z₍t₎ [B, 20]</text>
+  <path class="draw-me o" d="M220 146 V166" />
+  <path class="box draw-me" d={box(20, 166, 400, 48)} /><text class="s" x="220" y="186" text-anchor="middle">locally linear transition</text><text class="s" x="220" y="203" text-anchor="middle">z₍t+1₎ = A₍t₎z₍t₎ + B₍t₎(u₍t₎Δt)</text>
 
-  <path class="box draw-me" d={box(20, 32, 240, 48)} /><text class="s" x="140" y="52" text-anchor="middle">state x₍t₎ [B, 2, 64, 64]</text><text class="s" x="140" y="68" text-anchor="middle">CO₂ mole fraction, pressure</text>
-  <path class="box draw-me" d={box(414, 32, 175, 48)} /><text class="s" x="501" y="52" text-anchor="middle">controls u₍t₎, Δt</text><text class="s" x="501" y="68" text-anchor="middle">5 producers, 4 injectors</text>
-  <path class="box draw-me" d={box(604, 32, 175, 48)} /><text class="s" x="691" y="52" text-anchor="middle">static rock fields</text><text class="s" x="691" y="68" text-anchor="middle">permeability, porosity</text>
+  <path class="draw-me o" d="M220 214 V234" />
+  <path class="draw-me o" d="M115 234 H325" />
+  <path class="draw-me o" d="M115 234 V254" /><path class="draw-me o" d="M325 234 V254" />
+  <path class="box draw-me" d={box(20, 254, 190, 58)} /><text class="s" x="115" y="276" text-anchor="middle">CNN decoder</text><text class="s" x="115" y="294" text-anchor="middle">field [B, 2, 64, 64]</text>
+  <path class="box draw-me" d={box(230, 254, 190, 58)} /><text class="s" x="325" y="276" text-anchor="middle">V19 observation heads</text><text class="s" x="325" y="294" text-anchor="middle">5 × MLP + injector → 14</text>
 
-  <text class="s" x="20" y="102">CNN encoder</text>
-  {encoder.map((layer, i) => (
-    <>
-      <path class="box draw-me" d={box(20, 110 + i * 44, 240, 32)} />
-      <text class="s" x="30" y={130 + i * 44}>{layer.label}</text>
-      <text class="s" x="250" y={130 + i * 44} text-anchor="end">{layer.shape}</text>
-      {i < encoder.length - 1 && <path class="draw-me o" d={`M140 ${142 + i * 44} V${154 + i * 44}`} />}
-    </>
-  ))}
-  <path class="draw-me o" d="M140 78 V110" />
-  <path class="draw-me o" d="M260 318 H300 V240" />
+  <path class="draw-me o" d="M115 312 V334 H220" /><path class="draw-me o" d="M325 312 V334 H220" />
+  <path class="draw-me o" d="M220 334 V356" />
+  <path class="box draw-me" d={box(20, 356, 400, 48)} /><text class="s" x="220" y="376" text-anchor="middle">data objectives</text><text class="s" x="220" y="393" text-anchor="middle">reconstruction, transition consistency, well-rate MSE</text>
 
-  <path class="box draw-me" d={box(300, 194, 100, 46)} /><text class="s" x="350" y="215" text-anchor="middle">latent z₍t₎</text><text class="s" x="350" y="231" text-anchor="middle">[B, 20]</text>
-  <path class="draw-me o" d="M400 217 H414" />
+  <text class="s o" x="480" y="22">PINN physics module</text>
+  <path class="box draw-me" d={box(480, 30, 400, 48)} /><text class="s" x="680" y="50" text-anchor="middle">physics inputs</text><text class="s" x="680" y="67" text-anchor="middle">decoded x̂₍t+1₎, reference x₍t₎, K, φ, Δt</text>
+  <path class="draw-me o" d="M680 78 V98" />
+  <path class="box draw-me" d={box(480, 98, 400, 48)} /><text class="s" x="680" y="118" text-anchor="middle">time terms, finite-volume stencil</text><text class="s" x="680" y="135" text-anchor="middle">∂ₜp̂, ∂ₜĉ · harmonic transmissibility</text>
+  <path class="draw-me o" d="M680 146 V166" />
+  <path class="box draw-me" d={box(480, 166, 400, 66)} /><text class="s" x="680" y="188" text-anchor="middle">residuals on interior cells</text><text class="s" x="680" y="206" text-anchor="middle">pressure diffusion · CO₂ mass</text><text class="s" x="680" y="224" text-anchor="middle">Darcy flux</text>
+  <path class="draw-me o" d="M680 232 V252" />
+  <path class="box draw-me" d={box(480, 252, 400, 48)} /><text class="s" x="680" y="272" text-anchor="middle">residual penalty</text><text class="s" x="680" y="289" text-anchor="middle">weighted sum of the three residuals</text>
 
-  <path class="box draw-me" d={box(414, 166, 250, 104)} />
-  <text class="s" x="539" y="186" text-anchor="middle">locally linear dynamics</text>
-  <text class="s" x="539" y="204" text-anchor="middle">transition encoder 21 → 200 × 3</text>
-  <text class="s" x="539" y="222" text-anchor="middle">A₍t₎ 200 → 400 ⇒ [20, 20]</text>
-  <text class="s" x="539" y="240" text-anchor="middle">B₍t₎ 200 → 180 ⇒ [20, 9]</text>
-  <text class="s" x="539" y="260" text-anchor="middle">z₍t+1₎ = A₍t₎z₍t₎ + B₍t₎(u₍t₎Δt)</text>
-  <path class="draw-me o" d="M501 80 V166" />
-  <path class="draw-me o" d="M664 218 H704" />
+  <path class="draw-me o" d="M220 404 V430 H450 V452" />
+  <path class="draw-me o" d="M680 300 V430 H450" />
+  <path class="box draw-me" d={box(300, 452, 300, 48)} /><text class="s" x="450" y="472" text-anchor="middle">eight-term composite loss</text><text class="s" x="450" y="489" text-anchor="middle">ℒ = Σ λᵢ ℒᵢ, K = 2 rollout</text>
 
-  <path class="box draw-me" d={box(704, 194, 130, 46)} /><text class="s" x="769" y="215" text-anchor="middle">next latent</text><text class="s" x="769" y="231" text-anchor="middle">z₍t+1₎ [B, 20]</text>
-  <path class="draw-me o" d="M769 240 V300 H330 V344" />
-  <path class="draw-me o" d="M769 300 V344" />
-
-  <path class="box draw-me" d={box(180, 344, 300, 88)} />
-  <text class="s" x="320" y="366" text-anchor="middle">V19 observation heads</text>
-  <text class="s" x="320" y="384" text-anchor="middle">input [z₍t+1₎ ‖ u₍t₎] = 20 + 9 = 29</text>
-  <text class="s" x="320" y="402" text-anchor="middle">5 × producer MLP 29 → 64 → 64 → 2</text>
-  <text class="s" x="320" y="420" text-anchor="middle">injector head, linear 29 → 4 BHPs</text>
-
-  <path class="box draw-me" d={box(530, 344, 280, 88)} />
-  <text class="s" x="670" y="366" text-anchor="middle">CNN decoder</text>
-  <text class="s" x="670" y="384" text-anchor="middle">FC 20 → 32768, reshape 128 × 16 × 16</text>
-  <text class="s" x="670" y="402" text-anchor="middle">residual conv, 4 × transposed conv</text>
-  <text class="s" x="670" y="420" text-anchor="middle">conv 3×3: 16 → 2 [64 × 64]</text>
-
-  <path class="draw-me o" d="M330 432 V456" /><path class="draw-me o" d="M670 432 V456" />
-  <path class="box draw-me" d={box(200, 456, 260, 40)} /><text class="s" x="330" y="481" text-anchor="middle">well observations, 10 rates + 4 BHPs</text>
-  <path class="box draw-me" d={box(545, 456, 250, 40)} /><text class="s" x="670" y="481" text-anchor="middle">decoded field [B, 2, 64, 64]</text>
-
-  <text class="s o" x="865" y="22">PINN physics module</text>
-  <path class="box draw-me" d={box(865, 32, 235, 46)} /><text class="s" x="982" y="52" text-anchor="middle">physics inputs</text><text class="s" x="982" y="68" text-anchor="middle">x̂₍t+1₎, x₍t₎, K, φ, Δt</text>
-  <path class="draw-me o" d="M982 78 V96" />
-  <path class="box draw-me" d={box(865, 96, 112, 56)} /><text class="s" x="921" y="118" text-anchor="middle">time terms</text><text class="s" x="921" y="136" text-anchor="middle">∂ₜp̂, ∂ₜĉ</text>
-  <path class="box draw-me" d={box(988, 96, 112, 56)} /><text class="s" x="1044" y="118" text-anchor="middle">FV stencil</text><text class="s" x="1044" y="136" text-anchor="middle">harmonic T</text>
-  <path class="draw-me o" d="M921 152 V172" /><path class="draw-me o" d="M1044 152 V172" />
-  <path class="box draw-me" d={box(865, 172, 235, 76)} />
-  <text class="s" x="982" y="194" text-anchor="middle">residuals on interior cells</text>
-  <text class="s" x="982" y="214" text-anchor="middle">ℛₚ pressure diffusion</text>
-  <text class="s" x="982" y="234" text-anchor="middle">ℛₘ CO₂ mass · ℛ<tspan dy="3" style="font-size:8px">d</tspan><tspan dy="-3"> Darcy flux</tspan></text>
-  <path class="draw-me o" d="M982 248 V268" />
-  <path class="box draw-me" d={box(865, 268, 235, 52)} /><text class="s" x="982" y="290" text-anchor="middle">residual penalty</text><text class="s" x="982" y="308" text-anchor="middle">λ₆‖ℛₚ‖² + λ₇‖ℛₘ‖² + λ₈‖ℛ<tspan dy="3" style="font-size:8px">d</tspan><tspan dy="-3">‖²</tspan></text>
-  <path class="d" d="M795 476 H847 V55 H865" />
-
-  <path class="box draw-me" d={box(180, 540, 300, 62)} />
-  <text class="s" x="330" y="562" text-anchor="middle">data objectives</text>
-  <text class="s" x="330" y="580" text-anchor="middle">reconstruction, latent prior, transition</text>
-  <text class="s" x="330" y="596" text-anchor="middle">consistency, well-observation MSE</text>
-  <path class="box draw-me" d={box(545, 540, 265, 62)} />
-  <text class="s" x="677" y="562" text-anchor="middle">eight-term composite loss</text>
-  <text class="s" x="677" y="580" text-anchor="middle">ℒ = Σ λᵢ ℒᵢ, K = 2 rollout</text>
-  <text class="s" x="677" y="596" text-anchor="middle">adaptive log-variance weighting</text>
-  <path class="draw-me o" d="M480 571 H545" />
-  <path class="d" d="M330 496 V540" /><path class="d" d="M670 496 V520 H330" /><path class="d" d="M982 320 V520 H677 V540" />
-
-  <path class="d" d="M20 630 H1100" />
-  <text class="s" x="20" y="622">against the non-physics E2CO baseline, 12,000 realisations on a 64 × 64 grid, 20 timesteps</text>
-  <text class="n" x="20" y="672">{v('Saturation RMSE')}</text><text class="s" x="20" y="692">saturation RMSE</text>
-  <text class="n" x="200" y="672">{v('Pressure RMSE')}</text><text class="s" x="200" y="692">pressure RMSE</text>
-  <text class="n" x="380" y="672">{v('Per-well R2')}</text><text class="s" x="380" y="692">filtered per-well R², after {v('Fine-tune time')} of fine-tuning on one T4</text>
+  <path class="d" d="M20 524 H880" />
+  <text class="s" x="20" y="517">against the non-physics E2CO baseline, 12,000 realisations on a 64 × 64 grid</text>
+  <text class="n" x="20" y="558">{v('Saturation RMSE')}</text><text class="s" x="20" y="578">saturation RMSE</text>
+  <text class="n" x="200" y="558">{v('Pressure RMSE')}</text><text class="s" x="200" y="578">pressure RMSE</text>
+  <text class="n" x="380" y="558">{v('Per-well R2')}</text><text class="s" x="380" y="578">per-well R², after {v('Fine-tune time')} on one T4</text>
 </svg>
