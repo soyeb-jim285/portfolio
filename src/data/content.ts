@@ -11,14 +11,15 @@ export const person = {
   email: 'soyeb.jim@gmail.com',
   phone: '+8801718007639',
   education: 'BSc Electrical and Electronic Engineering, University of Dhaka, 2021 to present (final year)',
-  languages: ['Bengali, native', 'English, C1 (IELTS 8.0)', 'Hindi, moderate'],
-  scores: { gre: '155 Verbal, 170 Quant', ielts: '8.0' },
+  languages: ['Bengali, native', 'English, C1', 'Hindi, moderate'],
+  scores: { efset: 'C1', efsetCert: 'https://cert.efset.org/LEvQnj' },
   links: {
     github: 'https://github.com/soyeb-jim285',
     linkedin: 'https://www.linkedin.com/in/soyebjim',
-    codeforces: 'https://codeforces.com/profile/soyeb.jim',
+    codeforces: 'https://codeforces.com/profile/soyeb_p_jim',
     huggingface: 'https://huggingface.co/soyeb-jim285',
     site: 'https://soyebjim.me',
+    resume: '/Soyeb_Pervez_Jim_Resume.pdf',
   },
   portrait: '/assets/portrait.jpg',
 } as const;
@@ -42,13 +43,13 @@ export const work = {
 
 export type Project = {
   slug: string; name: string; kicker: string; summary: string; body: string[];
-  image?: string; thumb?: string; images?: string[]; stars?: number; stack: string[];
+  image?: string; thumb?: string; images?: string[]; stars?: number; forks?: number; contributors?: number; stack: string[];
   links: { label: string; href: string }[]; facts?: { label: string; value: string }[];
 };
 
 export const projects: Project[] = [
   {
-    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', stars: 285,
+    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', stars: 313, forks: 17, contributors: 10,
     summary: 'Qt6/QML file manager with Miller columns, split panes, async transfers and live-reloading TOML themes. Packaged for AUR, Flatpak, AppImage and Nix.',
     body: [
       'HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.',
@@ -58,7 +59,7 @@ export const projects: Project[] = [
     image: '/assets/miller-view.jpg', thumb: '/assets/miller-view-720.jpg', images: ['/assets/grid-view.jpg', '/assets/miller-view.jpg', '/assets/quick-preview.jpg'],
     stack: ['C++', 'Qt 6', 'QML', 'Wayland', 'udisks2', 'Flatpak', 'Nix'],
     links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/hyprfm' }, { label: 'Site', href: 'https://hyprfm.soyebjim.me' }, { label: 'LinuxLinks review', href: 'https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/' }],
-    facts: [{ label: 'Stars', value: '285' }, { label: 'Packages', value: 'AUR, Flatpak, AppImage, Nix' }, { label: 'Language', value: 'C++ and QML' }],
+    facts: [{ label: 'Stars', value: '313' }, { label: 'Packages', value: 'AUR, Flatpak, AppImage, Nix' }, { label: 'Language', value: 'C++ and QML' }],
   },
   {
     slug: 'neural-network-x-ray', name: 'Neural Network X-Ray', kicker: 'Draw a character, watch 13 CNN layers fire',
@@ -114,6 +115,39 @@ export const projects: Project[] = [
 
 export const research = [
   {
+    slug: 'pce-pinn-pipelines',
+    title: 'Physics-Informed Multi-Task Neural Network for Simultaneous Leak Detection, Diameter Estimation, and Localization in Multiphase Pipelines',
+    short: 'Physics-informed leak detection in multiphase pipelines',
+    venue: 'Process Safety and Environmental Protection, Elsevier', status: 'published, accepted September 2026',
+    doi: 'https://doi.org/10.1016/j.psep.2026.109609',
+    authors: 'Mridha, Kabir, Khandakar, Mia, Ahmed, Shahadad, Jim, Rahman, Ayari, Rahman and Barooah',
+    abstract: 'Offshore multiphase pipelines leak, and detecting a leak, sizing it and locating it have until now been treated as three separate problems solved by either expensive transient models or purely data-driven detectors with no physical consistency. PCE-PINN is one multi-task architecture that does all three from nothing more than inlet and outlet pressure and flow rate. A physics sub-network penalises violations of nondimensional mass, momentum and mechanical-energy balance through adaptive curriculum training and adaptive collocation.',
+    finding: 'Detection is saturated at F1 = 1.00. The regression heads are what matter: location R2 improves 16.5 percent over the best of five classical baselines on identical features, so the gain comes from the physics-informed architecture rather than from the features. SHAP attribution lands on conservation-consistent variables.',
+    results: [
+      { label: 'Leak detection F1', value: '1.00', note: 'stratified 5-fold CV' },
+      { label: 'Diameter R2', value: '0.906', note: '' },
+      { label: 'Location R2', value: '0.941', note: '16.5% over the best baseline' },
+    ],
+    keywords: ['physics-informed neural network', 'multiphase flow', 'leak localisation', 'multi-task learning', 'explainable AI'],
+  },
+  {
+    slug: 'pinn-e2co-co2',
+    title: 'Physics-Informed Embed-to-Control and Observe with Per-Producer MLP Heads for CO2 Storage Surrogate Modelling',
+    short: 'Physics-informed surrogate for CO2 storage simulation',
+    venue: 'Fuel Processing Technology, Elsevier', status: 'under review, submitted July 2026',
+    doi: '',
+    authors: 'Khandakar (corresponding), Ruhan, Kabir, Jim, Mia, Ahmed, Rahaman, Rahman, Ayari and Rahman',
+    abstract: 'A single forward solve of a high-resolution two-phase CO2 reservoir simulation takes hours, and history matching needs thousands of them. Embed-to-Control surrogates compress the state into a latent vector and advance it under well controls, but they share one linear observation model across every well, which regresses water and gas rates with very different non-linearities into one mediocre fit. PINN-E2CO replaces that block with an independent MLP head per producer over the shared latent, warm-started from a physics-free baseline at a tenth of the head learning rate, and trains under a hybrid loss whose three physics residuals are discretised on the simulator own finite-volume transmissibility operator.',
+    finding: 'Per-well heads are the fix, and the physics residuals are what make them stick: saturation RMSE down 38 percent and pressure RMSE down 35 percent against the non-physics baseline, with filtered per-well R2 moving from 0.82 to 0.91 after 16 minutes of fine-tuning on a single T4. An ablation of 33 variants, including FNO decoders, neural-ODE dynamics and DeepONet heads, confirms the shared linear observe block was the bottleneck.',
+    results: [
+      { label: 'Saturation RMSE', value: '-38%', note: 'against the non-physics E2CO baseline' },
+      { label: 'Pressure RMSE', value: '-35%', note: '' },
+      { label: 'Per-well R2', value: '0.82 to 0.91', note: 'filtered' },
+      { label: 'Fine-tune time', value: '16 min', note: 'single T4 GPU' },
+    ],
+    keywords: ['CO2 sequestration', 'physics-informed neural network', 'embed-to-control', 'reservoir surrogate', 'explainable AI'],
+  },
+  {
     slug: 'ai4pain-2026',
     title: 'Detecting Pain Without Localising It: A Hierarchical Physiological Classifier and the Arm-Hand Localisation Ceiling on AI4Pain 2026',
     short: 'Detecting pain without localising it',
@@ -155,11 +189,14 @@ export const record = [
   { year: '2023', what: 'ICPC Dhaka Regional, team DU_HoneyNuts', result: '37th of 225', detail: 'preliminary 35th of 2460' },
   { year: '2024', what: 'National Collegiate Programming Contest, team DU_3Musketeers', result: '27th of 196', detail: 'preliminary 31st of 1099' },
   { year: '2024', what: 'Meta Hacker Cup, round 2', result: '962nd of 5000', detail: 'round 1: 2359th of 22494' },
+  { year: '2023', what: 'Meta Hacker Cup, round 2', result: '2425th of 6193', detail: 'round 1: 1760th of 20324' },
   { year: '2024', what: 'BUET CSE Fest', result: '25th of 113', detail: '' },
-  { year: 'ongoing', what: 'Codeforces, handle soyeb.jim', result: 'Expert, 1658', detail: '30 rated rounds' },
+  { year: 'ongoing', what: 'Codeforces, handle soyeb_p_jim', result: 'Peak 1714, Expert', detail: '121 rated rounds, 769 problems solved', href: 'https://codeforces.com/profile/soyeb_p_jim' },
   { year: '2017', what: 'Bangladesh Mathematical Olympiad, national', result: 'First runner-up', detail: 'second runner-up in 2016' },
-  { year: '2024', what: 'Book: গণিত অলিম্পিয়াডের হাতেখড়ি, Swapno ’71', result: 'Author', detail: 'introduction to olympiad mathematics' },
-  { year: '2026', what: 'GRE and IELTS', result: '155V 170Q, 8.0', detail: 'English C1' },
+  { year: '2018', what: 'BdMO National Secondary, full solutions on the official forum', result: 'Author', detail: 'matholympiad.org.bd', href: 'https://matholympiad.org.bd/forum/viewtopic.php?t=5658' },
+  { year: '2024', what: 'Book: গণিত অলিম্পিয়াডের হাতেখড়ি, Swapno ’71', result: 'Author', detail: 'introduction to olympiad mathematics' },
+  { year: 'ongoing', what: 'Modern Physics full note, University of Dhaka', result: 'Author', detail: 'hosted on Studocu', href: 'https://www.studocu.com/row/document/university-of-dhaka/modern-physics/modern-physics-full-note/60378264' },
+  { year: '2026', what: 'EF SET English Certificate', result: 'C1', detail: 'certified at cert.efset.org', href: 'https://cert.efset.org/LEvQnj' },
 ];
 
 export const clubs = [

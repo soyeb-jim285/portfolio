@@ -4,21 +4,20 @@ import { record, person, work } from '../data/content';
 const revs = [
   { rev: 'A', date: '2021', what: 'Enrolled. ' + person.education },
   { rev: 'B', date: '2025-07', what: `Joined ${work.employer} as ${work.title}, remote` },
-  { rev: 'C', date: '2026', what: `GRE ${person.scores.gre}` },
-  { rev: 'D', date: '2026', what: `IELTS ${person.scores.ielts}, English C1` },
+  { rev: 'C', date: '2026-08', what: `EF SET English Certificate, English ${person.scores.efset}`, href: person.scores.efsetCert },
 ];
 ---
-<Layout title="Record, Soyeb Pervez Jim" description="Contest record, olympiad, book, GRE and IELTS scores, education and languages." sheet="6" big="Record" stamp={{ k: 'Items', v: `${record.length}` }}>
+<Layout title="Record, Soyeb Pervez Jim" description="Contest record, olympiad, book, English certification, education and languages." sheet="6" big="Record" stamp={{ k: 'Items', v: `${record.length}` }}>
   <section class="head r" data-anchor="record-table">
     <h1 class="title">Record</h1>
-    <p class="sub">Contests, olympiad, a book, and test scores. Ranks are of the total field.</p>
+    <p class="sub">Contests, olympiad, a book, and certification. Ranks are of the total field. Linked rows open the source.</p>
   </section>
   <div class="tw r">
     <table>
       <thead><tr><th>Item</th><th>Qty or rank</th><th>Description</th><th>Year</th></tr></thead>
       <tbody>
         {record.map((r, i) => (
-          <tr><td class="i">{i + 1}</td><td class="q">{r.result}</td><td>{r.what}{r.detail && <small>{r.detail}</small>}</td><td class="m">{r.year}</td></tr>
+          <tr><td class="i">{i + 1}</td><td class="q">{r.result}</td><td>{'href' in r && r.href ? <a href={r.href} target="_blank" rel="noopener">{r.what}</a> : r.what}{r.detail && <small>{r.detail}</small>}</td><td class="m">{r.year}</td></tr>
         ))}
       </tbody>
     </table>
@@ -32,7 +31,7 @@ const revs = [
     <div class="tw">
       <table>
         <thead><tr><th>Rev</th><th>Date</th><th>Description</th></tr></thead>
-        <tbody>{revs.map((r) => <tr><td class="q">{r.rev}</td><td class="m nw">{r.date}</td><td>{r.what}</td></tr>)}</tbody>
+        <tbody>{revs.map((r) => <tr><td class="q">{r.rev}</td><td class="m nw">{r.date}</td><td>{r.href ? <a href={r.href} rel="noopener" target="_blank">{r.what}</a> : r.what}</td></tr>)}</tbody>
       </table>
     </div>
   </section>

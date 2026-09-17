@@ -14,15 +14,17 @@ import { person } from '../data/content';
       <div><span>Location</span><b>{person.location}</b></div>
       <div><span>GitHub</span><b><a href={person.links.github} target="_blank" rel="noopener">soyeb-jim285</a></b></div>
       <div><span>LinkedIn</span><b><a href={person.links.linkedin} target="_blank" rel="noopener">soyebjim</a></b></div>
-      <div><span>Codeforces</span><b><a href={person.links.codeforces} target="_blank" rel="noopener">soyeb.jim</a></b></div>
+      <div><span>Codeforces</span><b><a href={person.links.codeforces} target="_blank" rel="noopener">soyeb_p_jim</a></b></div>
       <div><span>Hugging Face</span><b><a href={person.links.huggingface} target="_blank" rel="noopener">soyeb-jim285</a></b></div>
       <div><span>Site</span><b><a href={person.links.site} target="_blank" rel="noopener">soyebjim.me</a></b></div>
+      <div><span>Resume</span><b><a href={person.links.resume} target="_blank" rel="noopener">PDF, one page</a></b></div>
     </div>
     <div>
       <p class="lead">Open to research collaborations on physiological signal classification, LLM agent work, and Qt or Wayland tooling. Say what you need and where you are; I reply within a day.</p>
       <div class="btns" style="margin-top:24px">
         <button type="button" class="btn fill" data-contact>Open the form</button>
         <a class="btn" href={`mailto:${person.email}`}>Email directly</a>
+        <a class="btn" href={person.links.resume} target="_blank" rel="noopener">Download resume</a>
       </div>
     </div>
   </section>

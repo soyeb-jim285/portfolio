@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T18:07:09.077Z",
+  "generatedAt": "2026-09-17T20:31:59.383Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -18,9 +18,10 @@
     "links": {
       "github": "https://github.com/soyeb-jim285",
       "linkedin": "https://www.linkedin.com/in/soyebjim",
-      "codeforces": "https://codeforces.com/profile/soyeb.jim",
+      "codeforces": "https://codeforces.com/profile/soyeb_p_jim",
       "huggingface": "https://huggingface.co/soyeb-jim285",
-      "site": "https://soyebjim.me"
+      "site": "https://soyebjim.me",
+      "resume": "/Soyeb_Pervez_Jim_Resume.pdf"
     }
   },
   "projects": [
@@ -218,6 +219,77 @@
     ]
   },
   "research": [
+    {
+      "slug": "pce-pinn-pipelines",
+      "title": "Physics-Informed Multi-Task Neural Network for Simultaneous Leak Detection, Diameter Estimation, and Localization in Multiphase Pipelines",
+      "short": "Physics-informed leak detection in multiphase pipelines",
+      "venue": "Process Safety and Environmental Protection, Elsevier",
+      "status": "published, accepted September 2026",
+      "abstract": "Offshore multiphase pipelines leak, and detecting a leak, sizing it and locating it have until now been treated as three separate problems solved by either expensive transient models or purely data-driven detectors with no physical consistency. PCE-PINN is one multi-task architecture that does all three from nothing more than inlet and outlet pressure and flow rate. A physics sub-network penalises violations of nondimensional mass, momentum and mechanical-energy balance through adaptive curriculum training and adaptive collocation.",
+      "finding": "Detection is saturated at F1 = 1.00. The regression heads are what matter: location R2 improves 16.5 percent over the best of five classical baselines on identical features, so the gain comes from the physics-informed architecture rather than from the features. SHAP attribution lands on conservation-consistent variables.",
+      "results": [
+        {
+          "label": "Leak detection F1",
+          "value": "1.00",
+          "note": "stratified 5-fold CV"
+        },
+        {
+          "label": "Diameter R2",
+          "value": "0.906",
+          "note": ""
+        },
+        {
+          "label": "Location R2",
+          "value": "0.941",
+          "note": "16.5% over the best baseline"
+        }
+      ],
+      "keywords": [
+        "physics-informed neural network",
+        "multiphase flow",
+        "leak localisation",
+        "multi-task learning",
+        "explainable AI"
+      ]
+    },
+    {
+      "slug": "pinn-e2co-co2",
+      "title": "Physics-Informed Embed-to-Control and Observe with Per-Producer MLP Heads for CO2 Storage Surrogate Modelling",
+      "short": "Physics-informed surrogate for CO2 storage simulation",
+      "venue": "Fuel Processing Technology, Elsevier",
+      "status": "under review, submitted July 2026",
+      "abstract": "A single forward solve of a high-resolution two-phase CO2 reservoir simulation takes hours, and history matching needs thousands of them. Embed-to-Control surrogates compress the state into a latent vector and advance it under well controls, but they share one linear observation model across every well, which regresses water and gas rates with very different non-linearities into one mediocre fit. PINN-E2CO replaces that block with an independent MLP head per producer over the shared latent, warm-started from a physics-free baseline at a tenth of the head learning rate, and trains under a hybrid loss whose three physics residuals are discretised on the simulator own finite-volume transmissibility operator.",
+      "finding": "Per-well heads are the fix, and the physics residuals are what make them stick: saturation RMSE down 38 percent and pressure RMSE down 35 percent against the non-physics baseline, with filtered per-well R2 moving from 0.82 to 0.91 after 16 minutes of fine-tuning on a single T4. An ablation of 33 variants, including FNO decoders, neural-ODE dynamics and DeepONet heads, confirms the shared linear observe block was the bottleneck.",
+      "results": [
+        {
+          "label": "Saturation RMSE",
+          "value": "-38%",
+          "note": "against the non-physics E2CO baseline"
+        },
+        {
+          "label": "Pressure RMSE",
+          "value": "-35%",
+          "note": ""
+        },
+        {
+          "label": "Per-well R2",
+          "value": "0.82 to 0.91",
+          "note": "filtered"
+        },
+        {
+          "label": "Fine-tune time",
+          "value": "16 min",
+          "note": "single T4 GPU"
+        }
+      ],
+      "keywords": [
+        "CO2 sequestration",
+        "physics-informed neural network",
+        "embed-to-control",
+        "reservoir surrogate",
+        "explainable AI"
+      ]
+    },
     {
       "slug": "ai4pain-2026",
       "title": "Detecting Pain Without Localising It: A Hierarchical Physiological Classifier and the Arm-Hand Localisation Ceiling on AI4Pain 2026",

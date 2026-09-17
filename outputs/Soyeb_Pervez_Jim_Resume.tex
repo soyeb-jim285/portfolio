@@ -1,0 +1,92 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[top=0.36in,bottom=0.3in,left=0.5in,right=0.5in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\input{glyphtounicode}
+\pdfgentounicode=1
+\hypersetup{
+  pdftitle={Soyeb Pervez Jim - Software Engineer Resume},
+  pdfauthor={Soyeb Pervez Jim},
+  pdfsubject={Remote software engineering application}
+}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlist[itemize]{leftmargin=1.2em,itemsep=0.8pt,topsep=1.8pt,parsep=0pt,partopsep=0pt}
+\titleformat{\section}{\large\bfseries}{}{0pt}{}[\vspace{-3pt}\rule{\textwidth}{0.45pt}]
+\titlespacing*{\section}{0pt}{4.5pt}{2.5pt}
+
+\newcommand{\role}[4]{%
+  \textbf{#1} \hfill \textbf{#2}\\[-1pt]
+  \textit{#3} \hfill \textit{#4}
+}
+
+\newcommand{\project}[2]{\textbf{#1} \hfill \textit{#2}}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Soyeb Pervez Jim}\\[2pt]
+  {\large Software Engineer}\\[3pt]
+  Dhaka, Bangladesh \enspace $|$ \enspace +880 1718 007639 \enspace $|$ \enspace
+  \href{mailto:soyeb.jim@gmail.com}{soyeb.jim@gmail.com}\\[1pt]
+  \href{https://soyebjim.me}{soyebjim.me} \enspace $|$ \enspace
+  \href{https://github.com/soyeb-jim285}{github.com/soyeb-jim285} \enspace $|$ \enspace
+  \href{https://www.linkedin.com/in/soyebjim}{linkedin.com/in/soyebjim}
+\end{center}
+
+\section*{Professional Summary}
+Software engineer with remote experience building production LLM agents, semantic retrieval, and multi-tenant SaaS for e-commerce. Co-author on two Elsevier journal papers applying physics-informed deep learning to industrial systems; author of C++/Qt desktop software with 313 GitHub stars. English at CEFR C1.
+
+\section*{Technical Skills}
+\textbf{Languages:} TypeScript, Python, C++, QML, JavaScript, Swift, Lua, Bash\\
+\textbf{AI/ML:} LLM agents, tool calling, retrieval-augmented generation (RAG), vector/semantic search, embeddings, AI SDK, OpenAI, Anthropic and Google models, PyTorch, ONNX, scikit-learn, CNN/TCN, biosignal processing\\
+\textbf{Web/Systems:} Next.js, React, Node.js, Express, Sequelize, MySQL/Vitess, server-sent events, Stripe, Astro, Qt 6, QML, Wayland, Linux, Nix
+
+\section*{Professional Experience}
+\role{Software Engineer}{July 2025 -- Present}{\href{https://fuego.io}{Fuego.io}}{Remote}
+\begin{itemize}
+  \item Lead contributor to the tool-calling chat assistant behind a multi-tenant Shopify commerce platform: streaming responses, product search, recommendations, and reviews as structured tool results.
+  \item Built semantic product search over live catalogs, with a scheduled re-embedding job keeping every tenant's index current.
+  \item Automated per-brand context generation, so a new tenant gets a customer-care knowledge base from its own site with no manual authoring.
+  \item Own the admin surface and metering: analytics, token-usage tracking, and Stripe billing across tenants.
+\end{itemize}
+
+\section*{Selected Projects}
+\project{\href{https://github.com/soyeb-jim285/hyprfm}{HyprFM}}{C++, Qt 6, QML, Wayland}
+\begin{itemize}
+  \item Keyboard-first file manager with Miller columns, split panes, async transfers, device mounting, and live-reloading TOML themes; QML presentation split from C++ backend services, shipped on AUR, Flatpak, AppImage, and Nix. 313 stars and an independent \href{https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/}{LinuxLinks review}.
+\end{itemize}
+
+\project{\href{https://ocr.soyebjim.me}{Neural Network X-Ray}}{Next.js, React, TypeScript, ONNX Runtime}
+\begin{itemize}
+  \item Browser visualizer showing activations across all 13 CNN layers as users draw Latin or Bengali characters, inference running locally through WebAssembly. Trained the 146-class model on roughly 980,000 EMNIST and BanglaLekha images, published on \href{https://huggingface.co/soyeb-jim285}{Hugging Face}.
+\end{itemize}
+
+\section*{Research \& Publications}
+\textbf{Physics-Informed Multi-Task Neural Network for Leak Detection in Multiphase Pipelines} \hfill \textit{Published, 2026}\\[1pt]
+\textit{Process Safety and Environmental Protection} (Elsevier) \enspace $|$ \enspace \href{https://doi.org/10.1016/j.psep.2026.109609}{doi.org/10.1016/j.psep.2026.109609}
+\begin{itemize}
+  \item PCE-PINN, a multi-task network predicting leak presence, diameter, and location from inlet/outlet pressure and flow alone: F1 = 1.00 detection, $R^2$ = 0.906 and 0.941, a 16.5\% location gain over the best classical baseline.
+\end{itemize}
+\textbf{Physics-Informed Embed-to-Control with Per-Producer MLP Heads for CO$_2$ Storage Surrogate Modelling}\\[1pt]
+\textit{Fuel Processing Technology} (Elsevier), submitted 2026 \hfill \textit{Under review}
+\begin{itemize}
+  \item Replaced the shared linear well model in an E2CO reservoir surrogate with per-producer MLP heads, trained under PINN residuals on the simulator's own finite-volume operator: saturation RMSE $-$38\%, pressure RMSE $-$35\%, per-well $R^2$ from 0.82 to 0.91 in 16 min on one T4.
+\end{itemize}
+\textbf{Challenge papers.} AI4Pain 2026, ACII Grand Challenge (under review): two-stage physiological pain classifier, 0.572 test accuracy against a 0.398 baseline. MUMIDC, ABC2026: CNN2D-TCN over EEG, EMG, and IMU, 87.9\% macro F1 under 16-fold mixed LOSO.
+
+\section*{Education \& Achievements}
+\textbf{BSc in Electrical and Electronic Engineering}, University of Dhaka \hfill \textit{2021 -- Present, Final Year}\\[1pt]
+Final-year thesis on abnormal activity recognition \enspace $|$ \enspace \href{https://cert.efset.org/LEvQnj}{EF SET English certificate: C1}\\[2pt]
+{\small\textbf{Competitive programming.} \href{https://codeforces.com/profile/soyeb_p_jim}{Codeforces} peak 1714 (Expert), 769 problems solved over 121 rated rounds. ICPC Dhaka Regional finalist twice: 37th/308 (2024), 37th/225 (2023). National Collegiate Programming Contest 27th/196 (2024); Meta Hacker Cup round 2 (2023, 2024).\\[1pt]
+\textbf{Olympiad.} Bangladesh Mathematical Olympiad national first runner-up (2017) and second runner-up (2016); co-authored \textit{Ganit Olympiader Hatekhori}, an olympiad primer (Swapno '71, 2024).}
+
+\end{document}

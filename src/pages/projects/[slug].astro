@@ -50,7 +50,7 @@ const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid vie
   <section class="split r">
     <div>
       <ul class="specs tight">
-        {p.slug === 'hyprfm' && <GitHubStats owner="soyeb-jim285" repo="hyprfm" stars={285} forks={15} contributors={9} />}
+        {p.slug === 'hyprfm' && <GitHubStats owner="soyeb-jim285" repo="hyprfm" stars={p.stars} forks={p.forks} contributors={p.contributors} />}
         {p.facts?.filter((f) => p.slug !== 'hyprfm' || f.label !== 'Stars').map((f) => <li><span>{f.label}</span><span>{f.value}</span></li>)}
         <li><span>stack</span><span>{p.stack.join(', ')}</span></li>
         <li><span>links</span><span>{p.links.map((l, k) => <>{k > 0 && ', '}<a href={l.href} target="_blank" rel="noopener">{l.label}</a></>)}</span></li>

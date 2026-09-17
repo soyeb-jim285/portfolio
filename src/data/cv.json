@@ -36,7 +36,7 @@
     },
     "cf-api": {
       "kind": "api",
-      "url": "https://codeforces.com/api/user.info?handles=soyeb.jim",
+      "url": "https://codeforces.com/api/user.info?handles=soyeb_p_jim",
       "detail": "Also user.status and user.rating for the same handle"
     },
     "hf-api": {
@@ -50,6 +50,16 @@
     "site-soyebjim": {
       "kind": "web",
       "url": "https://soyebjim.me"
+    },
+    "fuproc-2026": {
+      "kind": "publication",
+      "url": "",
+      "detail": "Elsevier submission FUPROC-D-26-00558, co-authorship confirmation email 19 July 2026; draft at /stuff/Study/projects/kabir/CCS_E2CO-RL/paper/main.pdf"
+    },
+    "psep-2026": {
+      "kind": "publication",
+      "url": "https://doi.org/10.1016/j.psep.2026.109609",
+      "detail": "Journal pre-proof PDF held locally; accepted 11 September 2026"
     },
     "linuxlinks": {
       "kind": "web",
@@ -100,7 +110,7 @@
 
   "identity": {
     "full_name": { "v": "Soyeb Pervez Jim", "src": ["gh-api-user", "gitconfig", "old-cv-pdf"], "conf": "verified" },
-    "aliases": { "v": ["Soyeb Jim", "soyeb-jim285", "soyeb.jim"], "src": ["gitlab-api", "gh-api-user", "cf-api"], "conf": "verified" },
+    "aliases": { "v": ["Soyeb Jim", "soyeb-jim285", "soyeb_p_jim", "soyeb.jim"], "src": ["gitlab-api", "gh-api-user", "cf-api"], "conf": "verified" },
     "email_personal": { "v": "soyeb.jim@gmail.com", "src": ["gitconfig", "gh-profile", "old-cv-pdf"], "conf": "verified" },
     "email_academic": { "v": "soyebpervez-2020515843@eee.du.ac.bd", "src": ["session-context"], "conf": "verified" },
     "phone": { "v": "+8801718007639", "src": ["user"], "conf": "verified", "note": "Old CV shows +8801987490252 — superseded." },
@@ -110,7 +120,7 @@
       "linkedin": { "v": "https://www.linkedin.com/in/soyebjim", "src": ["gh-profile", "old-cv-pdf"], "conf": "reported", "note": "Never fetched — LinkedIn blocks automated access." },
       "gitlab": { "v": "https://gitlab.com/soyeb.jim", "src": ["gitlab-api"], "conf": "verified" },
       "huggingface": { "v": "https://huggingface.co/soyeb-jim285", "src": ["hf-api"], "conf": "verified" },
-      "codeforces": { "v": "https://codeforces.com/profile/soyeb.jim", "src": ["cf-api"], "conf": "verified" },
+      "codeforces": { "v": "https://codeforces.com/profile/soyeb_p_jim", "src": ["cf-api"], "conf": "verified", "note": "Main account. soyeb.jim is an older secondary handle: peak 1658, 99 solved." },
       "website": { "v": "https://soyebjim.me", "src": ["site-soyebjim"], "conf": "verified" },
       "project_site": { "v": "https://hyprfm.soyebjim.me", "src": ["gh-api-repos"], "conf": "reported" }
     }
@@ -127,16 +137,13 @@
   },
 
   "test_scores": {
-    "gre_verbal": { "v": 155, "src": ["user"], "conf": "verified" },
-    "gre_quant": { "v": 170, "src": ["user"], "conf": "verified", "note": "Perfect score." },
-    "gre_total": { "v": 325, "src": ["user"], "conf": "verified" },
-    "ielts_overall": { "v": 8.0, "src": ["user"], "conf": "verified" },
-    "english_cefr": { "v": "C1", "src": ["user"], "conf": "verified", "note": "Old CV says 'moderate' — outdated, must be corrected." }
+    "efset_cert": { "v": "https://cert.efset.org/LEvQnj", "src": ["efset-cert"], "conf": "verified", "note": "EF SET English Certificate, 16 Aug 2026. Do not publish numeric subscores." },
+    "english_cefr": { "v": "C1", "src": ["efset-cert"], "conf": "verified", "note": "Old CV says 'moderate' — outdated, must be corrected." }
   },
 
   "languages": [
     { "lang": "Bengali", "level": "Native", "src": ["old-cv-pdf"], "conf": "verified" },
-    { "lang": "English", "level": "C1 / IELTS 8.0", "src": ["user"], "conf": "verified" },
+    { "lang": "English", "level": "C1", "src": ["efset-cert"], "conf": "verified" },
     { "lang": "Hindi", "level": "Moderate", "src": ["old-cv-pdf"], "conf": "reported" }
   ],
 
@@ -169,6 +176,48 @@
   ],
 
   "research": [
+    {
+      "id": "pce-pinn-psep-2026",
+      "title": "Physics-Informed Multi-Task Neural Network for Simultaneous Leak Detection, Diameter Estimation, and Localization in Multiphase Pipelines",
+      "venue": "Process Safety and Environmental Protection (Elsevier)",
+      "status": "published — received 3 June 2026, revised 5 September 2026, accepted 11 September 2026",
+      "doi": "10.1016/j.psep.2026.109609",
+      "pii": "S0957-5820(26)01227-9",
+      "author_position": "7 of 11",
+      "authors": ["Al-Amin Mridha", "Ahasanul Kabir", "Amith Khandakar", "Md. Masum Mia", "Mosabber Uddin Ahmed", "M Shahadad", "Soyeb Pervez Jim", "Khondokar Radwanur Rahman", "Mohamed Arselene Ayari", "Mohammad Azizur Rahman", "Abinash Barooah"],
+      "src": ["psep-2026"],
+      "conf": "verified",
+      "results": {
+        "detection_f1": 1.0,
+        "diameter_r2": 0.906,
+        "location_r2": 0.941,
+        "location_r2_gain_over_best_baseline": "16.5%",
+        "protocol": "stratified 5-fold cross-validation"
+      },
+      "method": "PCE-PINN: multi-task architecture coupling conservation-law-derived features with an embedded physics sub-network penalising nondimensional mass, momentum and mechanical-energy balance violations; adaptive curriculum training and adaptive collocation; SHAP attribution.",
+      "data": "Mechanistically generated dataset representative of a laboratory multiphase test facility at Hamad Bin Khalifa University",
+      "note": "Contribution is as a co-author (7th of 11), not lead. Do not describe it as first-author work."
+    },
+    {
+      "id": "pinn-e2co-fuproc-2026",
+      "title": "Physics-Informed Embed-to-Control and Observe with Per-Producer MLP Heads for CO2 Storage Surrogate Modelling",
+      "venue": "Fuel Processing Technology (Elsevier)",
+      "status": "under review — submitted July 2026, manuscript FUPROC-D-26-00558",
+      "author_position": "4th of 10 as submitted (corresponding author Amith Khandakar)",
+      "src": ["fuproc-2026"],
+      "conf": "verified",
+      "results": {
+        "saturation_rmse_reduction": "38%",
+        "pressure_rmse_reduction": "35%",
+        "per_well_r2": "0.82 to 0.91",
+        "fine_tune": "16 min on a single T4",
+        "dataset": "12,000 realisations, 64x64 grid, 20 timesteps",
+        "ablation": "33 architectural variants (V0-V32)"
+      },
+      "method": "PINN-E2CO V19: per-producer MLP observation heads over a shared latent, differential-LR fine-tuning from a physics-free baseline, hybrid eight-term loss with pressure-diffusion, CO2 mass-conservation and Darcy-flux residuals on the simulator finite-volume transmissibility operator.",
+      "note": "AUTHORSHIP DISCREPANCY: the local IEEE-format draft lists Soyeb Pervez Jim as first author with Ahasanul Kabir Rifat. The Elsevier submission lists Amith Khandakar as corresponding with Soyeb 3rd among the co-authors. Use the submitted ordering until the published version says otherwise.",
+      "supersedes": "pc-e2co"
+    },
     {
       "id": "ai4pain-2026",
       "title": "Detecting Pain Without Localising It: A Hierarchical Physiological Classifier and the Arm-Hand Localisation Ceiling on AI4Pain 2026",
@@ -252,7 +301,7 @@
     {
       "name": "HyprFM",
       "repo": "https://github.com/soyeb-jim285/hyprfm",
-      "stars": 285,
+      "stars": 313,
       "language": "C++",
       "src": ["gh-hyprfm", "gh-api-repos", "linuxlinks"],
       "conf": "verified",
@@ -312,22 +361,24 @@
     "account_created": { "v": "2018-04-30", "src": ["gh-api-user"], "conf": "verified" },
     "public_repos": { "v": 57, "src": ["gh-api-user"], "conf": "verified" },
     "non_fork_repos": { "v": 39, "src": ["gh-api-repos"], "conf": "verified" },
-    "total_stars": { "v": 25, "src": ["gh-profile"], "conf": "reported", "note": "Profile README figure; the repo API shows 285 on hyprfm alone, so this number is stale." },
+    "total_stars": { "v": 318, "src": ["gh-api-repos"], "conf": "verified", "note": "Sum across public repos; refreshed daily by scripts/update-stars.mjs." },
     "followers": { "v": 3, "src": ["gh-api-user"], "conf": "verified" },
     "achievements": { "v": ["Pull Shark", "Arctic Code Vault Contributor"], "src": ["gh-profile"], "conf": "reported" }
   },
 
   "competitive_programming": {
     "codeforces": {
-      "handle": "soyeb.jim",
-      "rating": 1658,
-      "max_rating": 1658,
-      "rank": "Expert",
+      "handle": "soyeb_p_jim",
+      "rating": 1527,
+      "max_rating": 1714,
+      "rank": "Specialist",
       "max_rank": "Expert",
-      "rated_contests": 30,
-      "problems_solved": 99,
-      "submissions": 211,
-      "registered": "2018-03",
+      "rated_contests": 121,
+      "problems_solved": 769,
+      "submissions": 1698,
+      "registered": "2022-02",
+      "secondary_handle": { "handle": "soyeb.jim", "rating": 1658, "max_rating": 1658, "rated_contests": 30, "problems_solved": 99, "registered": "2018-03" },
+      "note": "Current rank is Specialist; only the peak is Expert. Do not write a bare 'Codeforces Expert'.",
       "src": ["cf-api"],
       "conf": "verified"
     },

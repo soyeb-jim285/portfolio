@@ -3,12 +3,50 @@ import Layout from '../layouts/SchematicLayout.astro';
 import PainDiagram from '../components/schematic/PainDiagram.astro';
 import MumidcDiagram from '../components/schematic/MumidcDiagram.astro';
 import { research } from '../data/content';
-const [pain, mumidc, other] = research;
+const [psep, e2co, pain, mumidc, other] = research;
 ---
-<Layout title="Research, Soyeb Pervez Jim" description="AI4Pain 2026 hierarchical pain classifier and MUMIDC movement-intent model, with measured results." sheet="3" big="Research" stamp={{ k: 'Status', v: pain.status }}>
+<Layout title="Research, Soyeb Pervez Jim" description="Physics-informed models for pipeline leak detection and CO2 storage, the AI4Pain 2026 pain classifier and the MUMIDC movement-intent model, with measured results." sheet="3" big="Research" stamp={{ k: 'Papers', v: '2 journal, 2 challenge' }}>
   <section class="head r" data-anchor="research-intro">
     <h1 class="title">Research</h1>
-    <p class="sub">Two challenge papers on physiological signals, one under review, one submitted. Every number below is from the official test set or from cross-validation, as noted.</p>
+    <p class="sub">Two journal papers, one published and one under review, plus two challenge papers on physiological signals. Every number below is from the official test set or from cross-validation, as noted.</p>
+  </section>
+
+  <section data-anchor="research-pipelines">
+    <div class="head r" style="margin-bottom:24px">
+      <h2 class="t2">{psep.short}</h2>
+      <p class="sub"><span class="ora">{psep.venue}</span>, {psep.status}. <a href={psep.doi} target="_blank" rel="noopener">doi.org/10.1016/j.psep.2026.109609</a></p>
+    </div>
+    <div class="r">
+      <p class="lead">{psep.abstract}</p>
+      <p class="lead"><b>Finding.</b> {psep.finding}</p>
+      <p class="lead"><b>Authors.</b> {psep.authors}. Departments of Electrical and Electronic Engineering at the University of Dhaka and Qatar University, with Hamad Bin Khalifa University.</p>
+    </div>
+    <div class="tw r" style="margin-top:32px">
+      <table>
+        <thead><tr><th>Measure</th><th>Value</th><th>Note</th></tr></thead>
+        <tbody>{psep.results.map((x) => <tr><td>{x.label}</td><td class="n">{x.value}</td><td class="m">{x.note || "—"}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <ul class="tags r" style="margin-top:16px">{psep.keywords.map((k) => <li>{k}</li>)}</ul>
+  </section>
+
+  <section data-anchor="research-co2">
+    <div class="head r" style="margin-bottom:24px">
+      <h2 class="t2">{e2co.short}</h2>
+      <p class="sub"><span class="ora">{e2co.venue}</span>, {e2co.status}.</p>
+    </div>
+    <div class="r">
+      <p class="lead">{e2co.abstract}</p>
+      <p class="lead"><b>Finding.</b> {e2co.finding}</p>
+      <p class="lead"><b>Authors.</b> {e2co.authors}.</p>
+    </div>
+    <div class="tw r" style="margin-top:32px">
+      <table>
+        <thead><tr><th>Measure</th><th>Value</th><th>Note</th></tr></thead>
+        <tbody>{e2co.results.map((x) => <tr><td>{x.label}</td><td class="n">{x.value}</td><td class="m">{x.note || "—"}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <ul class="tags r" style="margin-top:16px">{e2co.keywords.map((k) => <li>{k}</li>)}</ul>
   </section>
 
   <section data-anchor="research-pain">

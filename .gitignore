@@ -8,5 +8,9 @@ dist
 # build + runtime caches
 server/.cache
 outputs
+# the resume source is tracked so CI can refresh the star count in it
+!outputs/
+outputs/*
+!outputs/Soyeb_Pervez_Jim_Resume.tex
 .playwright-mcp
 .astro
