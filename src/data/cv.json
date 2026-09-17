@@ -61,6 +61,16 @@
       "url": "https://doi.org/10.1016/j.psep.2026.109609",
       "detail": "Journal pre-proof PDF held locally; accepted 11 September 2026"
     },
+    "gh-traffic": {
+      "kind": "web",
+      "url": "https://github.com/soyeb-jim285/hyprfm/graphs/traffic",
+      "detail": "Owner-only Insights page; figures supplied by Soyeb as a screenshot, 2026-09-18"
+    },
+    "reddit-threads": {
+      "kind": "web",
+      "url": "https://www.reddit.com/r/hyprland/comments/1vwnsze/i_built_a_file_manager_for_hyprland_mostly/",
+      "detail": "Launch thread, 675 upvotes and 67K views. Companion post on r/unixporn at 70 upvotes and 18K views."
+    },
     "linuxlinks": {
       "kind": "web",
       "url": "https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/"
@@ -327,6 +337,17 @@
       ],
       "architecture": "QML frontend separated from C++ backend services",
       "packaging": ["AUR (hyprfm-git)", "Flatpak", "AppImage", "Nix flake"],
+      "adoption": {
+        "unique_cloners_14d": 350,
+        "clones_14d": 521,
+        "repo_views_14d": 854,
+        "external_contributors": 9,
+        "external_commits": 32,
+        "reddit": { "r/hyprland": { "upvotes": 675, "comments": 56, "views": "67K" }, "r/unixporn": { "upvotes": 70, "comments": 9, "views": "18K" } },
+        "src": ["gh-traffic", "reddit-threads"],
+        "conf": "verified",
+        "note": "Traffic read from the repository Insights page on 2026-09-18 for 09/03-09/16. Cloners run well above visitors because the AUR package clones on every update. Soyeb disclosed AI assistance in the r/hyprland post itself; the thread largely defended it."
+      },
       "external_validation": [
         { "what": "LinuxLinks review", "src": ["linuxlinks"] },
         { "what": "Downstream fork/overhaul 'Wayfile'", "src": ["wayfile"] }

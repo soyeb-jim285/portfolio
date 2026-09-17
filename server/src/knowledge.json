@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T22:10:19.399Z",
+  "generatedAt": "2026-09-17T22:31:59.173Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -32,7 +32,8 @@
       "body": [
         "HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.",
         "Grid, detail and Miller-column views; image and video thumbnails with a Space-key quick preview; split panes for two-directory workflows; a bookmarks sidebar that mounts devices through udisks2; regex bulk rename with undo and redo; drag and drop across panes and to other apps.",
-        "Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it."
+        "Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it.",
+        "It is no longer a solo project. Nine people from outside have contributed: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Around 350 unique cloners pull it every fortnight, most of them through the AUR package, which clones on each update."
       ],
       "stack": [
         "C++",
