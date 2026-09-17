@@ -10,7 +10,7 @@ export const person = {
   location: 'Dhaka, Bangladesh',
   email: 'soyeb.jim@gmail.com',
   phone: '+8801718007639',
-  education: 'BSc Electrical and Electronic Engineering, University of Dhaka, 2021 to present (final year)',
+  education: 'BSc Electrical and Electronic Engineering, University of Dhaka, 2021 to 2026',
   languages: ['Bengali, native', 'English, C1', 'Hindi, moderate'],
   scores: { efset: 'C1', efsetCert: 'https://cert.efset.org/LEvQnj' },
   links: {
@@ -201,8 +201,9 @@ export const clubs = [
 export const skills = {
   languages: ['C++', 'Python', 'TypeScript', 'QML', 'Swift', 'Lua', 'Bash'],
   ml: ['PyTorch', 'ONNX', 'scikit-learn', 'CNN / TCN / LSTM', 'Mamba', 'PINNs', 'biosignal processing', 'LOSO and subject-fold CV', 'calibration'],
-  llm: ['agentic workflows', 'tool calling', 'RAG', 'Vercel AI SDK', 'OpenAI API', 'evals'],
-  web: ['Next.js', 'React', 'Astro'],
+  llm: ['agentic workflows', 'tool calling', 'RAG', 'vector search', 'embeddings', 'Vercel AI SDK', 'OpenAI API', 'evals'],
+  web: ['Next.js', 'React', 'Astro', 'Hono', 'Express', 'Drizzle', 'Sequelize', 'Postgres', 'MySQL / Vitess', 'Redis'],
+  infra: ['Docker', 'GitHub Actions', 'Traefik', 'Dokploy', 'Hetzner', 'Cloudflare R2 and DNS', 'Vercel', 'k6', 'Playwright'],
   systems: ['Qt 6', 'Wayland', 'Hyprland', 'Arch Linux', 'Flatpak', 'Nix', 'AppImage'],
 };
 

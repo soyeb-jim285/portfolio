@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T21:58:48.482Z",
+  "generatedAt": "2026-09-17T22:10:19.399Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -392,6 +392,8 @@
       "agentic workflows",
       "tool calling",
       "RAG",
+      "vector search",
+      "embeddings",
       "Vercel AI SDK",
       "OpenAI API",
       "evals"
@@ -399,7 +401,25 @@
     "web": [
       "Next.js",
       "React",
-      "Astro"
+      "Astro",
+      "Hono",
+      "Express",
+      "Drizzle",
+      "Sequelize",
+      "Postgres",
+      "MySQL / Vitess",
+      "Redis"
+    ],
+    "infra": [
+      "Docker",
+      "GitHub Actions",
+      "Traefik",
+      "Dokploy",
+      "Hetzner",
+      "Cloudflare R2 and DNS",
+      "Vercel",
+      "k6",
+      "Playwright"
     ],
     "systems": [
       "Qt 6",

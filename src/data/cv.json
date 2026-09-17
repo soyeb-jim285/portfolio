@@ -85,6 +85,16 @@
       "kind": "local",
       "path": "/home/jim/AI4Pain 2026 Dataset/paper_2026/main.tex"
     },
+    "local-xylo": {
+      "kind": "local",
+      "path": "/stuff/Study/projects/kids/xylo-commerce",
+      "detail": "Dolphincommerce: multi-tenant white-label commerce SaaS. Turborepo, Hono API, three Next.js apps, Drizzle/Postgres, Redis, self-hosted on Hetzner via Dokploy and Traefik."
+    },
+    "local-holmes": {
+      "kind": "local",
+      "path": "/stuff/Study/projects/HOLMES-IV",
+      "detail": "Fuego work repository. Read for stack only."
+    },
     "local-mumidc": {
       "kind": "local",
       "path": "/stuff/Study/projects/MUMIDC/CLAUDE.md"
@@ -133,7 +143,7 @@
     "session": { "v": "2020-2021", "src": ["old-cv-pdf"], "conf": "verified" },
     "student_id": { "v": "2020515843", "src": ["session-context"], "conf": "verified" },
     "cgpa": { "v": null, "src": [], "conf": "missing", "note": "OUTSTANDING. Old CV says 3.08; Soyeb states that is wrong. Do not use 3.08." },
-    "graduation": { "v": null, "src": [], "conf": "missing", "note": "Final-year project and defense materials exist on disk, so completion is near — but no confirmed date." }
+    "graduation": { "v": "2026", "src": ["user"], "conf": "verified", "note": "Stated by Soyeb, 2026-09-18. Final year; treat as expected until confirmed." }
   },
 
   "test_scores": {
@@ -503,7 +513,8 @@
     "languages": { "v": ["C++", "C", "Python", "TypeScript", "JavaScript", "QML", "Swift", "Lua", "Bash", "TeX"], "src": ["gh-api-repos", "gh-profile", "old-cv-pdf"], "conf": "verified" },
     "ml": { "v": ["PyTorch", "CNN", "TCN", "LSTM", "Mamba/SSM", "PINNs", "TabPFN", "ONNX", "scikit-learn", "biosignal processing (EEG/EMG/IMU/EDA/BVP/RESP/PPG)", "LOSO and subject-fold CV", "probability calibration"], "src": ["local-ai4pain", "local-mumidc", "gh-api-repos", "gh-profile"], "conf": "verified" },
     "llm_engineering": { "v": ["agentic workflows", "tool calling", "RAG / semantic search", "Vercel AI SDK", "OpenAI API"], "src": ["gh-profile"], "conf": "verified" },
-    "web": { "v": ["Next.js", "React", "Astro", "HTML"], "src": ["gh-api-repos", "old-cv-pdf"], "conf": "verified" },
+    "web": { "v": ["Next.js", "React", "Astro", "Hono", "Express", "Drizzle", "Sequelize", "Postgres", "MySQL/Vitess", "Redis", "HTML"], "src": ["gh-api-repos", "old-cv-pdf", "local-xylo"], "conf": "verified" },
+    "infra": { "v": ["Docker", "GitHub Actions", "Traefik", "Dokploy", "Hetzner VPS", "Cloudflare R2", "Cloudflare DNS", "Vercel", "GHCR", "k6", "Playwright"], "src": ["local-xylo", "local-holmes"], "conf": "verified", "note": "Object storage is Cloudflare R2 reached through the S3-compatible SDK, not AWS S3." },
     "systems": { "v": ["Qt6/QML", "Wayland", "Hyprland", "Arch Linux", "AUR", "Flatpak", "AppImage", "Nix"], "src": ["gh-hyprfm", "gh-profile"], "conf": "verified" },
     "other": { "v": ["LaTeX / IEEEtran", "web scraping", "reproducible experiment protocols"], "src": ["old-cv-pdf", "local-ai4pain"], "conf": "verified" }
   },
