@@ -1,0 +1,35 @@
+name: Refresh GitHub counts
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # daily, 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refresh star, fork and contributor counts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/update-stars.mjs
+
+      - name: Commit if anything moved
+        run: |
+          if git diff --quiet; then
+            echo "counts unchanged"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -am 'Refresh GitHub star counts'
+          git push
