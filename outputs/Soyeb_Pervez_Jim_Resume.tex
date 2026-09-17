@@ -6,7 +6,11 @@
 \usepackage[top=0.36in,bottom=0.3in,left=0.5in,right=0.5in]{geometry}
 \usepackage{enumitem}
 \usepackage{titlesec}
-\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+% Links carry no cue under hidelinks, so a reader cannot tell the project titles open
+% anything. Colour says it without costing the line an arrow glyph would.
+\definecolor{linkblue}{HTML}{17456B}
+\usepackage[colorlinks=true,urlcolor=linkblue,linkcolor=linkblue,citecolor=linkblue]{hyperref}
 \usepackage{microtype}
 \input{glyphtounicode}
 \pdfgentounicode=1
