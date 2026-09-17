@@ -1,4 +1,4 @@
-// Schematic: strokes draw themselves on scroll, reveals, block <-> spec row hover link.
+// Schematic: strokes draw themselves on scroll, block <-> spec row hover link.
 let observer: IntersectionObserver | null = null;
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -17,7 +17,7 @@ function prime(stroke: SVGGeometryElement) {
 export function init() {
   observer?.disconnect();
   const strokes = document.querySelectorAll<SVGGeometryElement>('.draw path.draw-me, .draw line.draw-me, .draw polyline.draw-me');
-  const targets = document.querySelectorAll<HTMLElement>('.r, .draw');
+  const targets = document.querySelectorAll<HTMLElement>('.draw');
   if (reduced()) { targets.forEach(target => target.classList.add('in')); return; }
   // Hidden until primed, so a stroke is never shown full-length before its figure scrolls in.
   strokes.forEach(stroke => { stroke.style.transition = 'none'; stroke.style.strokeDashoffset = '0'; stroke.style.opacity = '0'; });
