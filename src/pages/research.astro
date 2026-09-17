@@ -16,14 +16,15 @@ const [psep, e2co, pain, mumidc] = research;
   <section data-anchor="research-pipelines">
     <div class="head r" style="margin-bottom:24px">
       <h2 class="t2">{psep.short}</h2>
-      <p class="sub"><span class="ora">{psep.venue}</span>, {psep.status}. <a href={psep.doi} target="_blank" rel="noopener">doi.org/10.1016/j.psep.2026.109609</a></p>
+      <p class="sub"><span class="ora">{psep.venue}</span>, {psep.status}.</p>
+      <p class="sub"><a class="nowrap" href={psep.doi} target="_blank" rel="noopener">doi.org/10.1016/j.psep.2026.109609</a></p>
     </div>
     <div class="r prose">
       <p class="lead">{psep.abstract}</p>
       <p class="lead"><b>Finding.</b> {psep.finding}</p>
       <p class="lead"><b>Authors.</b> {psep.authors}. Departments of Electrical and Electronic Engineering at the University of Dhaka and Qatar University, with Hamad Bin Khalifa University.</p>
     </div>
-    <div class="diag-wide"><PipelineLeakDiagram /></div>
+    <div class="diag-wide wide"><PipelineLeakDiagram /></div>
     <div class="tw r" style="margin-top:32px">
       <table>
         <thead><tr><th>Measure</th><th>Value</th><th>Note</th></tr></thead>
@@ -43,7 +44,7 @@ const [psep, e2co, pain, mumidc] = research;
       <p class="lead"><b>Finding.</b> {e2co.finding}</p>
       <p class="lead"><b>Authors.</b> {e2co.authors}.</p>
     </div>
-    <div class="diag-wide"><E2coDiagram /></div>
+    <div class="diag-wide wide"><E2coDiagram /></div>
     <div class="tw r" style="margin-top:32px">
       <table>
         <thead><tr><th>Measure</th><th>Value</th><th>Note</th></tr></thead>

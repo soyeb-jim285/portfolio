@@ -98,6 +98,17 @@ h3 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
 /* A prose-led section has no second column to fill, so the reading measure is widened to the
    diagram's own ceiling rather than leaving the text stranded against the sheet edge. */
 .prose .lead, .sub.prose { max-width: 860px; }
+/* An identifier broken across two lines stops being one, so a DOI or handle never wraps. */
+.nowrap { white-space: nowrap; }
+
+/* A paper-faithful architecture needs more room than a four-box flow: its own ceiling, and the
+   same pan-instead-of-shrink treatment on a phone. */
+.diag-wide.wide { max-width: 1100px; }
+@media (max-width: 1000px) { .diag-wide.wide { overflow-x: auto; margin: 8px 0 0; } .diag-wide.wide .diag { min-width: 900px; } }
+/* The trunk is a real mesh: hairline edges so the nodes stay legible through them. */
+.diag .mesh { stroke: var(--line-2); stroke-width: 1; opacity: .55; }
+.diag .node { fill: rgba(232, 147, 63, .18); stroke: var(--accent); stroke-width: 1.2; }
+.diag text.o { fill: var(--accent); }
 
 /* diagrams */
 /* a full-width diagram still needs a ceiling, or the labels blow up on a wide screen */

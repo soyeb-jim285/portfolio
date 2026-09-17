@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#171a1c"/><path d="M14 40 C24 40 22 24 32 24 S40 40 50 40" fill="none" stroke="#e7edf7" stroke-width="5" stroke-linecap="round"/><path d="M26 32h12" stroke="#e8933f" stroke-width="5" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="A drawing sheet with a section line and a title block">
+  <rect width="64" height="64" rx="12" fill="#0f1f3a"/>
+  <g stroke="#c9d6ea" stroke-opacity=".18" stroke-width="2">
+    <path d="M21 0v64M43 0v64M0 21h64M0 43h64"/>
+  </g>
+  <path d="M10 50 L50 14" fill="none" stroke="#e7edf7" stroke-width="8" stroke-linecap="round"/>
+  <path d="M28 64 H64 V38 H28 Z" fill="#e8933f"/>
+</svg>

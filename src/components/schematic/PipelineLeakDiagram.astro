@@ -1,37 +1,76 @@
 ---
+// Follows Figure 4 of the paper: feature engineering, the shared trunk, its four task heads,
+// the physics module down the right, and the composite loss they all feed.
 import { research } from '../../data/content';
 const box = (x: number, y: number, w: number, h: number) => `M${x} ${y}h${w}v${h}h${-w}z`;
 const r = research.find((x) => x.slug === 'pce-pinn-pipelines')!.results;
 const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
+
+// The trunk is drawn as a real mesh rather than a labelled rectangle, so the fan-out to the
+// heads reads as the shared representation it is.
+const layers = [
+  { x: 156, n: 4 },
+  { x: 248, n: 5 },
+  { x: 340, n: 5 },
+  { x: 432, n: 4 },
+];
+const nodeY = (count: number, index: number) => 148 + (index - (count - 1) / 2) * 26;
+const nodes = layers.map((layer) => Array.from({ length: layer.n }, (_, i) => ({ x: layer.x, y: nodeY(layer.n, i) })));
+const edges = nodes.slice(0, -1).flatMap((column, i) => column.flatMap((a) => nodes[i + 1].map((b) => ({ a, b }))));
 ---
-<svg class="diag draw r" viewBox="0 0 680 340" role="img" aria-label="PCE-PINN: inlet and outlet pressure and flow into conservation-law features, a shared multi-task trunk, and three heads for leak detection, diameter and location, with a physics sub-network penalising mass, momentum and energy residuals">
-  <path class="box draw-me" d={box(10, 55, 115, 90)} />
-  <text x="67" y="85" text-anchor="middle">inlet, outlet</text><text class="s" x="67" y="105" text-anchor="middle">pressure</text><text class="s" x="67" y="122" text-anchor="middle">flow rate</text>
-  <path class="draw-me o" d="M125 100 H165" />
+<svg class="diag draw r" viewBox="0 0 980 620" role="img" aria-label="PCE-PINN architecture: twelve raw inputs and fifteen engineered features are scaled and fed to a shared tanh trunk, which fans out to a leak head, a diameter head, a spatial attention location head and a gradient-reversal domain head; a physics module interpolates boundary conditions, predicts field corrections, builds the fields, adds a leak source and takes autograd derivatives to form nondimensional mass, momentum and energy residuals; data, domain and residual losses combine into the training objective">
+  <text class="s o" x="20" y="22">feature engineering, 27 total</text>
+  <path class="box draw-me" d={box(20, 32, 150, 44)} /><text class="s" x="95" y="52" text-anchor="middle">12 raw inputs</text><text class="s" x="95" y="68" text-anchor="middle">pressure, flow</text>
+  <text x="183" y="60" text-anchor="middle">+</text>
+  <path class="box draw-me" d={box(196, 32, 200, 44)} /><text class="s" x="296" y="52" text-anchor="middle">15 engineered</text><text class="s" x="296" y="68" text-anchor="middle">Re, Fr, We, x‌ᴸᴹ …</text>
+  <path class="draw-me o" d="M396 54 H440" />
+  <path class="box draw-me" d={box(440, 32, 130, 44)} /><text class="s" x="505" y="58" text-anchor="middle">robust scaler</text>
+  <path class="draw-me o" d="M505 76 V92 H294" />
 
-  <path class="box draw-me" d={box(165, 50, 135, 100)} />
-  <text x="232" y="82" text-anchor="middle">features</text><text class="s" x="232" y="102" text-anchor="middle">conservation-law</text><text class="s" x="232" y="119" text-anchor="middle">derived</text>
-  <path class="draw-me o" d="M300 100 H340" />
+  <text class="s o" x="20" y="112">shared trunk, tanh</text>
+  {edges.map((e) => <path class="mesh" d={`M${e.a.x} ${e.a.y}L${e.b.x} ${e.b.y}`} />)}
+  {nodes.flat().map((n) => <circle class="node" cx={n.x} cy={n.y} r="7" />)}
+  <text class="s" x="466" y="152">64-d</text>
 
-  <path class="box draw-me" d={box(340, 50, 120, 100)} />
-  <text x="400" y="88" text-anchor="middle">shared</text><text x="400" y="107" text-anchor="middle">trunk</text><text class="s" x="400" y="128" text-anchor="middle">multi-task</text>
+  <path class="draw-me o" d="M432 200 V232 H95" />
+  <path class="draw-me o" d="M294 200 V232" />
+  <path class="draw-me o" d="M432 232 H600" />
 
-  <path class="draw-me o" d="M460 72 H510" />
-  <path class="draw-me o" d="M460 100 H510" />
-  <path class="draw-me o" d="M460 128 H510" />
-  <path class="box draw-me" d={box(510, 55, 160, 34)} /><text class="s" x="590" y="77" text-anchor="middle">detection head</text>
-  <path class="box draw-me" d={box(510, 83, 160, 34)} /><text class="s" x="590" y="105" text-anchor="middle">diameter head</text>
-  <path class="box draw-me" d={box(510, 111, 160, 34)} /><text class="s" x="590" y="133" text-anchor="middle">location head</text>
+  <text class="s o" x="20" y="250">4 task heads</text>
+  <path class="box draw-me" d={box(20, 258, 148, 56)} /><text class="s" x="94" y="280" text-anchor="middle">leak head</text><text class="s" x="94" y="298" text-anchor="middle">64 → 24 → 1</text>
+  <path class="box draw-me" d={box(180, 258, 148, 56)} /><text class="s" x="254" y="280" text-anchor="middle">diameter head</text><text class="s" x="254" y="298" text-anchor="middle">64 → 32 → 1</text>
+  <path class="box draw-me" d={box(340, 258, 158, 56)} /><text class="s" x="419" y="280" text-anchor="middle">spatial attention</text><text class="s" x="419" y="298" text-anchor="middle">global + local, 3 zones</text>
+  <path class="box draw-me" d={box(510, 258, 148, 56)} /><text class="s" x="584" y="280" text-anchor="middle">GRL domain</text><text class="s" x="584" y="298" text-anchor="middle">∇ → −λ∇</text>
+  <text class="s" x="94" y="334" text-anchor="middle">leak probability</text>
+  <text class="s" x="254" y="334" text-anchor="middle">diameter</text>
+  <text class="s" x="419" y="334" text-anchor="middle">location</text>
+  <text class="s" x="584" y="334" text-anchor="middle">domain label</text>
 
-  <path class="box draw-me" d={box(165, 180, 295, 48)} />
-  <text class="s" x="312" y="202" text-anchor="middle">physics sub-network</text><text class="s" x="312" y="219" text-anchor="middle">mass, momentum, mechanical energy</text>
-  <path class="d" d="M400 180 V150" />
-  <path class="d" d="M232 180 V150" />
-  <text class="s" x="475" y="200">adaptive curriculum</text><text class="s" x="475" y="217">adaptive collocation</text>
+  <text class="s o" x="700" y="22">physics module</text>
+  <path class="box draw-me" d={box(700, 32, 265, 46)} /><text class="s" x="832" y="52" text-anchor="middle">boundary interpolation</text><text class="s" x="832" y="68" text-anchor="middle">P₍bc₎ = P₍in₎(1−ξ) + P₍out₎ξ</text>
+  <path class="draw-me o" d="M832 78 V92" />
+  <path class="box draw-me" d={box(700, 92, 265, 46)} /><text class="s" x="832" y="112" text-anchor="middle">physics net</text><text class="s" x="832" y="128" text-anchor="middle">feat ⊕ ξ → 65 → 64×4 → 3</text>
+  <path class="draw-me o" d="M832 138 V152" />
+  <path class="box draw-me" d={box(700, 152, 265, 46)} /><text class="s" x="832" y="172" text-anchor="middle">field construction</text><text class="s" x="832" y="188" text-anchor="middle">ψ = ξ(1−ξ), P = P₍bc₎ + ψΔP</text>
+  <path class="draw-me o" d="M770 198 V212" /><path class="draw-me o" d="M895 198 V212" />
+  <path class="box draw-me" d={box(700, 212, 128, 42)} /><text class="s" x="764" y="238" text-anchor="middle">leak source</text>
+  <path class="box draw-me" d={box(838, 212, 127, 42)} /><text class="s" x="901" y="238" text-anchor="middle">autograd ∂/∂ξ</text>
+  <path class="draw-me o" d="M764 254 V268" /><path class="draw-me o" d="M901 254 V268" />
+  <path class="box draw-me" d={box(700, 268, 265, 58)} /><text class="s" x="832" y="290" text-anchor="middle">PDE residuals, nondimensional</text><text class="s" x="832" y="308" text-anchor="middle">mass · momentum · mechanical energy</text>
+  <path class="d" d="M600 232 H660 V299 H700" />
+  <text class="s" x="606" y="224">features ⊕ ξ</text>
 
-  <path class="d" d="M10 250 H670" />
-  <text class="s" x="10" y="243">stratified 5-fold cross-validation</text>
-  <text class="n" x="10" y="300">{v('Leak detection F1')}</text><text class="s" x="10" y="320">detection F1</text>
-  <text class="n" x="190" y="300">{v('Diameter R2')}</text><text class="s" x="190" y="320">diameter R²</text>
-  <text class="n" x="380" y="300">{v('Location R2')}</text><text class="s" x="380" y="320">location R², 16.5% over the best classical baseline</text>
+  <text class="s o" x="20" y="382">composite loss</text>
+  <path class="box draw-me" d={box(20, 392, 190, 50)} /><text class="s" x="115" y="414" text-anchor="middle">data loss</text><text class="s" x="115" y="431" text-anchor="middle">focal + diameter + location</text>
+  <path class="box draw-me" d={box(222, 392, 150, 50)} /><text class="s" x="297" y="414" text-anchor="middle">domain loss</text><text class="s" x="297" y="431" text-anchor="middle">BCE</text>
+  <path class="box draw-me" d={box(384, 392, 150, 50)} /><text class="s" x="459" y="414" text-anchor="middle">residual loss</text><text class="s" x="459" y="431" text-anchor="middle">Σ ℛ²</text>
+  <path class="d" d="M254 340 V392" /><path class="d" d="M584 340 V370 H297 V392" /><path class="d" d="M832 326 V370 H459 V392" />
+  <path class="draw-me o" d="M115 442 V466 H277" /><path class="draw-me o" d="M297 442 V466" /><path class="draw-me o" d="M459 442 V466 H277" />
+  <path class="box draw-me" d={box(197, 466, 160, 44)} /><text class="s" x="277" y="493" text-anchor="middle">training objective</text>
+
+  <path class="d" d="M20 540 H960" />
+  <text class="s" x="20" y="533">stratified 5-fold cross-validation</text>
+  <text class="n" x="20" y="588">{v('Leak detection F1')}</text><text class="s" x="20" y="608">detection F1</text>
+  <text class="n" x="230" y="588">{v('Diameter R2')}</text><text class="s" x="230" y="608">diameter R²</text>
+  <text class="n" x="440" y="588">{v('Location R2')}</text><text class="s" x="440" y="608">location R², 16.5% over the best classical baseline</text>
 </svg>

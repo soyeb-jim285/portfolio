@@ -1,0 +1,52 @@
+---
+// A missing route is a sheet that was never drawn, so it says so in the set's own language
+// and hands the visitor the index rather than a dead end.
+import Layout from '../layouts/SchematicLayout.astro';
+import { person } from '../data/content';
+const sheets = [
+  { n: '1', name: 'Title', href: '/', what: 'Who I am and what I am working on' },
+  { n: '2', name: 'Work', href: '/work/', what: 'The day job, in detail' },
+  { n: '3', name: 'Research', href: '/research/', what: 'Two journal papers and two challenge papers' },
+  { n: '4', name: 'Projects', href: '/projects/', what: 'Open source, with the numbers' },
+  { n: '6', name: 'Record', href: '/record/', what: 'Contests, olympiad, a book, certification' },
+  { n: '7', name: 'Contact', href: '/contact/', what: 'Email, links, a form and the resume' },
+];
+---
+<Layout title="Sheet not found, Soyeb Pervez Jim" description="That sheet is not in this drawing set. The index lists the eight that are." sheet="0" big="Not found" stamp={{ k: 'Status', v: 'Void' }}>
+  <section class="head r" data-anchor="notfound">
+    <h1 class="title">404</h1>
+    <p class="sub">That sheet is not in this set. It was never drawn, or it was superseded and the reference was left behind.</p>
+  </section>
+
+  <section>
+    <div class="diag-wide r">
+      <svg class="diag draw" viewBox="0 0 560 210" role="img" aria-label="An empty drawing frame stamped void, with the requested reference crossed out">
+        <path class="d" d="M20 20h520v170H20z" />
+        <path class="draw-me" d="M40 40h300v110H40z" />
+        <path class="d" d="M40 40 L340 150M340 40L40 150" />
+        <text class="s" x="190" y="176" text-anchor="middle">reference not resolved</text>
+        <path class="draw-me o" d="M380 60h150v40H380z" />
+        <text class="n" x="455" y="92" text-anchor="middle">VOID</text>
+        <text class="s" x="380" y="126">no sheet at this number</text>
+        <text class="s" x="380" y="144">check the index below</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="split r">
+    <div>
+      <h2 class="t2" style="margin-bottom:16px">Sheet index</h2>
+      <p class="sub">Eight sheets, numbered. Pick the one you meant.</p>
+      <div class="btns" style="margin-top:24px">
+        <a class="btn fill" href="/">Back to sheet 1</a>
+        <a class="btn" href={`mailto:${person.email}`}>Report a bad link</a>
+      </div>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Sheet</th><th>Name</th><th>Contents</th></tr></thead>
+        <tbody>{sheets.map((s) => <tr><td class="q">{s.n}</td><td class="m nw"><a href={s.href}>{s.name}</a></td><td>{s.what}</td></tr>)}</tbody>
+      </table>
+    </div>
+  </section>
+</Layout>
