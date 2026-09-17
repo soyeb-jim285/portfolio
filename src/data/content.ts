@@ -187,7 +187,7 @@ export const record = [
   { year: '2024', what: 'BUET CSE Fest', result: '25th of 113', detail: '', href: 'https://toph.co/c/inter-university-buet-cse-fest-2024/standings' },
   { year: 'ongoing', what: 'Codeforces, handle soyeb_p_jim', result: 'Peak 1714, Expert', detail: '121 rated rounds, 769 problems solved', href: 'https://codeforces.com/profile/soyeb_p_jim' },
   { year: '2017', what: 'Bangladesh Mathematical Olympiad, national', result: 'First runner-up', detail: 'second runner-up in 2016' },
-  { year: '2020', what: 'Mathematical Olympiad Problem Solve & Approach, a page of worked olympiad solutions', result: '6.5K followers', detail: 'founded 2020, solutions and problem approaches for BdMO students', href: 'https://www.facebook.com/mpms.solve' },
+  { year: '2020', what: 'Mathematical Olympiad Problem Solve & Approach, worked solutions to BdMO national papers', result: '6.5K followers', detail: 'full solution sets across all four categories, primary to higher secondary', href: 'https://www.facebook.com/mpms.solve' },
   { year: '2024', what: 'Book: গণিত অলিম্পিয়াডের হাতেখড়ি, Swapno ’71', result: 'Author', detail: 'introduction to olympiad mathematics, secondary level', href: 'https://www.rokomari.com/book/288868/gonit-olympiad-er-hate-khori-secondary' },
   { year: '2026', what: 'EF SET English Certificate', result: 'C1', detail: 'certified at cert.efset.org', href: 'https://cert.efset.org/LEvQnj' },
 ];
