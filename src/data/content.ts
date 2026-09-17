@@ -176,26 +176,18 @@ export const research = [
     ],
     keywords: ['EEG', 'EMG', 'IMU', 'temporal convolution', 'motor intent'],
   },
-  {
-    slug: 'other',
-    title: 'Other work', short: 'Other work', venue: '', status: '',
-    abstract: 'A physics-constrained Embed-to-Control surrogate for CO2 storage with per-well MLP observation heads. An ECG image digitisation pipeline for the PhysioNet challenge. A final-year thesis on abnormal activity recognition, classical and deep models evaluated under leave-one-subject-out.',
-    finding: '', results: [], keywords: [],
-  },
 ];
 
 export const record = [
-  { year: '2024', what: 'ICPC Dhaka Regional, team DU_Oblivion', result: '37th of 308', detail: 'preliminary 16th of 2489' },
-  { year: '2023', what: 'ICPC Dhaka Regional, team DU_HoneyNuts', result: '37th of 225', detail: 'preliminary 35th of 2460' },
-  { year: '2024', what: 'National Collegiate Programming Contest, team DU_3Musketeers', result: '27th of 196', detail: 'preliminary 31st of 1099' },
-  { year: '2024', what: 'Meta Hacker Cup, round 2', result: '962nd of 5000', detail: 'round 1: 2359th of 22494' },
-  { year: '2023', what: 'Meta Hacker Cup, round 2', result: '2425th of 6193', detail: 'round 1: 1760th of 20324' },
-  { year: '2024', what: 'BUET CSE Fest', result: '25th of 113', detail: '' },
+  { year: '2024', what: 'ICPC Dhaka Regional, team DU_Oblivion', result: '37th of 308', detail: 'preliminary 16th of 2489', href: 'https://icpc.global/regionals/finder/Dhaka-2025/standings' },
+  { year: '2023', what: 'ICPC Dhaka Regional, team DU_HoneyNuts', result: '37th of 225', detail: 'preliminary 35th of 2460', href: 'https://icpc.global/regionals/finder/Dhaka-2024/standings' },
+  { year: '2024', what: 'National Collegiate Programming Contest, team DU_3Musketeers', result: '27th of 196', detail: 'preliminary 31st of 1099', href: 'https://bapsoj.org/contests/ncpc-onsite-2023-hosted-by-ju/standings' },
+  { year: '2024', what: 'Meta Hacker Cup, round 2', result: '962nd of 5000', detail: 'round 1: 2359th of 22494', href: 'https://www.facebook.com/codingcompetitions/hacker-cup/2024/certificate/2005569239823325' },
+  { year: '2023', what: 'Meta Hacker Cup, round 2', result: '2425th of 6193', detail: 'round 1: 1760th of 20324', href: 'https://www.facebook.com/codingcompetitions/hacker-cup/2023/certificate/2005569239823325' },
+  { year: '2024', what: 'BUET CSE Fest', result: '25th of 113', detail: '', href: 'https://toph.co/c/inter-university-buet-cse-fest-2024/standings' },
   { year: 'ongoing', what: 'Codeforces, handle soyeb_p_jim', result: 'Peak 1714, Expert', detail: '121 rated rounds, 769 problems solved', href: 'https://codeforces.com/profile/soyeb_p_jim' },
   { year: '2017', what: 'Bangladesh Mathematical Olympiad, national', result: 'First runner-up', detail: 'second runner-up in 2016' },
-  { year: '2018', what: 'BdMO National Secondary, full solutions on the official forum', result: 'Author', detail: 'matholympiad.org.bd', href: 'https://matholympiad.org.bd/forum/viewtopic.php?t=5658' },
-  { year: '2024', what: 'Book: গণিত অলিম্পিয়াডের হাতেখড়ি, Swapno ’71', result: 'Author', detail: 'introduction to olympiad mathematics' },
-  { year: 'ongoing', what: 'Modern Physics full note, University of Dhaka', result: 'Author', detail: 'hosted on Studocu', href: 'https://www.studocu.com/row/document/university-of-dhaka/modern-physics/modern-physics-full-note/60378264' },
+  { year: '2024', what: 'Book: গণিত অলিম্পিয়াডের হাতেখড়ি, Swapno ’71', result: 'Author', detail: 'introduction to olympiad mathematics, secondary level', href: 'https://www.rokomari.com/book/288868/gonit-olympiad-er-hate-khori-secondary' },
   { year: '2026', what: 'EF SET English Certificate', result: 'C1', detail: 'certified at cert.efset.org', href: 'https://cert.efset.org/LEvQnj' },
 ];
 

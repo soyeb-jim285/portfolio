@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T20:31:59.383Z",
+  "generatedAt": "2026-09-17T20:45:11.187Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -365,17 +365,6 @@
         "temporal convolution",
         "motor intent"
       ]
-    },
-    {
-      "slug": "other",
-      "title": "Other work",
-      "short": "Other work",
-      "venue": "",
-      "status": "",
-      "abstract": "A physics-constrained Embed-to-Control surrogate for CO2 storage with per-well MLP observation heads. An ECG image digitisation pipeline for the PhysioNet challenge. A final-year thesis on abnormal activity recognition, classical and deep models evaluated under leave-one-subject-out.",
-      "finding": "",
-      "results": [],
-      "keywords": []
     }
   ],
   "skills": {

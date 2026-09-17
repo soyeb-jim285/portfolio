@@ -387,6 +387,7 @@
       {
         "event": "ICPC Dhaka Regional Site",
         "year": 2024,
+        "standings": "https://icpc.global/regionals/finder/Dhaka-2025/standings",
         "team": "DU_Oblivion",
         "results": [
           { "stage": "Preliminary", "rank": 16, "of": 2489 },
@@ -397,6 +398,7 @@
       {
         "event": "ICPC Dhaka Regional Site",
         "year": 2023,
+        "standings": "https://icpc.global/regionals/finder/Dhaka-2024/standings",
         "team": "DU_HoneyNuts",
         "results": [
           { "stage": "Preliminary", "rank": 35, "of": 2460 },
@@ -407,6 +409,7 @@
       {
         "event": "National Collegiate Programming Contest",
         "year": 2024,
+        "standings": "https://bapsoj.org/contests/ncpc-onsite-2023-hosted-by-ju/standings",
         "team": "DU_3Musketeers",
         "results": [
           { "stage": "Preliminary", "rank": 31, "of": 1099 },
@@ -417,6 +420,7 @@
       {
         "event": "Meta Hacker Cup",
         "year": 2024,
+        "standings": "https://www.facebook.com/codingcompetitions/hacker-cup/2024/certificate/2005569239823325",
         "team": null,
         "results": [
           { "stage": "Round 1", "rank": 2359, "of": 22494 },
@@ -427,6 +431,7 @@
       {
         "event": "Meta Hacker Cup",
         "year": 2023,
+        "standings": "https://www.facebook.com/codingcompetitions/hacker-cup/2023/certificate/2005569239823325",
         "team": null,
         "results": [
           { "stage": "Round 1", "rank": 1760, "of": 20324 },
@@ -437,12 +442,13 @@
       {
         "event": "BUET CSE Fest",
         "year": 2024,
+        "standings": "https://toph.co/c/inter-university-buet-cse-fest-2024/standings",
         "team": "DU_oblivion",
         "results": [ { "stage": "Final", "rank": 25, "of": 113 } ],
         "src": ["old-cv-pdf"], "conf": "reported"
       }
     ],
-    "standings_links_note": "The old CV hyperlinks each standings page. Those links were not opened or verified."
+    "standings_links_note": "Standings and certificate URLs supplied by Soyeb, 2026-09-18. Not independently opened. Note the NCPC URL slug reads ncpc-onsite-2023 while the result is recorded as 2024 — confirm which year is right."
   },
 
   "mathematics_olympiad": [
@@ -458,6 +464,8 @@
       "title_translit": "Ganit Olympiader Hatekhori (Introduction to Math Olympiad)",
       "publisher": "স্বপ্ন '৭১ (Swapno '71)",
       "year": 2024,
+      "url": "https://www.rokomari.com/book/288868/gonit-olympiad-er-hate-khori-secondary",
+      "level": "Secondary",
       "src": ["old-cv-pdf"], "conf": "reported"
     },
     {

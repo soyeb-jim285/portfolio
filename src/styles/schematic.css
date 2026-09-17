@@ -95,6 +95,10 @@ h3 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
 .fig .lab { position: absolute; z-index: 1; left: -10px; top: -10px; }
 .fig .cap, .cap { margin-top: 8px; font-size: 12px; color: var(--muted); }
 
+/* A prose-led section has no second column to fill, so the reading measure is widened to the
+   diagram's own ceiling rather than leaving the text stranded against the sheet edge. */
+.prose .lead, .sub.prose { max-width: 860px; }
+
 /* diagrams */
 /* a full-width diagram still needs a ceiling, or the labels blow up on a wide screen */
 .diag-wide { max-width: 860px; margin: 32px auto 0; }

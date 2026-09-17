@@ -1,7 +1,7 @@
 ---
 import { research } from '../../data/content';
 const box = (x: number, y: number, w: number, h: number) => `M${x} ${y}h${w}v${h}h${-w}z`;
-const r = research[1].results;
+const r = research.find((x) => x.slug === 'mumidc-abc2026')!.results;
 const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
 ---
 <svg class="diag draw r" viewBox="0 0 680 310" role="img" aria-label="MUMIDC pipeline: EEG, EMG and IMU into a CNN2D, then a TCN, late fusion with statistical EEG features, seven motor task classes at 87.5 percent accuracy">

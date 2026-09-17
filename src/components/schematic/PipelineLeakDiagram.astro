@@ -1,0 +1,37 @@
+---
+import { research } from '../../data/content';
+const box = (x: number, y: number, w: number, h: number) => `M${x} ${y}h${w}v${h}h${-w}z`;
+const r = research.find((x) => x.slug === 'pce-pinn-pipelines')!.results;
+const v = (label: string) => r.find((x) => x.label === label)?.value ?? '';
+---
+<svg class="diag draw r" viewBox="0 0 680 340" role="img" aria-label="PCE-PINN: inlet and outlet pressure and flow into conservation-law features, a shared multi-task trunk, and three heads for leak detection, diameter and location, with a physics sub-network penalising mass, momentum and energy residuals">
+  <path class="box draw-me" d={box(10, 55, 115, 90)} />
+  <text x="67" y="85" text-anchor="middle">inlet, outlet</text><text class="s" x="67" y="105" text-anchor="middle">pressure</text><text class="s" x="67" y="122" text-anchor="middle">flow rate</text>
+  <path class="draw-me o" d="M125 100 H165" />
+
+  <path class="box draw-me" d={box(165, 50, 135, 100)} />
+  <text x="232" y="82" text-anchor="middle">features</text><text class="s" x="232" y="102" text-anchor="middle">conservation-law</text><text class="s" x="232" y="119" text-anchor="middle">derived</text>
+  <path class="draw-me o" d="M300 100 H340" />
+
+  <path class="box draw-me" d={box(340, 50, 120, 100)} />
+  <text x="400" y="88" text-anchor="middle">shared</text><text x="400" y="107" text-anchor="middle">trunk</text><text class="s" x="400" y="128" text-anchor="middle">multi-task</text>
+
+  <path class="draw-me o" d="M460 72 H510" />
+  <path class="draw-me o" d="M460 100 H510" />
+  <path class="draw-me o" d="M460 128 H510" />
+  <path class="box draw-me" d={box(510, 55, 160, 34)} /><text class="s" x="590" y="77" text-anchor="middle">detection head</text>
+  <path class="box draw-me" d={box(510, 83, 160, 34)} /><text class="s" x="590" y="105" text-anchor="middle">diameter head</text>
+  <path class="box draw-me" d={box(510, 111, 160, 34)} /><text class="s" x="590" y="133" text-anchor="middle">location head</text>
+
+  <path class="box draw-me" d={box(165, 180, 295, 48)} />
+  <text class="s" x="312" y="202" text-anchor="middle">physics sub-network</text><text class="s" x="312" y="219" text-anchor="middle">mass, momentum, mechanical energy</text>
+  <path class="d" d="M400 180 V150" />
+  <path class="d" d="M232 180 V150" />
+  <text class="s" x="475" y="200">adaptive curriculum</text><text class="s" x="475" y="217">adaptive collocation</text>
+
+  <path class="d" d="M10 250 H670" />
+  <text class="s" x="10" y="243">stratified 5-fold cross-validation</text>
+  <text class="n" x="10" y="300">{v('Leak detection F1')}</text><text class="s" x="10" y="320">detection F1</text>
+  <text class="n" x="190" y="300">{v('Diameter R2')}</text><text class="s" x="190" y="320">diameter R²</text>
+  <text class="n" x="380" y="300">{v('Location R2')}</text><text class="s" x="380" y="320">location R², 16.5% over the best classical baseline</text>
+</svg>
