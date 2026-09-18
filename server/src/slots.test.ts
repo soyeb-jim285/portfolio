@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { afterEach, beforeEach, mock } from 'node:test';
 import { freeSlots, instantOfLocal } from './slots';
+
+// Fixed scheduling windows must not silently become past dates as the test suite ages.
+beforeEach(() => { mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-09-01T00:00:00Z') }); });
+afterEach(() => { mock.timers.reset(); });
 
 const weekdays = { days: [1, 2, 3, 4, 5], start: '09:00', end: '18:00' };
 const base = { timeZone: 'Asia/Dhaka', hours: weekdays, durationMinutes: 30, bufferMinutes: 10, noticeMinutes: 0, stepMinutes: 30 };
@@ -69,7 +73,7 @@ test('a working day in a shifting zone keeps its local hours across the change',
     const shown = local(slot.start, 'America/New_York');
     byDay.set(shown.day, [...(byDay.get(shown.day) ?? []), shown.time]);
   }
-  // Friday is on standard time, Monday on daylight time: both still start at 09:00 local.
+  // Friday is on daylight time, Monday on standard time: both still start at 09:00 local.
   assert.equal(byDay.get('30/10')?.[0], '09:00', 'the Friday before the change');
   assert.equal(byDay.get('02/11')?.[0], '09:00', 'the Monday after it');
   assert.equal(byDay.get('30/10')?.length, byDay.get('02/11')?.length);

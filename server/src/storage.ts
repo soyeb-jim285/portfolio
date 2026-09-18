@@ -30,7 +30,7 @@ export function createStorage(config: StorageConfig, fetchImpl: typeof fetch = f
     },
     async signedUrl(key, seconds) {
       if (!client) throw new Error('Artifact storage is not configured');
-      const signed = await client.sign(`${objectUrl(key)}?X-Amz-Expires=${seconds}`, { method: 'GET', aws: { signQuery: true } });
+      const signed = await client.sign(`${objectUrl(key)}?X-Amz-Expires=${seconds}&response-content-disposition=attachment`, { method: 'GET', aws: { signQuery: true } });
       return signed.url;
     },
     async remove(keys) {

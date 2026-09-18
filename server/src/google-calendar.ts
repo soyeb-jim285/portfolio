@@ -17,8 +17,9 @@ export function createGoogleScheduler(config: GoogleConfig, fetchImpl: typeof fe
   const configured = Boolean(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET && config.GOOGLE_REFRESH_TOKEN && config.MEETING_TYPES.length);
   // Access tokens last an hour; keep one until it is nearly spent rather than minting per request.
   let token: { value: string; expiresAt: number } | undefined;
+  let refreshing: Promise<string> | undefined;
 
-  async function accessToken() {
+  async function refreshToken() {
     if (token && token.expiresAt > Date.now() + 60_000) return token.value;
     const response = await fetchImpl(TOKEN_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -34,6 +35,7 @@ export function createGoogleScheduler(config: GoogleConfig, fetchImpl: typeof fe
     token = { value: body.access_token, expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000 };
     return token.value;
   }
+  const accessToken = () => refreshing ??= refreshToken().finally(() => { refreshing = undefined; });
 
   return {
     configured,

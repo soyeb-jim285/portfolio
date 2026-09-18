@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isIP } from 'node:net';
 
 export const configSchema = z.object({
   OPENROUTER_API_KEY: z.string().min(1).refine(value => !value.startsWith('replace-'), 'Set your OpenRouter key'),
@@ -6,6 +7,8 @@ export const configSchema = z.object({
   DATABASE_URL: z.string().min(1).refine(value => /^postgres(ql)?:\/\//.test(value), 'Use a postgresql:// connection string'),
   SITE_ORIGIN: z.string().url().refine(value => new URL(value).origin === value, 'Use an origin without a trailing slash'),
   HOST: z.string().default('127.0.0.1'),
+  TRUSTED_PROXY_IPS: z.string().default('').transform(value => value.split(',').map(ip => ip.trim()).filter(Boolean))
+    .refine(ips => ips.every(ip => isIP(ip)), 'Use comma-separated proxy IP addresses, not CIDRs'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   MAX_OUTPUT_TOKENS: z.coerce.number().int().min(1).max(10000).default(10000),
   // The longest the provider may stay silent mid-answer; a stream that keeps arriving is not cut off.
@@ -94,7 +97,7 @@ export const configSchema = z.object({
   BOOKINGS_PER_DAY: z.coerce.number().int().min(1).default(5),
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(7),
   MAX_MESSAGES_PER_SESSION: z.coerce.number().int().min(2).max(200).default(40),
-  // Finished answers are reused for this long when the last five turns match; 0 turns the cache off.
+  // Finished answers are reused for this long when the full model context matches; 0 disables caching.
   ANSWER_CACHE_TTL_HOURS: z.coerce.number().min(0).max(720).default(24),
 });
 

@@ -20,7 +20,7 @@ export async function applySchema(pool: Pool) {
 export type Db = Awaited<ReturnType<typeof createDb>>;
 
 export async function createDb(url: string, ttlDays: number) {
-  const pool = new Pool({ connectionString: url, max: 10, connectionTimeoutMillis: 20000 });
+  const pool = new Pool({ connectionString: url, max: 10, connectionTimeoutMillis: 20000, statement_timeout: 15000, idle_in_transaction_session_timeout: 15000 });
   pool.on('error', error => console.error('Database pool error:', error.message));
   await applySchema(pool);
   const ttl = `${ttlDays} days`;
@@ -40,6 +40,29 @@ export async function createDb(url: string, ttlDays: number) {
   return {
     // Exposed so retrieval can share the same pool.
     pool,
+    // One host calendar: serialize the live-check/create pair across API replicas.
+    async acquireBookingLock() {
+      const connection = await pool.connect();
+      try {
+        await connection.query("BEGIN; SET LOCAL idle_in_transaction_session_timeout = '120s'");
+        const { rows } = await connection.query('SELECT pg_try_advisory_xact_lock(72741852) AS acquired');
+        if (!rows[0].acquired) { await connection.query('ROLLBACK'); connection.release(); return null; }
+        return async () => {
+          try { await connection.query('ROLLBACK'); connection.release(); }
+          catch (error) { connection.release(true); throw error; }
+        };
+      } catch (error) { connection.release(true); throw error; }
+    },
+    async consumeRateLimit(scope: string, address: string, max: number, seconds: number) {
+      const { rows } = await pool.query<{ count: number; retry: number }>(
+        `INSERT INTO rate_limits (key, count, expires_at) VALUES ($1, 1, now() + make_interval(secs => $3))
+         ON CONFLICT (key) DO UPDATE SET
+           count = CASE WHEN rate_limits.expires_at <= now() THEN 1 ELSE least(rate_limits.count + 1, $2 + 1) END,
+           expires_at = CASE WHEN rate_limits.expires_at <= now() THEN now() + make_interval(secs => $3) ELSE rate_limits.expires_at END
+         RETURNING count, greatest(1, ceil(extract(epoch FROM expires_at - now())))::integer AS retry`,
+        [hash(`${scope}:${address}`), max, seconds]);
+      return { allowed: rows[0].count <= max, retryAfter: rows[0].retry };
+    },
     async createSession() {
       const token = randomBytes(32).toString('base64url');
       const { rows } = await pool.query<{ expires_at: Date }>(
@@ -85,7 +108,7 @@ export async function createDb(url: string, ttlDays: number) {
     // Atomic claim: concurrent sends of one draft cannot both reach the provider.
     async claimDraft(id: string, sessionId: string, final: { name: string; email: string; message: string }) {
       const { rows } = await pool.query(
-        `UPDATE contact_drafts SET name = $3, email = $4, message = $5
+        `UPDATE contact_drafts SET status = 'sending', name = $3, email = $4, message = $5
          WHERE id = $1 AND session_id = $2 AND status IN ('draft', 'failed') AND expires_at > now()
          RETURNING id`, [id, sessionId, final.name, final.email, final.message]);
       if (rows[0]) return { claimed: true as const };
@@ -96,12 +119,12 @@ export async function createDb(url: string, ttlDays: number) {
     async createDirectDraft(draft: { name: string; email: string; message: string }, ttlMinutes: number) {
       const id = randomUUID();
       await pool.query(
-        `INSERT INTO contact_drafts (id, session_id, name, email, message, expires_at)
-         VALUES ($1, NULL, $2, $3, $4, now() + make_interval(mins => $5))`,
+        `INSERT INTO contact_drafts (id, session_id, name, email, message, status, expires_at)
+         VALUES ($1, NULL, $2, $3, $4, 'sending', now() + make_interval(mins => $5))`,
         [id, draft.name, draft.email, draft.message, ttlMinutes]);
       return id;
     },
-    async finishDraft(id: string, status: 'sent' | 'failed', providerId = '') {
+    async finishDraft(id: string, status: 'sent' | 'failed' | 'unknown', providerId = '') {
       await pool.query(
         `UPDATE contact_drafts SET status = $2, provider_id = $3, sent_at = CASE WHEN $2 = 'sent' THEN now() ELSE sent_at END WHERE id = $1`,
         [id, status, providerId || null]);
@@ -120,7 +143,8 @@ export async function createDb(url: string, ttlDays: number) {
     },
     async expiredArtifacts(limit = 200) {
       const { rows } = await pool.query<{ id: string; object_key: string }>(
-        'SELECT id, object_key FROM artifacts WHERE expires_at <= now() LIMIT $1', [limit]);
+        `SELECT a.id, a.object_key FROM artifacts a JOIN sessions s ON s.id = a.session_id
+         WHERE a.expires_at <= now() OR s.expires_at <= now() LIMIT $1`, [limit]);
       return rows.map(row => ({ id: row.id, objectKey: row.object_key }));
     },
     async deleteArtifacts(ids: string[]) {
@@ -138,7 +162,7 @@ export async function createDb(url: string, ttlDays: number) {
     // An 'unknown' outcome is deliberately not re-claimable: a maybe-created booking is never retried.
     async claimBooking(id: string, sessionId: string, final: { slotStart: string; name: string; email: string; timeZone: string }) {
       const { rows } = await pool.query(
-        `UPDATE bookings SET slot_start = $3, name = $4, email = $5, time_zone = $6
+        `UPDATE bookings SET status = 'confirming', slot_start = $3, name = $4, email = $5, time_zone = $6
          WHERE id = $1 AND session_id = $2 AND status IN ('pending', 'conflict', 'failed') AND expires_at > now()
          RETURNING id, meeting_key`, [id, sessionId, final.slotStart, final.name, final.email, final.timeZone]);
       if (rows[0]) return { claimed: true as const, meetingKey: rows[0].meeting_key };
@@ -159,11 +183,13 @@ export async function createDb(url: string, ttlDays: number) {
     releaseBooking: () => release('bookings'),
     releaseContactSend: () => release('contact_sends'),
     async sweep() {
-      await pool.query(`DELETE FROM contact_drafts WHERE status = 'draft' AND expires_at <= now()`);
-      await pool.query(`DELETE FROM bookings WHERE status = 'pending' AND expires_at <= now()`);
-      const { rowCount } = await pool.query(`DELETE FROM sessions WHERE expires_at <= now()`);
+      await pool.query(`DELETE FROM contact_drafts WHERE expires_at <= now()`);
+      await pool.query(`DELETE FROM bookings WHERE expires_at <= now()`);
+      // Keep ownership rows until the object-storage sweep has removed their documents.
+      const { rowCount } = await pool.query(`DELETE FROM sessions s WHERE expires_at <= now() AND NOT EXISTS (SELECT 1 FROM artifacts a WHERE a.session_id = s.id)`);
       await pool.query(`DELETE FROM usage_daily WHERE day < CURRENT_DATE - 30`);
       await pool.query(`DELETE FROM answer_cache WHERE expires_at <= now()`);
+      await pool.query(`DELETE FROM rate_limits WHERE expires_at <= now()`);
       return rowCount ?? 0;
     },
     close: () => pool.end(),

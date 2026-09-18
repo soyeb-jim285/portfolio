@@ -1,6 +1,7 @@
 // Resend over plain fetch: one endpoint, no SDK. Delivery is "accepted by the provider",
 // which is not the same as "in the inbox", and the wording everywhere says so.
 export type Mailer = { configured: boolean; recipientLabel: string; send(message: { name: string; email: string; body: string }): Promise<string> };
+export class AmbiguousDeliveryError extends Error {}
 
 export function createMailer(
   config: { RESEND_API_KEY?: string; CONTACT_FROM?: string; CONTACT_TO?: string; CONTACT_LABEL: string },
@@ -12,7 +13,8 @@ export function createMailer(
     recipientLabel: config.CONTACT_LABEL,
     async send({ name, email, body }) {
       if (!configured) throw new Error('Email delivery is not configured');
-      const response = await fetchImpl('https://api.resend.com/emails', {
+      let response: Response;
+      try { response = await fetchImpl('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${config.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -24,7 +26,8 @@ export function createMailer(
           text: `${body}\n\n—\nFrom: ${name} <${email}>\nSent through the assistant on soyebjim.me.`,
         }),
         signal: AbortSignal.timeout(15000),
-      });
+      }); } catch { throw new AmbiguousDeliveryError('Email provider did not confirm delivery'); }
+      if (response.status >= 500) throw new AmbiguousDeliveryError(`Email provider error (${response.status})`);
       if (!response.ok) throw new Error(`Email provider rejected the message (${response.status})`);
       const result = await response.json().catch(() => ({}));
       return typeof result?.id === 'string' ? result.id : '';

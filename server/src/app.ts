@@ -10,14 +10,12 @@ import type { Config } from './config';
 import type { Db } from './db';
 import { buildSystemPrompt } from './knowledge';
 import type { Retrieval, SourceHit } from './retrieval';
-import type { Mailer } from './mailer';
+import { AmbiguousDeliveryError, type Mailer } from './mailer';
 import type { Storage } from './storage';
-import { AmbiguousBookingError, type EventType, type Scheduler } from './scheduler';
-import { buildToolDefinitions, runTool } from './tools';
+import { AmbiguousBookingError, type EventType, type Scheduler, type Slot } from './scheduler';
+import { buildToolDefinitions, runTool, type ToolOutcome } from './tools';
 
 const MAX_CONTEXT_CHARS = 24000;
-// A cached answer is reused when this many of the newest turns, the new question included, match.
-const CACHE_TURNS = 5;
 // However lively the stream, one answer never runs longer than this.
 const MAX_ANSWER_MS = 300000;
 // These events carry ids owned by the session that asked, or depend on the clock: never replayed to another.
@@ -104,32 +102,25 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
   const app = new OpenAPIHono<{ Variables: Vars }>({ defaultHook: (result, c) => {
     if (!result.success) return c.json({ error: 'Invalid request. Send one non-empty message under 8000 characters with a valid session.' }, 400);
   } });
-  // The per-minute burst limit is per process. The daily budget lives in the database.
-  // Put a shared limiter in front (or in the proxy) before running more than one replica.
-  const limits = new Map<string, { count: number; expires: number }>();
+  // ponytail: concurrency is per process; size the replica count against the provider's capacity.
   let active = 0;
   const sessionOf = async (c: Context) => {
-    const token = /^Bearer (\S+)$/.exec(c.req.header('authorization') ?? '')?.[1];
+    const token = /^Bearer ([A-Za-z0-9_-]{43})$/.exec(c.req.header('authorization') ?? '')?.[1];
     return token ? await db.touchSession(token) : null;
   };
-  // One fixed window per address, oldest entries dropped on the way past.
-  const window = (buckets: Map<string, { count: number; expires: number }>, ip: string, ms: number) => {
-    const now = Date.now();
-    for (const [key, value] of buckets) if (value.expires <= now) buckets.delete(key);
-    const bucket = buckets.get(ip) || { count: 0, expires: now + ms };
-    buckets.set(ip, bucket);
-    return bucket;
-  };
-
   // Every header the browser client sends must be listed, or the preflight kills the request.
-  app.use('*', cors({ origin: config.SITE_ORIGIN, allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'], allowHeaders: CLIENT_HEADERS }));
-  // Large enough for a base64 voice note under TRANSCRIPTION_MAX_BYTES, small enough to bound the upload.
-  app.use('/v1/*', bodyLimit({ maxSize: Math.ceil(config.TRANSCRIPTION_MAX_BYTES * 4 / 3) + 200_000, onError: c => c.json({ error: 'Request is too large' }, 413) }));
+  app.use('*', cors({ origin: config.SITE_ORIGIN, allowMethods: ['GET', 'POST', 'OPTIONS'], allowHeaders: CLIENT_HEADERS, exposeHeaders: ['Retry-After'] }));
   app.use('/v1/*', async (c, next) => {
+    c.header('Cache-Control', 'no-store');
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('Referrer-Policy', 'no-referrer');
     if (c.req.method === 'OPTIONS') return next();
     if (c.req.header('origin') !== config.SITE_ORIGIN) return c.json({ error: 'Origin is not allowed' }, 403);
-    const limit = window(limits, c.get('clientIP') || 'unknown', 60000);
-    if (++limit.count > config.REQUESTS_PER_MINUTE) return c.json({ error: 'Too many requests from this address. Please try again shortly.' }, 429);
+    const limit = await db.consumeRateLimit('requests', c.get('clientIP') || 'unknown', config.REQUESTS_PER_MINUTE, 60);
+    if (!limit.allowed) {
+      c.header('Retry-After', String(limit.retryAfter));
+      return c.json({ error: 'Too many requests from this address. Please try again shortly.' }, 429);
+    }
     await next();
   });
   // The token is the only proof of ownership: a guessed or expired one reads and writes nothing.
@@ -140,6 +131,11 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     await next();
   };
   for (const path of ['/v1/chat', '/v1/transcribe', '/v1/actions/*', '/v1/artifacts/*', '/v1/bookings', '/v1/proposals']) app.use(path, authenticate);
+  // Reject bad origins/tokens before buffering uploads. Only transcription needs a large body.
+  app.use('/v1/*', (c, next) => bodyLimit({
+    maxSize: c.req.path === '/v1/transcribe' ? Math.ceil(config.TRANSCRIPTION_MAX_BYTES * 4 / 3) + 200_000 : 200_000,
+    onError: c => c.json({ error: 'Request is too large' }, 413),
+  })(c, next));
 
   app.openapi(createRoute({ method: 'get', path: '/health', responses: { 200: { description: 'Process is running', content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } } } } }),
     c => c.json({ status: 'ok' as const }));
@@ -170,14 +166,16 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     const audio = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
     if (audio.length < 1000) return c.json({ error: 'That recording is empty.' }, 400);
     if (audio.length > config.TRANSCRIPTION_MAX_BYTES) return c.json({ error: 'That recording is too long to send.' }, 413);
-    if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
+    if (active >= config.MAX_CONCURRENT_REQUESTS) { c.header('Retry-After', '5'); return c.json({ error: 'Assistant is busy. Please try again shortly.' }, 429); }
+    active++;
     const startedAt = Date.now();
     try {
+      if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
       const result = await client.audio.transcriptions.create({
         file: await toFile(audio, `voice.${format}`, { type: container }),
         model: config.OPENROUTER_TRANSCRIPTION_MODEL,
         temperature: 0,
-      }, { signal: AbortSignal.timeout(config.REQUEST_TIMEOUT_MS) });
+      }, { signal: AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(config.REQUEST_TIMEOUT_MS)]) });
       const text = typeof result === 'string' ? result : result.text;
       if (!text?.trim()) return c.json({ error: 'Nothing was heard in that recording.' }, 502);
       const usage = (result as { usage?: { seconds?: number; cost?: number } }).usage;
@@ -189,14 +187,14 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       }, 200);
     } catch (error) {
       const timedOut = error instanceof Error && error.name === 'TimeoutError';
-      console.error('transcription failed', { ms: Date.now() - startedAt, error: error instanceof Error ? error.message : String(error) });
+      console.error('transcription failed', { ms: Date.now() - startedAt, timedOut });
       return c.json({ error: timedOut ? 'Transcription took too long. Try a shorter clip.' : 'The recording could not be transcribed. Try again.' }, 502);
-    }
+    } finally { active--; }
   });
 
   app.openapi(createRoute({
     method: 'post', path: '/v1/chat', summary: 'Stream a portfolio answer',
-    description: 'Requires the configured site Origin and a session bearer token. The browser keeps the conversation and sends its recent turns as history; the server keeps the newest MAX_MESSAGES_PER_SESSION turns and trims the oldest to fit the context budget. When the last five turns, model, prompt and indexed commits match a finished answer from the last ANSWER_CACHE_TTL_HOURS, that answer is replayed with usage.cached set, without calling the model or spending the daily budget. A voice note is transcribed first at /v1/transcribe and arrives here as text. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. OpenAPI describes each event, not the whole stream.',
+    description: 'Requires the configured site Origin and a session bearer token. The browser keeps the conversation and sends its recent turns as history; the server keeps the newest MAX_MESSAGES_PER_SESSION turns and trims the oldest to fit the context budget. When the full retained history, question, model, prompt, time zone and indexed commits match a finished answer from the last ANSWER_CACHE_TTL_HOURS, that answer is replayed across visitors with usage.cached set, without calling the model or spending the daily budget. Session-bound results are never cached. A voice note is transcribed first at /v1/transcribe and arrives here as text. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. OpenAPI describes each event, not the whole stream.',
     request: { headers: authHeader, body: { required: true, content: { 'application/json': { schema: chatSchema } } } },
     responses: {
       200: { description: 'SSE frames containing versioned ChatEvent JSON', content: { 'text/event-stream': { schema: eventSchema } } },
@@ -211,15 +209,14 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     while (history.length && history.reduce((sum, entry) => sum + entry.content.length, message.length) > MAX_CONTEXT_CHARS) history.splice(0, 2);
     const indexed = await retrieval.indexedRepos().catch(() => []);
     const systemPrompt = buildSystemPrompt(indexed, mailer.configured, storage.configured, scheduler.configured ? scheduler.eventTypes : []);
-    c.header('Cache-Control', 'no-cache, no-transform');
+    c.header('Cache-Control', 'no-store, no-transform');
     c.header('X-Accel-Buffering', 'no');
 
-    // The same last turns against the same model, prompt and indexed commits get the same answer, so
-    // it is replayed instead of generated. A reindex or prompt change moves the key and misses on its own.
+    // Share identical full contexts, never just a suffix: answers may quote earlier private turns.
     const cacheKey = !config.ANSWER_CACHE_TTL_HOURS ? undefined : createHash('sha256').update(JSON.stringify({
-      model: config.OPENROUTER_MODEL, system: systemPrompt,
+      model: config.OPENROUTER_MODEL, system: systemPrompt, timeZone: timeZoneOf(c.req.header('x-time-zone')),
       commits: indexed.map(entry => `${entry.repo}@${entry.commit}`),
-      turns: [...history, { role: 'user', content: message }].slice(-CACHE_TURNS).map(({ role, content }) => [role, content]),
+      turns: [...history, { role: 'user', content: message }].map(({ role, content }) => [role, content]),
     })).digest();
     const cached = cacheKey && await db.cachedAnswer(cacheKey).catch(() => undefined);
     // A replay costs no model call, so it spends neither the daily budget nor a concurrency slot.
@@ -230,9 +227,15 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'done', finishReason: 'stop' }) });
     });
 
-    if (active >= config.MAX_CONCURRENT_REQUESTS) return c.json({ error: 'Assistant is busy. Please try again shortly.' }, 429);
-    if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
+    if (active >= config.MAX_CONCURRENT_REQUESTS) { c.header('Retry-After', '5'); return c.json({ error: 'Assistant is busy. Please try again shortly.' }, 429); }
+    // Claim synchronously, before the budget query yields to another request.
     active++;
+    try {
+      if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) {
+        active--;
+        return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
+      }
+    } catch (error) { active--; throw error; }
     return streamSSE(c, async stream => {
       const controller = new AbortController();
       // Silence ends a turn, not length: every provider chunk and tool result pushes the deadline back,
@@ -256,13 +259,22 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       const visitorTimeZone = timeZoneOf(c.req.header('x-time-zone'));
       const repoNames = indexed.map(entry => entry.repo);
       const toolDefinitions = buildToolDefinitions(repoNames);
+      const turnAvailability = new Map<string, Promise<Slot[]>>();
       const toolContext = {
         retrieval, repoNames, contactEnabled: mailer.configured, artifactsEnabled: storage.configured, maxArtifactBytes: config.ARTIFACT_MAX_BYTES,
         scheduling: scheduler.configured
-          ? { timeZone: visitorTimeZone, eventTypes: scheduler.eventTypes, availability: (eventType: EventType) => availableSlots(eventType, visitorTimeZone) }
+          ? { timeZone: visitorTimeZone, eventTypes: scheduler.eventTypes, availability: (eventType: EventType) => {
+            let pending = turnAvailability.get(eventType.key);
+            if (!pending) {
+              pending = availableSlots(eventType, visitorTimeZone).catch(error => { turnAvailability.delete(eventType.key); throw error; });
+              turnAvailability.set(eventType.key, pending);
+            }
+            return pending;
+          } }
           : undefined,
       };
       const sources: SourceHit[] = [];
+      const readResults = new Map<string, ToolOutcome>();
       let answer = '';
       const startedAt = Date.now();
       const usage: { promptTokens?: number; completionTokens?: number; costUsd?: number } = {};
@@ -303,10 +315,12 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
             }
             // Ignore tool calls on the final step: no tools were offered, so any are spurious.
             for (const part of (canUseTools ? choice?.delta?.tool_calls : undefined) ?? []) {
+              if (!Number.isInteger(part.index) || part.index < 0 || part.index >= 12) throw new Error('Too many tool calls');
               const call = calls[part.index] ??= { id: '', name: '', arguments: '' };
               if (part.id) call.id = part.id;
               if (part.function?.name) call.name += part.function.name;
               if (part.function?.arguments) call.arguments += part.function.arguments;
+              if (call.arguments.length > 1_000_000 || call.name.length > 80 || call.id.length > 200) throw new Error('Tool call too large');
             }
             if (choice?.finish_reason) finish = choice.finish_reason;
           }
@@ -316,17 +330,25 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
           if (!requested.length) break;
           conversation.push({ role: 'assistant', content: stepText || null, tool_calls: requested.map(call => ({ id: call.id, type: 'function', function: { name: call.name, arguments: call.arguments } })) });
           for (const call of requested) {
+            controller.signal.throwIfAborted();
             const started = Date.now();
             await send({ type: 'tool', id: call.id, name: call.name, summary: 'running', status: 'running' });
             let outcome;
-            try { outcome = await runTool(toolContext, call.name, call.arguments); }
+            try {
+              const readOnly = ['search_knowledge', 'read_source', 'list_files'].includes(call.name);
+              const key = `${call.name}:${call.arguments}`;
+              outcome = readOnly ? readResults.get(key) : undefined;
+              outcome ??= await runTool(toolContext, call.name, call.arguments);
+              if (readOnly && !outcome.failed) readResults.set(key, outcome);
+            }
             catch (error) {
               console.error('Tool failed:', call.name, error instanceof Error ? error.message : error);
               outcome = { summary: 'tool failed', result: 'The tool could not run. Say so instead of guessing.', sources: [], failed: true as const };
             }
             const ms = Date.now() - started;
+            controller.signal.throwIfAborted();
             if (outcome.failed) recorded = undefined;
-            await send({ type: 'tool', id: call.id, name: call.name, summary: outcome.summary, status: outcome.summary.startsWith('tool failed') ? 'error' : 'done', ms });
+            await send({ type: 'tool', id: call.id, name: call.name, summary: outcome.summary, status: outcome.failed ? 'error' : 'done', ms });
             if (outcome.image) await send({ type: 'image', image: outcome.image });
             if (outcome.slots) {
               const { eventType, timeZone, slots: free } = outcome.slots;
@@ -351,13 +373,15 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
               try {
                 await storage.put(objectKey, document, 'text/markdown; charset=utf-8');
                 await db.createArtifact({ id, sessionId, kind, title, objectKey, bytes, sources }, config.ARTIFACT_TTL_DAYS);
-                const artifact = { id, kind, title, bytes, markdown: document, expiresAt: new Date(Date.now() + config.ARTIFACT_TTL_DAYS * 86400000).toISOString() };
-                await send({ type: 'artifact', artifact });
               } catch (error) {
+                recorded = undefined;
                 console.error('Could not store artifact:', error instanceof Error ? error.message : error);
+                await storage.remove([objectKey]).catch(() => console.error('Artifact upload cleanup failed'));
                 conversation.push({ role: 'tool', tool_call_id: call.id, content: 'The document could not be stored. Tell the visitor it is unavailable and answer in the chat instead.' });
                 continue;
               }
+              const artifact = { id, kind, title, bytes, markdown: document, expiresAt: new Date(Date.now() + config.ARTIFACT_TTL_DAYS * 86400000).toISOString() };
+              await send({ type: 'artifact', artifact });
             }
             if (outcome.draft) {
               const draftId = await db.createDraft(sessionId, outcome.draft, config.CONTACT_DRAFT_TTL_MINUTES);
@@ -427,8 +451,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     return scheduler.availability(eventType, from, to, timeZone);
   };
 
-  // The per-address hourly send limit is per process. The daily cap lives in the database.
-  const sendLimits = new Map<string, { count: number; expires: number }>();
   const contactBody = z.object({
     draftId: z.string().uuid().optional(),
     name: z.string().trim().min(1).max(120),
@@ -457,10 +479,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     // Silently accept the honeypot: a bot learns nothing from the response.
     if (body._gotcha) return c.json({ id: '', status: 'accepted' as const }, 202);
 
-    const limit = window(sendLimits, c.get('clientIP') || 'unknown', 3600000);
-    // Counted only when a message actually goes out, so a rejected draft never costs the visitor a send.
-    if (limit.count >= config.CONTACT_SENDS_PER_HOUR) return c.json({ error: 'Too many messages from this address. Please try again later.' }, 429);
-
     const draft = { name: body.name, email: body.email, message: body.message };
     let draftId = body.draftId;
     if (draftId) {
@@ -469,25 +487,36 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       const claim = await db.claimDraft(draftId, sessionId, draft);
       if (!claim.claimed) {
         if (claim.status === 'sent') return c.json({ id: draftId, status: 'already-sent' as const }, 202);
+        if (claim.status === 'sending' || claim.status === 'unknown') return c.json({ error: 'This message is being sent or delivery is unconfirmed. Please do not resend it.' }, 502);
         return c.json({ error: 'That draft is no longer available. Write the message again.' }, 404);
       }
     } else {
       draftId = await db.createDirectDraft(draft, config.CONTACT_DRAFT_TTL_MINUTES);
     }
 
-    if (!await db.reserveContactSend(config.CONTACT_SENDS_PER_DAY)) return c.json({ error: 'The daily message limit is reached. Please email directly.' }, 429);
-    limit.count++;
+    const limit = await db.consumeRateLimit('contact', c.get('clientIP') || 'unknown', config.CONTACT_SENDS_PER_HOUR, 3600);
+    if (!limit.allowed || !await db.reserveContactSend(config.CONTACT_SENDS_PER_DAY)) {
+      await db.finishDraft(draftId, 'failed');
+      c.header('Retry-After', String(limit.allowed ? 86400 : limit.retryAfter));
+      return c.json({ error: 'The message limit is reached. Please try later or email directly.' }, 429);
+    }
+    let providerId: string;
     try {
-      const providerId = await mailer.send({ name: draft.name, email: draft.email, body: draft.message });
-      await db.finishDraft(draftId, 'sent', providerId);
-      return c.json({ id: draftId, status: 'accepted' as const }, 202);
+      providerId = await mailer.send({ name: draft.name, email: draft.email, body: draft.message });
     } catch (error) {
+      if (error instanceof AmbiguousDeliveryError) {
+        await db.finishDraft(draftId, 'unknown');
+        return c.json({ error: 'Delivery was not confirmed. Please do not resend: the message may already have arrived.' }, 502);
+      }
       // Keep the draft so the visitor can retry the same text, and free the reserved slot.
       console.error('Contact delivery failed:', error instanceof Error ? error.message : error);
       await db.finishDraft(draftId, 'failed').catch(() => {});
       await db.releaseContactSend().catch(() => {});
       return c.json({ error: 'The message could not be delivered. Your text is kept, please try again.' }, 502);
     }
+    // A database failure after acceptance must not mark the message as safe to resend.
+    await db.finishDraft(draftId, 'sent', providerId);
+    return c.json({ id: draftId, status: 'accepted' as const }, 202);
   });
 
   app.openapi(createRoute({
@@ -550,6 +579,14 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     }, 201);
   });
 
+  app.use('/v1/bookings', async (c, next) => {
+    const release = await db.acquireBookingLock();
+    if (!release) {
+      c.header('Retry-After', '5');
+      return c.json({ error: 'Another booking is being confirmed. Please try again shortly.' }, 429);
+    }
+    try { await next(); } finally { await release(); }
+  });
   app.openapi(createRoute({
     method: 'post', path: '/v1/bookings', summary: 'Confirm a call',
     description: 'The only path to the calendar provider, and the model never reaches it: the visitor confirms the slot and their own details. The slot is re-checked against live availability first, so a time taken in the meantime returns 409 with the current slots. Confirming the same proposal twice returns the first booking. If the provider does not answer, the proposal is left unresolved rather than retried, because the booking may already exist.',
@@ -609,10 +646,9 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       await db.finishBooking(body.proposalId, 'failed');
       return c.json({ error: 'The daily booking limit is reached. Please send a message instead.' }, 429);
     }
+    let uid: string;
     try {
-      const { uid } = await scheduler.book({ eventTypeKey: eventType.key, start, name: body.name, email: body.email, timeZone, notes: '' });
-      await db.finishBooking(body.proposalId, 'confirmed', uid);
-      return c.json({ id: body.proposalId, uid, start, status: 'confirmed' as const }, 201);
+      ({ uid } = await scheduler.book({ eventTypeKey: eventType.key, start, name: body.name, email: body.email, timeZone, notes: '' }));
     } catch (error) {
       if (error instanceof AmbiguousBookingError) {
         // The booking may exist upstream: leave it unresolved so nothing books it twice.
@@ -625,6 +661,8 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       await db.releaseBooking().catch(() => {});
       return c.json({ error: 'The calendar rejected that booking. Pick another time or send a message.' }, 502);
     }
+    await db.finishBooking(body.proposalId, 'confirmed', uid);
+    return c.json({ id: body.proposalId, uid, start, status: 'confirmed' as const }, 201);
   });
 
   app.doc('/openapi.json', { openapi: '3.1.0', info: { title: 'Portfolio Assistant API', version: '0.2.0' } });

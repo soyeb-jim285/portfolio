@@ -5,7 +5,7 @@ import { CLIENT_HEADERS, createApp } from './app';
 import { configSchema } from './config';
 import { createDb, type Db } from './db';
 import type { Retrieval, SourceHit } from './retrieval';
-import type { Mailer } from './mailer';
+import { AmbiguousDeliveryError, type Mailer } from './mailer';
 import type { Storage } from './storage';
 import { AmbiguousBookingError, type Scheduler, type Slot } from './scheduler';
 import { Pool } from 'pg';
@@ -13,13 +13,13 @@ import { Pool } from 'pg';
 // TEST_DATABASE_URL only, never DATABASE_URL: these tests TRUNCATE every table.
 const url = process.env.TEST_DATABASE_URL;
 if (!url) throw new Error('Set TEST_DATABASE_URL to a disposable PostgreSQL database. These tests delete all rows, so never point it at a database you care about.');
-const config = configSchema.parse({ OPENROUTER_API_KEY: 'test-key', OPENROUTER_MODEL: 'test-model', SITE_ORIGIN: 'http://localhost:4321', DATABASE_URL: url, MAX_MESSAGES_PER_SESSION: 4, ANSWER_CACHE_TTL_HOURS: 0 });
+const config = configSchema.parse({ OPENROUTER_API_KEY: 'test-key', OPENROUTER_MODEL: 'test-model', SITE_ORIGIN: 'http://localhost:4321', DATABASE_URL: url, MAX_MESSAGES_PER_SESSION: 4, ANSWER_CACHE_TTL_HOURS: 0, REQUESTS_PER_MINUTE: 100 });
 // The answer cache is off by default here so repeated questions keep reaching the provider; its own tests turn it on.
 const cachedConfig = { ...config, ANSWER_CACHE_TTL_HOURS: 24 };
 const db: Db = await createDb(url, config.SESSION_TTL_DAYS);
 const pool = new Pool({ connectionString: url });
 after(async () => { await db.close(); await pool.end(); });
-beforeEach(async () => { sentMail.length = 0; stored.clear(); booked.length = 0; await pool.query('TRUNCATE sessions, usage_daily, answer_cache CASCADE'); });
+beforeEach(async () => { sentMail.length = 0; stored.clear(); booked.length = 0; await pool.query('TRUNCATE sessions, usage_daily, answer_cache, rate_limits CASCADE'); });
 
 const hit = (overrides: Partial<SourceHit> = {}): SourceHit => ({
   repo: 'hyprfm', path: 'src/FileOps.cpp', language: 'cpp', symbols: ['copy'], startLine: 10, endLine: 40,
@@ -167,8 +167,8 @@ test('rejects invalid input, disallowed origins and oversized bodies before the 
   const token = await newSession(app);
   assert.equal((await app.fetch(ask(token, 'hi', 'https://evil.example'))).status, 403);
   assert.equal((await app.fetch(ask(token, ' '))).status, 400);
-  // The limit is sized for a base64 voice note, so only a genuinely huge body is refused.
-  assert.equal((await app.fetch(ask(token, 'a'.repeat(12_000_000)))).status, 413);
+  // Chat cannot borrow the much larger transcription upload budget.
+  assert.equal((await app.fetch(ask(token, 'a'.repeat(200_001)))).status, 413);
   const extra = await app.fetch(new Request('http://localhost/v1/chat', { method: 'POST', body: JSON.stringify({ message: 'hi', role: 'system' }), headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` } }));
   assert.equal(extra.status, 400);
   assert.equal(calls, 0);
@@ -192,6 +192,48 @@ test('per-address burst limit applies to every /v1 route', async () => {
   await newSession(app);
   await newSession(app);
   assert.equal((await app.fetch(new Request('http://localhost/v1/sessions', { method: 'POST', headers: { Origin: config.SITE_ORIGIN } }))).status, 429);
+});
+
+test('burst limits are atomic across app instances and provide a retry time', async () => {
+  const limited = { ...config, REQUESTS_PER_MINUTE: 2 };
+  const first = createApp(limited, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), replying().client);
+  const second = createApp(limited, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), replying().client);
+  const responses = await Promise.all(Array.from({ length: 8 }, (_, index) => (index % 2 ? first : second).fetch(new Request('http://localhost/v1/sessions', { method: 'POST', headers: { Origin: config.SITE_ORIGIN, 'X-Forwarded-For': `192.0.2.${index}` } }))));
+  assert.equal(responses.filter(response => response.status === 201).length, 2);
+  for (const response of responses.filter(response => response.status === 429)) assert.ok(Number(response.headers.get('Retry-After')) > 0);
+  await pool.query("UPDATE rate_limits SET expires_at = now() - interval '1 second'");
+  await newSession(second);
+});
+
+test('private API responses prohibit browser caching and malformed tokens never query sessions', async () => {
+  let touches = 0;
+  const guarded = { ...db, touchSession: async (token: string) => { touches++; return db.touchSession(token); } };
+  const app = createApp(config, guarded, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), replying().client);
+  const session = await app.fetch(new Request('http://localhost/v1/sessions', { method: 'POST', headers: { Origin: config.SITE_ORIGIN } }));
+  assert.equal(session.headers.get('Cache-Control'), 'no-store');
+  assert.equal(session.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.equal((await app.fetch(ask('invalid-token'))).status, 401);
+  assert.equal(touches, 0);
+});
+
+test('concurrent claims cannot send one draft or confirm one proposal twice', async () => {
+  const { token } = await db.createSession();
+  const sessionId = (await db.touchSession(token))!;
+  const draft = { name: 'Ada', email: 'ada@example.com', message: 'Please get in touch.' };
+  const draftId = await db.createDraft(sessionId, draft, 60);
+  const drafts = await Promise.all(Array.from({ length: 8 }, () => db.claimDraft(draftId, sessionId, draft)));
+  assert.equal(drafts.filter(result => result.claimed).length, 1);
+  const booking = { sessionId, meetingKey: '30min', slotStart: slotAt(24).start, name: draft.name, email: draft.email, timeZone: 'UTC', notes: '' };
+  const bookingId = await db.createBooking(booking, 60);
+  const bookings = await Promise.all(Array.from({ length: 8 }, () => db.claimBooking(bookingId, sessionId, booking)));
+  assert.equal(bookings.filter(result => result.claimed).length, 1);
+  const release = await db.acquireBookingLock();
+  assert.ok(release);
+  assert.equal(await db.acquireBookingLock(), null, 'the check/create lock is shared by separate DB connections');
+  await release();
+  const again = await db.acquireBookingLock();
+  assert.ok(again);
+  await again();
 });
 
 test('provider failure and truncated streams never report completion', async () => {
@@ -472,6 +514,22 @@ test('a provider failure keeps the draft, frees the slot and can be retried', as
   assert.equal(sentMail.length, 1);
 });
 
+test('ambiguous mail delivery and persistence failures cannot trigger duplicate sends', async () => {
+  for (const ambiguous of [true, false]) {
+    let sends = 0;
+    const { token } = await db.createSession();
+    const sessionId = (await db.touchSession(token))!;
+    const draft = { name: 'Ada', email: 'ada@example.com', message: 'Please get in touch.' };
+    const draftId = await db.createDraft(sessionId, draft, 60);
+    const database = ambiguous ? db : { ...db, finishDraft: async () => { throw new Error('write failed after send'); } };
+    const mailer = fakeMailer({ send: async () => { sends++; if (ambiguous) throw new AmbiguousDeliveryError('no confirmation'); return 'accepted'; } });
+    const app = createApp(config, database, fakeRetrieval(), mailer, fakeStorage(), fakeScheduler());
+    assert.equal((await post(app, { ...draft, draftId }, token)).status, ambiguous ? 502 : 500);
+    assert.equal((await post(app, { ...draft, draftId }, token)).status, 502);
+    assert.equal(sends, 1);
+  }
+});
+
 test('with no mail provider configured nothing is offered and nothing is sent', async () => {
   const offline = { configured: false, recipientLabel: 'Jim', send: async () => { throw new Error('not configured'); } };
   const { sent, client } = scripted(draftCall('{"name":"Ada","email":"ada@example.com","message":"Hello there."}'), sse('Use the contact page.'));
@@ -580,6 +638,16 @@ test('a storage failure is reported and stores no row', async () => {
   assert.equal(frames.at(-1).type, 'done');
 });
 
+test('an uploaded document is removed if its ownership row cannot be saved, and the failure is not cached', async () => {
+  const database = { ...db, createArtifact: async () => { throw new Error('database unavailable'); } };
+  const { client } = scripted(artifactCall(brief), sse('The document could not be stored.'));
+  const app = createApp(cachedConfig, database, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const frames = events(await (await app.fetch(ask(await newSession(app), 'Create a downloadable brief'))).text());
+  assert.equal(stored.size, 0);
+  assert.equal(frames.some(event => event.type === 'artifact'), false);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM answer_cache')).rows[0].n, 0);
+});
+
 test('with no storage configured the tool is refused and downloads answer 503', async () => {
   const offline: Storage = { configured: false, put: async () => { throw new Error('off'); }, signedUrl: async () => { throw new Error('off'); }, remove: async () => {} };
   const { sent, client } = scripted(artifactCall(brief), sse('I cannot produce documents right now.'));
@@ -610,6 +678,18 @@ test('expired artifacts stop resolving and their objects are deleted with their 
   await db.deleteArtifacts(expired.map(entry => entry.id));
   assert.equal(stored.has(key), false, 'the object must not outlive its row');
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM artifacts')).rows[0].n, 0);
+});
+
+test('expired sessions retain artifact ownership until object cleanup completes', async () => {
+  const { token } = await db.createSession();
+  const sessionId = (await db.touchSession(token))!;
+  const id = crypto.randomUUID();
+  await db.createArtifact({ id, sessionId, kind: 'brief', title: 'Brief', objectKey: 'test.md', bytes: 10, sources: [] }, 7);
+  await pool.query("UPDATE sessions SET expires_at = now() - interval '1 second'");
+  assert.deepEqual(await db.expiredArtifacts(), [{ id, objectKey: 'test.md' }]);
+  assert.equal(await db.sweep(), 0, 'a storage outage must not orphan objects by deleting the owner');
+  await db.deleteArtifacts([id]);
+  assert.equal(await db.sweep(), 1);
 });
 
 const availabilityCall = toolFrame([{ index: 0, id: 'call_slots', name: 'get_availability', args: '{}' }], 'tool_calls') + 'data: [DONE]\n\n';
@@ -676,6 +756,33 @@ test('a proposal must match a real slot, and the visitor confirms it', async () 
   assert.equal(row.status, 'confirmed');
   assert.equal(row.provider_uid, 'event_1');
   assert.equal(row.name, 'Ada Lovelace');
+});
+
+test('calendar tools share a lookup within a turn but confirmation always reads live availability', async () => {
+  let lookups = 0;
+  const start = slotAt(24).start;
+  const scheduler = fakeScheduler({ availability: async () => { lookups++; return [slotAt(24)]; } });
+  const { client } = scripted(availabilityCall, proposeCall(start), sse('Confirm the time below.'));
+  const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), scheduler, client);
+  const token = await newSession(app);
+  const frames = events(await (await app.fetch(ask(token, 'Find a time and propose it'))).text());
+  assert.equal(lookups, 1);
+  const proposal = frames.find(event => event.type === 'proposal').proposal;
+  assert.equal((await confirmRequest(app, token, { proposalId: proposal.id, start, name: 'Ada', email: 'ada@example.com', timeZone: 'UTC' })).status, 201);
+  assert.equal(lookups, 2);
+});
+
+test('a persistence failure after a calendar acceptance never permits a second booking', async () => {
+  const { token } = await db.createSession();
+  const sessionId = (await db.touchSession(token))!;
+  const start = slotAt(24).start;
+  const id = await db.createBooking({ sessionId, meetingKey: '30min', slotStart: start, name: 'Ada', email: 'ada@example.com', timeZone: 'UTC', notes: '' }, 60);
+  const database = { ...db, finishBooking: async () => { throw new Error('write failed after booking'); } };
+  const app = createApp(config, database, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler());
+  const body = { proposalId: id, start, name: 'Ada', email: 'ada@example.com', timeZone: 'UTC' };
+  assert.equal((await confirmRequest(app, token, body)).status, 500);
+  assert.equal((await confirmRequest(app, token, body)).status, 404);
+  assert.equal(booked.length, 1);
 });
 
 test('a time that is no longer free is refused with the current slots', async () => {
@@ -868,7 +975,7 @@ test('citations of the same file collapse to the widest range', async () => {
   const other = { ...hit(), path: 'src/Thumbnailer.cpp', startLine: 1, endLine: 30 };
   let call = 0;
   const retrieval = fakeRetrieval({ search: async () => [[narrow], [wide], [other]][Math.min(call++, 2)] });
-  const search = (id: string) => toolFrame([{ index: 0, id, name: 'search_knowledge', args: '{"query":"copy"}' }], 'tool_calls') + 'data: [DONE]\n\n';
+  const search = (id: string) => toolFrame([{ index: 0, id, name: 'search_knowledge', args: JSON.stringify({ query: `copy ${id}` }) }], 'tool_calls') + 'data: [DONE]\n\n';
   const { client } = scripted(search('a'), search('b'), sse('Answered.'));
   const app = createApp({ ...config, MAX_TOOL_STEPS: 3 }, db, retrieval, fakeMailer(), fakeStorage(), fakeScheduler(), client);
   const token = await newSession(app);
@@ -932,6 +1039,52 @@ const transcribing = (text = 'What makes HyprFM interesting?') => {
   return { seen, client };
 };
 const voice = (bytes = 4000, type = 'audio/webm;codecs=opus') => ({ mediaType: type, dataUrl: `data:${type};base64,${Buffer.alloc(bytes, 7).toString('base64')}` });
+
+test('chat and transcription reserve concurrency before awaiting the daily budget', async () => {
+  for (const route of ['chat', 'transcribe']) {
+    let enter!: () => void, release!: () => void;
+    const entered = new Promise<void>(resolve => { enter = resolve; });
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const database = { ...db, reserveDailyRequest: async (max: number) => { enter(); await gate; return db.reserveDailyRequest(max); } };
+    const client = route === 'chat' ? replying().client : transcribing().client;
+    const app = createApp({ ...config, MAX_CONCURRENT_REQUESTS: 1 }, database, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+    const token = await newSession(app);
+    const transcription = () => new Request('http://localhost/v1/transcribe', { method: 'POST', body: JSON.stringify(voice()), headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` } });
+    const first = app.fetch(route === 'chat' ? ask(token) : transcription());
+    await entered;
+    try {
+      assert.equal((await app.fetch(ask(token))).status, 429);
+      assert.equal((await app.fetch(transcription())).status, 429);
+    } finally { release(); }
+    const response = await first;
+    assert.equal(response.status, 200);
+    await response.text();
+    const next = await app.fetch(route === 'chat' ? ask(token) : transcription());
+    assert.equal(next.status, 200, 'completion releases the reserved capacity');
+    await next.text();
+  }
+});
+
+test('duplicate read-only tools reuse results rather than repeating retrieval calls', async () => {
+  let searches = 0;
+  const retrieval = fakeRetrieval({ search: async () => { searches++; return [hit()]; } });
+  const calls = toolFrame([0, 1].map(index => ({ index, id: `search_${index}`, name: 'search_knowledge', args: '{"query":"copy"}' })), 'tool_calls') + 'data: [DONE]\n\n';
+  const { client } = scripted(calls, sse('Here is the code.'));
+  const app = createApp(config, db, retrieval, fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const frames = events(await (await app.fetch(ask(await newSession(app)))).text());
+  assert.equal(searches, 1);
+  assert.equal(frames.filter(event => event.type === 'tool' && event.status === 'done').length, 2);
+});
+
+test('excessive provider tool batches are rejected before tools execute', async () => {
+  let searches = 0;
+  const retrieval = fakeRetrieval({ search: async () => { searches++; return [hit()]; } });
+  const { client } = scripted(toolFrame([{ index: 1000000, id: 'bad', name: 'search_knowledge', args: '{"query":"copy"}' }], 'tool_calls') + 'data: [DONE]\n\n');
+  const app = createApp(config, db, retrieval, fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const frames = events(await (await app.fetch(ask(await newSession(app)))).text());
+  assert.equal(searches, 0);
+  assert.equal(frames.at(-1).type, 'error');
+});
 
 test('a voice note is transcribed through the configured model and only the text comes back', async () => {
   const { seen, client } = transcribing();
@@ -1000,10 +1153,10 @@ test('show_image can only display one of the portfolio images', async () => {
   assert.match(refused.sent[1].messages.at(-1).content, /Unknown image/);
 });
 
-test('the same last five turns replay the stored answer without calling the model or spending budget', async () => {
+test('identical full context replays across sessions without calling the model or spending budget', async () => {
   let calls = 0;
   const client = mockClient(async () => { calls++; return new Response(sse(`Answer ${calls}.`), { headers: { 'Content-Type': 'text/event-stream' } }); });
-  const app = createApp({ ...cachedConfig, MAX_REQUESTS_PER_DAY: 1 }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const app = createApp({ ...cachedConfig, MAX_MESSAGES_PER_SESSION: 40, MAX_REQUESTS_PER_DAY: 1 }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
   const token = await newSession(app);
   const turns = (first: string) => [first, 'a1', 'q2', 'a2', 'q3', 'a3'].map((content, index) => ({ role: index % 2 ? 'assistant' : 'user', content }));
 
@@ -1011,15 +1164,16 @@ test('the same last five turns replay the stored answer without calling the mode
   assert.equal(calls, 1);
   assert.equal(fresh.find(event => event.type === 'usage').usage.cached, undefined);
 
-  // Only the newest five turns count: a different first question still matches, from another session too.
+  // Identical full context is safe to share across visitors.
   const otherToken = await newSession(app);
-  const replay = events(await (await app.fetch(ask(otherToken, 'q4', config.SITE_ORIGIN, turns('something else')))).text());
+  const replay = events(await (await app.fetch(ask(otherToken, 'q4', config.SITE_ORIGIN, turns('q1')))).text());
   assert.equal(calls, 1, 'a cache hit must not call the model');
   assert.deepEqual(replay.filter(event => event.type === 'delta'), fresh.filter(event => event.type === 'delta'));
   assert.equal(replay.find(event => event.type === 'usage').usage.cached, true);
   assert.equal(replay.at(-1).type, 'done');
 
   // The daily budget of one was spent by the first answer; anything that misses the cache is refused.
+  assert.equal((await app.fetch(ask(otherToken, 'q4', config.SITE_ORIGIN, turns('different private detail')))).status, 429, 'an identical suffix must not expose another visitor’s earlier context');
   assert.equal((await app.fetch(ask(token, 'q4', config.SITE_ORIGIN, turns('q1').slice(0, 5)))).status, 429);
   assert.equal((await pool.query('SELECT hits FROM answer_cache')).rows[0].hits, 1);
 });

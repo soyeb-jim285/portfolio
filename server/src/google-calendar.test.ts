@@ -34,7 +34,7 @@ test('the refresh token is exchanged once and the access token reused', async ()
   const { calls, fetchImpl } = recorder({ token: () => { tokenCalls++; return json({ access_token: 'token-1', expires_in: 3600 }); } });
   const scheduler = createGoogleScheduler(config, fetchImpl);
   assert.equal(scheduler.configured, true);
-  await scheduler.availability(eventType, window().from, window().to, 'Europe/Rome');
+  await Promise.all(Array.from({ length: 3 }, () => scheduler.availability(eventType, window().from, window().to, 'Europe/Rome')));
   await scheduler.availability(eventType, window().from, window().to, 'Europe/Rome');
   assert.equal(tokenCalls, 1, 'a cached access token must be reused');
   assert.deepEqual(calls[0].body, { client_id: 'client', client_secret: 'secret', refresh_token: 'refresh', grant_type: 'refresh_token' });

@@ -1,4 +1,5 @@
 import { serve } from '@hono/node-server';
+import { Server } from 'node:http';
 import { getConnInfo } from '@hono/node-server/conninfo';
 import { Hono } from 'hono';
 import { configSchema } from './config';
@@ -10,6 +11,7 @@ import { createStorage } from './storage';
 import { createGoogleScheduler } from './google-calendar';
 import { createCalScheduler } from './cal-calendar';
 import { createRetrieval } from './retrieval';
+import { clientAddress } from './client-address';
 
 const config = configSchema.parse(process.env);
 const db = await createDb(config.DATABASE_URL, config.SESSION_TTL_DAYS);
@@ -33,21 +35,31 @@ console.log(scheduler.configured
 
 // Expired rows and their objects go together: a stored document must never outlive its row.
 async function sweepAll() {
-  const expired = await db.expiredArtifacts();
-  if (expired.length && storage.configured) await storage.remove(expired.map(artifact => artifact.objectKey));
-  await db.deleteArtifacts(expired.map(artifact => artifact.id));
-  await db.sweep();
+  try {
+    const expired = await db.expiredArtifacts();
+    if (expired.length && storage.configured) {
+      await storage.remove(expired.map(artifact => artifact.objectKey));
+      await db.deleteArtifacts(expired.map(artifact => artifact.id));
+    }
+  } finally { await db.sweep(); }
 }
 // An hourly in-process sweep is enough for one node. Move it to cron if you run several.
 const sweep = setInterval(() => { void sweepAll().catch(error => console.error('Sweep failed:', error.message)); }, 3600000);
 sweep.unref();
-await sweepAll();
+await sweepAll().catch(error => console.error('Startup sweep failed:', error.message));
 
 const app = new Hono<{ Variables: { clientIP: string; sessionId: string } }>();
-// Use the socket peer, never an untrusted forwarded header.
-app.use('*', async (c, next) => { c.set('clientIP', getConnInfo(c).remote.address || 'unknown'); await next(); });
+app.use('*', async (c, next) => {
+  c.set('clientIP', clientAddress(getConnInfo(c).remote.address || 'unknown', c.req.header('x-real-ip'), config.TRUSTED_PROXY_IPS));
+  await next();
+});
 app.route('/', createApp(config, db, retrieval, mailer, storage, scheduler));
 const server = serve({ fetch: app.fetch, hostname: config.HOST, port: config.PORT });
+if (server instanceof Server) {
+  server.requestTimeout = 30000;
+  server.headersTimeout = 15000;
+  server.keepAliveTimeout = 5000;
+}
 console.log(`Portfolio API: http://${config.HOST}:${config.PORT}/docs`);
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => {
   clearInterval(sweep);

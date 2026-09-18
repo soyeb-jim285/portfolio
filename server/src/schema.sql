@@ -12,8 +12,8 @@ CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at);
 -- them in a messages table; dropping it erases every stored transcript.
 DROP TABLE IF EXISTS messages;
 
--- Finished answers, replayed when the same last five turns arrive again. The key is a hash of the
--- model, system prompt, indexed commits and those turns, so the question text itself is not kept.
+-- Finished answers, replayed when the full model context matches. The key hashes the model,
+-- system prompt, indexed commits, time zone and turns; an answer may quote the question text.
 CREATE TABLE IF NOT EXISTS answer_cache (
   key bytea PRIMARY KEY,
   events jsonb NOT NULL,
@@ -22,6 +22,14 @@ CREATE TABLE IF NOT EXISTS answer_cache (
   expires_at timestamptz NOT NULL
 );
 CREATE INDEX IF NOT EXISTS answer_cache_expires_idx ON answer_cache (expires_at);
+
+-- Shared fixed-window counters; keys are hashes, not stored client addresses.
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key bytea PRIMARY KEY,
+  count integer NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS rate_limits_expiry_idx ON rate_limits (expires_at);
 
 -- Request budget that survives restarts and is shared by every process on this database.
 CREATE TABLE IF NOT EXISTS usage_daily (
@@ -108,6 +116,8 @@ CREATE TABLE IF NOT EXISTS contact_drafts (
   sent_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS contact_drafts_expiry_idx ON contact_drafts (expires_at) WHERE status = 'draft';
+ALTER TABLE contact_drafts DROP CONSTRAINT IF EXISTS contact_drafts_status_check;
+ALTER TABLE contact_drafts ADD CONSTRAINT contact_drafts_status_check CHECK (status IN ('draft', 'sending', 'sent', 'failed', 'unknown'));
 
 ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS contact_sends integer NOT NULL DEFAULT 0;
 
@@ -141,6 +151,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   confirmed_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS bookings_expiry_idx ON bookings (expires_at) WHERE status = 'pending';
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check;
+ALTER TABLE bookings ADD CONSTRAINT bookings_status_check CHECK (status IN ('pending', 'confirming', 'confirmed', 'conflict', 'failed', 'unknown'));
 
 ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS bookings integer NOT NULL DEFAULT 0;
 
