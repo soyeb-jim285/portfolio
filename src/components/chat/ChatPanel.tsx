@@ -492,7 +492,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         </Button>
       </SheetTrigger>
       <SheetContent container={portal} data-shown={shown || undefined} data-mobile={mobile || undefined}
-        onOpenAutoFocus={event => { event.preventDefault(); input.current?.focus(); }}
+        onOpenAutoFocus={event => { if (!mobile) { event.preventDefault(); input.current?.focus(); } }}
         onInteractOutside={event => { if (!mobile) event.preventDefault(); }}>
         {!mobile && <div className="assistant-resizer" role="separator" aria-orientation="vertical" aria-label="Resize assistant panel"
           aria-valuenow={width} aria-valuemin={MIN_WIDTH} aria-valuemax={760} tabIndex={0} onPointerDown={drag}
