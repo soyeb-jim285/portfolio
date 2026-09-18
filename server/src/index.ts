@@ -11,6 +11,8 @@ import { createStorage } from './storage';
 import { createGoogleScheduler } from './google-calendar';
 import { createCalScheduler } from './cal-calendar';
 import { createRetrieval } from './retrieval';
+import { createGitHub } from './github';
+import { runIndex } from './index-run';
 import { clientAddress } from './client-address';
 
 const config = configSchema.parse(process.env);
@@ -48,6 +50,22 @@ const sweep = setInterval(() => { void sweepAll().catch(error => console.error('
 sweep.unref();
 await sweepAll().catch(error => console.error('Startup sweep failed:', error.message));
 
+// The code index keeps up with pushes on its own: a pass shortly after boot, then every
+// INDEX_EVERY_HOURS. Unchanged repositories are skipped after one ls-remote each.
+// ponytail: in-process like the sweep; move it to a cron job if the API ever runs as several replicas
+// (the advisory lock already keeps two passes from overlapping).
+let indexTimer: NodeJS.Timeout | undefined;
+if (config.INDEX_EVERY_HOURS > 0) {
+  const github = createGitHub(config.GITHUB_TOKEN);
+  const embedder = createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS);
+  const pass = () => void runIndex(db.pool, config, github, embedder, { log: message => console.log(`[index] ${message}`) })
+    .catch(error => console.error('[index] pass failed:', error instanceof Error ? error.message : error));
+  const first = setTimeout(pass, 5 * 60_000);
+  first.unref();
+  indexTimer = setInterval(pass, config.INDEX_EVERY_HOURS * 3_600_000);
+  indexTimer.unref();
+}
+
 const app = new Hono<{ Variables: { clientIP: string; sessionId: string } }>();
 app.use('*', async (c, next) => {
   c.set('clientIP', clientAddress(getConnInfo(c).remote.address || 'unknown', c.req.header('x-real-ip'), config.TRUSTED_PROXY_IPS));
@@ -63,6 +81,7 @@ if (server instanceof Server) {
 console.log(`Portfolio API: http://${config.HOST}:${config.PORT}/docs`);
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => {
   clearInterval(sweep);
+  if (indexTimer) clearInterval(indexTimer);
   server.close(() => { void db.close().finally(() => process.exit(0)); });
   setTimeout(() => process.exit(1), config.REQUEST_TIMEOUT_MS + 1000).unref();
 });

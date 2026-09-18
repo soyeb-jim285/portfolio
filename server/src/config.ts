@@ -24,6 +24,8 @@ export const configSchema = z.object({
   GITHUB_OWNER: z.string().min(1).default('soyeb-jim285'),
   GITHUB_TOKEN: z.string().min(1).optional(),
   REPO_CACHE_DIR: z.string().min(1).default('.cache/repos'),
+  // Hours between automatic index passes inside the API; 0 turns them off. Unchanged repositories cost one ls-remote each.
+  INDEX_EVERY_HOURS: z.coerce.number().min(0).max(168).default(24),
   MAX_TOOL_STEPS: z.coerce.number().int().min(0).max(6).default(3),
   RESEND_API_KEY: z.string().min(1).optional(),
   CONTACT_FROM: z.string().min(1).optional(),

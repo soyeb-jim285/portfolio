@@ -83,12 +83,16 @@ const cases: Case[] = [
 let passed = 0;
 try {
   for (const testCase of cases) {
-    const session = await (await app.request('/v1/sessions', { method: 'POST', headers: { Origin: config.SITE_ORIGIN } })).json();
+    const started = await app.request('/v1/sessions', { method: 'POST', headers: { Origin: config.SITE_ORIGIN } });
+    const session = await started.json();
+    // A refused session (bot check, rate limit, budget) would otherwise surface as an empty answer.
+    if (!started.ok || !session.token) { console.log(`FAIL  ${testCase.name}\n      session refused (${started.status}): ${session.error ?? 'no token'}`); continue; }
     const response = await app.request('/v1/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${session.token}`, 'X-Time-Zone': 'Asia/Dhaka' },
       body: JSON.stringify({ message: testCase.ask }),
     });
+    if (!response.ok) { console.log(`FAIL  ${testCase.name}\n      chat refused (${response.status}): ${(await response.text()).slice(0, 200)}`); continue; }
     const frames = (await response.text()).split(/\n\n/).filter(Boolean).map(frame => JSON.parse(frame.replace(/^data: /, '')) as Frame);
     const answer = frames.filter(frame => frame.type === 'delta').map(frame => frame.text).join('');
     const verdict = frames.at(-1)?.type === 'done' ? testCase.check(frames, answer) : 'the answer did not complete';

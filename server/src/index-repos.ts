@@ -1,59 +1,21 @@
-// Indexing command. Discovers the public repositories, skips the ones whose head commit is
-// already indexed, and re-embeds only the windows whose text changed.
+// Indexing command. The pass itself lives in index-run.ts, shared with the API's daily timer.
 import { Pool } from 'pg';
 import { configSchema } from './config';
-import { applySchema } from './db';
 import { createEmbedder } from './embeddings';
 import { createGitHub } from './github';
-import { indexRepo } from './indexer';
-import { INCLUDED, selectRepos } from './repos';
+import { runIndex } from './index-run';
 
 const config = configSchema.parse(process.env);
-const requested = process.argv.slice(2).filter(argument => !argument.startsWith('--'));
-const force = process.argv.includes('--force');
-const dryRun = process.argv.includes('--dry-run');
-
 const pool = new Pool({ connectionString: config.DATABASE_URL, connectionTimeoutMillis: 20000 });
-const github = createGitHub(config.GITHUB_TOKEN);
-const embedder = createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS);
-
 let failed = false;
 try {
-  await applySchema(pool);
-  const discovered = selectRepos(await github.repos(config.GITHUB_OWNER));
-  const targets = requested.length ? discovered.filter(repo => requested.includes(repo.name)) : discovered;
-  if (requested.length && targets.length !== requested.length) {
-    const missing = requested.filter(name => !targets.some(repo => repo.name === name));
-    throw new Error(`Unknown repository: ${missing.join(', ')}. Available: ${discovered.map(repo => repo.name).join(', ')}`);
-  }
-  console.log(`${targets.length} repositories to consider${config.GITHUB_TOKEN ? '' : ' (no GITHUB_TOKEN: 60 requests per hour)'}`);
-  if (!dryRun) {
-    // Dropping a name from the allowlist must also drop what was already indexed under it,
-    // or retrieval keeps quoting a repository the site no longer talks about.
-    const names = [...INCLUDED];
-    const dropped = await pool.query('DELETE FROM index_revisions WHERE repo <> ALL($1::text[]) RETURNING repo', [names]);
-    await pool.query('DELETE FROM repo_facts WHERE repo <> ALL($1::text[])', [names]);
-    if (dropped.rowCount) console.log(`Pruned ${dropped.rowCount} revision(s) for repositories off the allowlist: ${[...new Set(dropped.rows.map(row => row.repo))].join(', ')}`);
-  }
-  if (dryRun) {
-    for (const repo of targets) console.log(`  ${repo.name} — ${repo.blurb}`);
-    process.exit(0);
-  }
-
-  let embedded = 0;
-  let unchanged = 0;
-  for (const repo of targets) {
-    try {
-      const report = await indexRepo(pool, repo, config.REPO_CACHE_DIR, embedder, github, { force, log: message => console.log(message) });
-      if (report.unchanged) { unchanged++; console.log(`${report.repo}: unchanged at ${report.commit.slice(0, 8)}`); continue; }
-      embedded += report.embedded;
-      console.log(`${report.repo}: live at ${report.commit.slice(0, 8)} — ${report.files} files, ${report.chunks} chunks, ${report.embedded} embedded, ${report.reused} reused`);
-    } catch (error) {
-      failed = true;
-      console.error(`${repo.name}: indexing failed, previous revision kept —`, error instanceof Error ? error.message : error);
-    }
-  }
-  console.log(`\nDone: ${unchanged} unchanged, ${embedded} windows embedded.`);
+  const result = await runIndex(pool, config, createGitHub(config.GITHUB_TOKEN),
+    createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS), {
+      requested: process.argv.slice(2).filter(argument => !argument.startsWith('--')),
+      force: process.argv.includes('--force'),
+      dryRun: process.argv.includes('--dry-run'),
+    });
+  failed = result.failed || result.skipped === 'locked';
 } catch (error) {
   failed = true;
   console.error('Indexing run failed:', error instanceof Error ? error.message : error);

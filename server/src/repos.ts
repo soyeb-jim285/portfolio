@@ -10,7 +10,7 @@ export const INCLUDED = [
   'hyprfm', 'hyprpdf', 'hyprfm-site',
   'soydots', 'quill', 'quill-icons', 'quill-polkit',
   'distrostrap', 'gre-vocab-trainer', 'portfolio',
-  'ai4pain-2026-analysis',
+  'ai4pain-2026-analysis', 'ocr-visualization-', 'LeakNet',
 ] as const;
 const allowed = new Set<string>(INCLUDED);
 
