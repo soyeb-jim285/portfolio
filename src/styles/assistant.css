@@ -173,14 +173,14 @@
 .chat-diagram { margin: 0; padding: 12px; background: var(--bg); border: 1px solid var(--line); }
 /* Mermaid 12 paints node borders with a generated gradient and rounds the corners. Neither suits a
    drawing set, and it scopes its own rules by the SVG id, so a flat square box has to be forced. */
-.chat-response svg :is(.node, .cluster) > :is(rect, polygon) { rx: 0; ry: 0; stroke: var(--accent) !important; stroke-width: 1.25px !important; }
-.chat-response svg .cluster > rect { stroke: var(--line-2) !important; }
+:is(.chat-response, [data-streamdown=mermaid-fullscreen]) svg :is(.node, .cluster) > :is(rect, polygon) { rx: 0; ry: 0; stroke: var(--accent) !important; stroke-width: 1.25px !important; }
+:is(.chat-response, [data-streamdown=mermaid-fullscreen]) svg .cluster > rect { stroke: var(--line-2) !important; }
 /* Mermaid 12 ships filter: drop-shadow(3px 5px 2px rgb(0 0 0 / .4)) on its shapes, which on a flat
    navy panel reads as a smear rather than depth. Nothing in this drawing set casts a shadow. */
-.chat-response svg :is(.node, .cluster, .label-container, rect, polygon, circle, path, g) { filter: none !important; }
+:is(.chat-response, [data-streamdown=mermaid-fullscreen]) svg :is(.node, .cluster, .label-container, rect, polygon, circle, path, g) { filter: none !important; }
 /* An edge label sits on its own rect; unthemed that rect is black, so it punches a hole in the panel. */
-.chat-response svg .edgeLabel :is(rect, .labelBkg, foreignObject > div) { fill: var(--bg-2) !important; background: var(--bg-2) !important; }
-.chat-response svg .edgeLabel :is(text, tspan, span, p) { fill: var(--ink) !important; color: var(--ink) !important; background: transparent !important; }
+:is(.chat-response, [data-streamdown=mermaid-fullscreen]) svg .edgeLabel :is(rect, .labelBkg, foreignObject > div) { fill: var(--bg-2) !important; background: var(--bg-2) !important; opacity: 1 !important; }
+:is(.chat-response, [data-streamdown=mermaid-fullscreen]) svg .edgeLabel :is(text, tspan, span, p) { fill: var(--ink) !important; color: var(--ink) !important; background: transparent !important; }
 .chat-diagram-canvas { overflow-x: auto; min-height: 120px; display: flex; align-items: center; justify-content: center; }
 .chat-diagram svg { max-width: 100%; height: auto; }
 .chat-diagram figcaption { display: flex; gap: 6px; margin-top: 8px; }
