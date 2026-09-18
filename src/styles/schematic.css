@@ -295,13 +295,24 @@ tr:hover td { background: rgba(201, 214, 234, .04); }
 @media (max-width: 1023px) {
   .idx a { padding: 12px 11px; }
   .tbl b { padding: 13px 14px; }
-  .split, .split:has(> h2), .split:has(> h3) { grid-template-columns: 1fr; }
+  .split, .split:has(> h2), .split:has(> h3), .split:has(> div > h2), .split:has(> div > h3) { grid-template-columns: 1fr; }
   .cgrid { grid-template-columns: 1fr; }
   .parts { grid-template-columns: 1fr 1fr; }
   .stack { padding-bottom: 32px; }
 }
 
 @media (max-width: 767px) {
+  /* Three columns of prose do not fit a phone: the description ends up one word per line. A
+     stacked table borrows the shape of the specs list, with the row's labels in a narrow column. */
+  .tw.stacked { overflow-x: visible; }
+  .tw.stacked table, .tw.stacked tbody { display: block; width: 100%; }
+  .tw.stacked thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .tw.stacked tr { display: grid; grid-template-columns: 90px 1fr; grid-template-rows: auto 1fr; column-gap: 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .tw.stacked tr:last-child { border-bottom: 1px solid var(--line); }
+  .tw.stacked td { padding: 0; border: 0; }
+  .tw.stacked td:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .tw.stacked td:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .tw.stacked td:nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
   .sheet { min-height: 0; }
   .idx { margin: 10px 10px 0; justify-content: flex-start; }
   .idx a { font-size: 11px; gap: 5px; }

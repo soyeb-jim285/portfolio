@@ -29,7 +29,7 @@ const revs = [
       <h2 class="t2" style="margin-bottom:16px">Revision history</h2>
       <p class="sub">Education and scores.</p>
     </div>
-    <div class="tw">
+    <div class="tw stacked">
       <table>
         <thead><tr><th>Rev</th><th>Date</th><th>Description</th></tr></thead>
         <tbody>{revs.map((r) => <tr><td class="q">{r.rev}</td><td class="m nw">{r.date}</td><td>{r.href ? <a href={r.href} rel="noopener" target="_blank">{r.what}</a> : r.what}</td></tr>)}</tbody>
