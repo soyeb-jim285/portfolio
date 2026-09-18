@@ -1,17 +1,313 @@
 {
   "note": "Retrieval evaluation. Each case must surface at least one expected path in the top results. Paths are checked against the live index, so a rename should fail this suite until the case is updated.",
   "cases": [
-    { "question": "How does HyprFM copy files without blocking the interface?", "expectAnyPath": ["src/services/fileoperations.cpp", "src/services/giotransferworker.cpp"] },
-    { "question": "Where is undo and redo of file operations implemented?", "expectAnyPath": ["src/services/undomanager.cpp", "src/services/undomanager.h"] },
-    { "question": "How are TOML themes loaded and reloaded at runtime?", "expectAnyPath": ["src/services/themeloader.cpp", "src/services/themeloader.h"] },
-    { "question": "Which code generates image and video thumbnails?", "expectAnyPath": ["src/providers/thumbnailprovider.cpp", "src/providers/thumbnailprovider.h"] },
-    { "question": "How does the Miller column view work?", "expectAnyPath": ["src/qml/views/FileMillerView.qml"] },
-    { "question": "How are devices mounted through udisks2?", "expectAnyPath": ["src/models/devicemodel.cpp", "src/services/cloudmounts.h", "src/models/devicemodel.h"] },
-    { "question": "Where does bulk rename with regular expressions happen?", "expectAnyPath": ["src/qml/components/BulkRenameDialog.qml"] },
-    { "question": "How are files moved to the trash?", "expectAnyPath": ["src/services/xdgtrash.cpp", "src/services/xdgtrash.h"] },
-    { "question": "What tests cover file operations?", "expectAnyPath": ["tests/tst_fileoperations.cpp", "tests/tst_giotransferworker.cpp"] },
-    { "question": "How is the quill Button component styled?", "expectAnyPath": ["components/Button.qml"], "repo": "quill" },
-    { "question": "Where are quill's theme colours defined?", "expectAnyPath": ["Theme.qml"], "repo": "quill" },
-    { "question": "Does quill provide a dropdown component?", "expectAnyPath": ["components/Dropdown.qml"], "repo": "quill" }
+    {
+      "question": "How does HyprFM copy files without blocking the interface?",
+      "expectAnyPath": [
+        "src/services/fileoperations.cpp",
+        "src/services/giotransferworker.cpp"
+      ]
+    },
+    {
+      "question": "Where is undo and redo of file operations implemented?",
+      "expectAnyPath": [
+        "src/services/undomanager.cpp",
+        "src/services/undomanager.h"
+      ]
+    },
+    {
+      "question": "How are TOML themes loaded and reloaded at runtime?",
+      "expectAnyPath": [
+        "src/services/themeloader.cpp",
+        "src/services/themeloader.h"
+      ]
+    },
+    {
+      "question": "Which code generates image and video thumbnails?",
+      "expectAnyPath": [
+        "src/providers/thumbnailprovider.cpp",
+        "src/providers/thumbnailprovider.h"
+      ]
+    },
+    {
+      "question": "How does the Miller column view work?",
+      "expectAnyPath": [
+        "src/qml/views/FileMillerView.qml"
+      ]
+    },
+    {
+      "question": "How are devices mounted through udisks2?",
+      "expectAnyPath": [
+        "src/models/devicemodel.cpp",
+        "src/services/cloudmounts.h",
+        "src/models/devicemodel.h"
+      ]
+    },
+    {
+      "question": "Where does bulk rename with regular expressions happen?",
+      "expectAnyPath": [
+        "src/qml/components/BulkRenameDialog.qml"
+      ]
+    },
+    {
+      "question": "How are files moved to the trash?",
+      "expectAnyPath": [
+        "src/services/xdgtrash.cpp",
+        "src/services/xdgtrash.h"
+      ]
+    },
+    {
+      "question": "What tests cover file operations?",
+      "expectAnyPath": [
+        "tests/tst_fileoperations.cpp",
+        "tests/tst_giotransferworker.cpp"
+      ]
+    },
+    {
+      "question": "How is the quill Button component styled?",
+      "expectAnyPath": [
+        "components/Button.qml"
+      ],
+      "repo": "quill"
+    },
+    {
+      "question": "Where are quill's theme colours defined?",
+      "expectAnyPath": [
+        "Theme.qml"
+      ],
+      "repo": "quill"
+    },
+    {
+      "question": "Does quill provide a dropdown component?",
+      "expectAnyPath": [
+        "components/Dropdown.qml"
+      ],
+      "repo": "quill"
+    },
+    {
+      "question": "How does hyprpdf save highlights and sticky notes?",
+      "expectAnyPath": [
+        "src/services/annotationstore.cpp",
+        "src/services/annotationstore.h"
+      ],
+      "repo": "hyprpdf"
+    },
+    {
+      "question": "Where is the PDF outline or table of contents built?",
+      "expectAnyPath": [
+        "src/models/outlinemodel.cpp",
+        "src/models/outlinemodel.h",
+        "src/qml/OutlinePanel.qml"
+      ],
+      "repo": "hyprpdf"
+    },
+    {
+      "question": "How does hyprpdf remember recently opened files?",
+      "expectAnyPath": [
+        "src/models/recentfilesmodel.cpp",
+        "src/models/recentfilesmodel.h",
+        "src/qml/RecentFilesView.qml"
+      ],
+      "repo": "hyprpdf"
+    },
+    {
+      "question": "How does searching for text inside a PDF work?",
+      "expectAnyPath": [
+        "src/qml/PdfView.qml",
+        "src/qml/SearchBar.qml"
+      ],
+      "repo": "hyprpdf"
+    },
+    {
+      "question": "How does the GRE app decide when a word is reviewed next?",
+      "expectAnyPath": [
+        "Sources/GRECore/Scheduler/FSRS.swift",
+        "Sources/GRECore/Model/FSRSCard.swift"
+      ],
+      "repo": "gre-vocab-trainer"
+    },
+    {
+      "question": "How are typed answers graded without calling the AI?",
+      "expectAnyPath": [
+        "Sources/GRECore/Grading/LocalGrader.swift",
+        "Sources/GRECore/Grading/Levenshtein.swift"
+      ],
+      "repo": "gre-vocab-trainer"
+    },
+    {
+      "question": "Where are the wrong options for multiple-choice questions picked?",
+      "expectAnyPath": [
+        "Sources/GRECore/Grading/DistractorPicker.swift"
+      ],
+      "repo": "gre-vocab-trainer"
+    },
+    {
+      "question": "How does the GRE app ask OpenRouter to grade a definition?",
+      "expectAnyPath": [
+        "Sources/GRECore/AI/OpenRouterClient.swift",
+        "Sources/GRECore/AI/Prompts.swift",
+        "Sources/GRECore/AI/Schemas.swift"
+      ],
+      "repo": "gre-vocab-trainer"
+    },
+    {
+      "question": "Where is the OpenRouter API key stored on the device?",
+      "expectAnyPath": [
+        "App/GRE/Settings/KeychainStore.swift"
+      ],
+      "repo": "gre-vocab-trainer"
+    },
+    {
+      "question": "How does Neural Network X-Ray capture what the user draws?",
+      "expectAnyPath": [
+        "components/canvas/DrawingCanvas.tsx",
+        "hooks/useDrawingCanvas.ts"
+      ],
+      "repo": "ocr-visualization-"
+    },
+    {
+      "question": "Where does the CNN run in the browser with ONNX Runtime?",
+      "expectAnyPath": [
+        "lib/model/loadModel.ts",
+        "lib/model/predict.ts",
+        "lib/model/epochModels.ts"
+      ],
+      "repo": "ocr-visualization-"
+    },
+    {
+      "question": "How is the drawing turned into the model's input tensor?",
+      "expectAnyPath": [
+        "lib/model/preprocess.ts",
+        "lib/utils/tensorUtils.ts",
+        "lib/utils/canvasUtils.ts"
+      ],
+      "repo": "ocr-visualization-"
+    },
+    {
+      "question": "Where is the 3D view of the network drawn?",
+      "expectAnyPath": [
+        "components/three/NetworkScene.tsx",
+        "components/three/NetworkView3D.tsx",
+        "components/three/LayerMesh.tsx"
+      ],
+      "repo": "ocr-visualization-"
+    },
+    {
+      "question": "How can a visitor design their own network architecture in the model lab?",
+      "expectAnyPath": [
+        "components/model-lab/ArchitectureBuilder.tsx",
+        "lib/model-lab/architecture.ts",
+        "lib/model-lab/buildModel.ts"
+      ],
+      "repo": "ocr-visualization-"
+    },
+    {
+      "question": "How is the LeakNet experiment run end to end?",
+      "expectAnyPath": [
+        "leaknet_experiment.py",
+        "leaknet_recreation.py"
+      ],
+      "repo": "LeakNet"
+    },
+    {
+      "question": "Where is the LIME explanation experiment for LeakNet?",
+      "expectAnyPath": [
+        "fix_lime_experiment.py"
+      ],
+      "repo": "LeakNet"
+    },
+    {
+      "question": "How is the stage one CNN for pain detection trained?",
+      "expectAnyPath": [
+        "kaggle/stage1_cnn_v2.py",
+        "kaggle/stage1_cnn_aug.py"
+      ],
+      "repo": "ai4pain-2026-analysis"
+    },
+    {
+      "question": "Where are physiological features extracted from the signals?",
+      "expectAnyPath": [
+        "recovered/03_physio_features.py"
+      ],
+      "repo": "ai4pain-2026-analysis"
+    },
+    {
+      "question": "How does the two-stage model adapt to each subject?",
+      "expectAnyPath": [
+        "recovered/31_two_stage_subject_adapt_suite.py",
+        "recovered/24_subject_constrained_decoding.py"
+      ],
+      "repo": "ai4pain-2026-analysis"
+    },
+    {
+      "question": "How does distrostrap partition the target disk?",
+      "expectAnyPath": [
+        "src/distrostrap/partition/create.py",
+        "src/distrostrap/partition/layout.py"
+      ],
+      "repo": "distrostrap"
+    },
+    {
+      "question": "Where is GRUB set up for the new install?",
+      "expectAnyPath": [
+        "src/distrostrap/bootloader/grub.py",
+        "src/distrostrap/bootloader/host_grub.py"
+      ],
+      "repo": "distrostrap"
+    },
+    {
+      "question": "Which checks stop distrostrap from wiping the wrong disk?",
+      "expectAnyPath": [
+        "src/distrostrap/core/safety.py"
+      ],
+      "repo": "distrostrap"
+    },
+    {
+      "question": "How are Fedora and Ubuntu installs handled differently?",
+      "expectAnyPath": [
+        "src/distrostrap/distros/fedora.py",
+        "src/distrostrap/distros/ubuntu.py",
+        "src/distrostrap/distros/base.py"
+      ],
+      "repo": "distrostrap"
+    },
+    {
+      "question": "Where are the Hyprland keybindings defined in the dotfiles?",
+      "expectAnyPath": [
+        "hypr/hyprland.lua",
+        "docs/KEYBINDINGS.md",
+        "docs/keybindings.json"
+      ],
+      "repo": "soydots"
+    },
+    {
+      "question": "How does quill-polkit answer a polkit authentication request?",
+      "expectAnyPath": [
+        "agent.py",
+        "PolkitAgent.qml"
+      ],
+      "repo": "quill-polkit"
+    },
+    {
+      "question": "How does the HyprFM website show the latest release version?",
+      "expectAnyPath": [
+        "src/lib/version.ts"
+      ],
+      "repo": "hyprfm-site"
+    },
+    {
+      "question": "How does the portfolio assistant verify a Turnstile token?",
+      "expectAnyPath": [
+        "server/src/turnstile.ts"
+      ],
+      "repo": "portfolio"
+    },
+    {
+      "question": "How are source files split into chunks for code search?",
+      "expectAnyPath": [
+        "server/src/chunker.ts"
+      ],
+      "repo": "portfolio"
+    }
   ]
 }

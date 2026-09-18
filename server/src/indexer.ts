@@ -22,9 +22,12 @@ export async function remoteHead(repo: Repo) {
 // Only the file types worth answering questions from. Anything else is never downloaded.
 const INDEXABLE = /\.(cpp|cc|cxx|h|hpp|py|ts|tsx|js|mjs|qml|swift|sh|bash|md|toml|json|ya?ml|nix|cmake|pro|lua|tex|astro|css|html|rs|go|java|kt|rb|sql)$|(^|\/)(CMakeLists\.txt|Makefile|Dockerfile|qmldir|PKGBUILD|flake\.nix)$/i;
 const SKIP_PATH = /(^|\/)(\.git|node_modules|build|builddir|dist|out|target|vendor|third_party|3rdparty|external|subprojects|\.venv|__pycache__|\.cache|package-lock\.json|yarn\.lock|pnpm-lock\.yaml)(\/|$)/i;
+// Never citeable even when public: evaluation fixtures (every question would find its own answer key
+// first) and the provenance ledger, whose notes are for the author, not for visitors.
+const PRIVATE_PATH = /(^|\/)(evals\/|cv\.json$)/i;
 
 export const wantedPaths = (entries: { path: string; size: number }[]) =>
-  entries.filter(entry => INDEXABLE.test(entry.path) && !SKIP_PATH.test(entry.path) && entry.size > 0 && entry.size <= MAX_FILE_BYTES)
+  entries.filter(entry => INDEXABLE.test(entry.path) && !SKIP_PATH.test(entry.path) && !PRIVATE_PATH.test(entry.path) && entry.size > 0 && entry.size <= MAX_FILE_BYTES)
     .map(entry => entry.path);
 
 /**

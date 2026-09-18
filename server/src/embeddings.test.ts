@@ -1,6 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createEmbedder } from './embeddings';
+import { clipForEmbedding, createEmbedder } from './embeddings';
+
+test('embedding input is capped by estimated tokens, so non-Latin text cannot overflow the model', () => {
+  const english = 'const value = compute(input);\n'.repeat(150);
+  assert.equal(clipForEmbedding(english), english, 'ordinary code under 6,000 characters is untouched');
+  const chinese = '漢字轉換表'.repeat(1400);
+  const clipped = clipForEmbedding(chinese);
+  assert.ok(clipped.length <= 3000, `Chinese was clipped to ${clipped.length} characters, about 6,000 estimated tokens`);
+  assert.ok(chinese.startsWith(clipped));
+  assert.equal(clipForEmbedding('x'.repeat(9000)).length, 6000, 'the character cap still applies');
+  const emoji = '😀'.repeat(4000);
+  assert.ok(!/[\uD800-\uDBFF]$/.test(clipForEmbedding(emoji)), 'never cuts a surrogate pair in half');
+});
 
 test('identical concurrent and repeated queries share one bounded, timed embedding call', async () => {
   let calls = 0;

@@ -90,6 +90,7 @@ test('indexes only reviewable source and pins the commit', async () => {
     { path: 'src/FileOps.cpp', size: 200 }, { path: '.env', size: 40 },
     { path: 'build/generated.cpp', size: 40 }, { path: 'logo.png', size: 400 },
     { path: 'src/huge.cpp', size: 10_000_000 },
+    { path: 'server/evals/code-questions.json', size: 900 }, { path: 'src/data/cv.json', size: 900 },
   ]), ['src/FileOps.cpp']);
   assert.equal(report.commit.length, 40);
   const revision = (await pool.query('SELECT status, commit_sha, embedding_model, embedding_dims FROM index_revisions')).rows[0];

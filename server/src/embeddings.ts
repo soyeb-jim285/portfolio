@@ -1,6 +1,21 @@
 // OpenRouter's embeddings endpoint, used for both indexing and query time so vectors are comparable.
 import { createHash } from 'node:crypto';
 const MAX_INPUT_CHARS = 6000;
+// The model rejects any input over ~8K tokens, and one oversized input fails the whole batch. A
+// character cap is only safe for English (~4 characters a token): 6,000 characters of Chinese
+// can pass 9,000 tokens. So the cap counts estimated tokens, pessimistic for anything non-ASCII.
+// ponytail: an estimate, not a tokenizer; a real one is the upgrade if a 400 ever recurs.
+const MAX_INPUT_TOKENS = 6000;
+export function clipForEmbedding(text: string) {
+  let tokens = 0;
+  let end = 0;
+  for (const character of text) {
+    tokens += character.charCodeAt(0) < 128 ? 0.3 : 2;
+    if (tokens > MAX_INPUT_TOKENS || end >= MAX_INPUT_CHARS) break;
+    end += character.length;
+  }
+  return text.slice(0, end);
+}
 const BATCH = 32;
 
 export type Embedder = { model: string; dims: number; embed(texts: string[]): Promise<number[][]> };
@@ -39,7 +54,7 @@ export function createEmbedder(apiKey: string, model: string, dims: number, fetc
   return {
     model, dims,
     async embed(texts) {
-      const trimmed = texts.map(text => text.slice(0, MAX_INPUT_CHARS));
+      const trimmed = texts.map(clipForEmbedding);
       if (trimmed.length === 1) {
         const key = createHash('sha256').update(trimmed[0]).digest('hex');
         const cached = queries.get(key);
