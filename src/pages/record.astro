@@ -3,7 +3,7 @@ import Layout from '../layouts/SchematicLayout.astro';
 import { record, person, work } from '../data/content';
 const revs = [
   { rev: 'A', date: '2021', what: 'Enrolled. ' + person.education },
-  { rev: 'B', date: '2025-07', what: `Joined ${work.employer} as ${work.title}, remote` },
+  { rev: 'B', date: work.start, what: `Joined ${work.employer} as ${work.title}, remote` },
   { rev: 'C', date: '2026-08', what: `EF SET English Certificate, English ${person.scores.efset}`, href: person.scores.efsetCert },
   { rev: 'D', date: '2026', what: 'Graduated. BSc Electrical and Electronic Engineering, University of Dhaka' },
 ];

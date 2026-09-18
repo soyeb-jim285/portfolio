@@ -30,8 +30,8 @@ export const work = {
   url: 'https://fuego.io',
   product: 'Apa',
   title: 'Software Engineer',
-  period: 'July 2025 to present',
-  start: '2025-07',
+  period: 'June 2025 to present',
+  start: '2025-06',
   remote: true,
   context: 'a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps',
   // Fuego's engineering and its numbers are confidential. This describes what the product does for a
