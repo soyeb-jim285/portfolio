@@ -143,14 +143,16 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     return () => { media.removeEventListener('change', update); removeEventListener('resize', resize); controller.current?.abort(); };
   }, []);
   useEffect(() => {
-    // The island is persisted across a page swap but the custom property is not: it lives in an
-    // inline style on <html>, which Astro replaces, so the panel snapped back to its default width
-    // on every navigation. Re-applied once the new document is in place.
-    const apply = () => document.documentElement.style.setProperty('--assistant-width', `${width}px`);
-    apply();
+    // The width lives in an inline style on <html>, and a page swap replaces <html>'s attributes with
+    // the incoming page's. Re-applying after the swap was too late: the view transition snapshots the
+    // new page in between, laid out at the default width, so the sheet animated to the wrong size and
+    // snapped back. Writing it onto the incoming document first means it is never missing.
+    const value = `${width}px`;
+    document.documentElement.style.setProperty('--assistant-width', value);
     try { localStorage.setItem('assistant-width', String(width)); } catch {}
-    document.addEventListener('astro:page-load', apply);
-    return () => document.removeEventListener('astro:page-load', apply);
+    const carry = (event: Event) => (event as Event & { newDocument: Document }).newDocument.documentElement.style.setProperty('--assistant-width', value);
+    document.addEventListener('astro:before-swap', carry);
+    return () => document.removeEventListener('astro:before-swap', carry);
   }, [width]);
   // Any element on the site can open the panel with a question or a repository already chosen.
   // Re-registered every render on purpose, so the handler always calls the current ask().
