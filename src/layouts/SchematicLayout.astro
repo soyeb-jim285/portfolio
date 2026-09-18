@@ -134,10 +134,16 @@ const flip = {
         if (order) event.direction = order > 0 ? 'forward' : 'back';
       };
     });
+    // View-transition snapshots sit above every normal z-index, including the mobile drawer.
+    // Swap quietly behind an open drawer instead of painting the sheet over the conversation.
+    const mobileDrawerOpen = () => document.querySelector('.assistant-panel[data-mobile][data-state="open"]');
+    document.addEventListener('astro:before-swap', event => {
+      if (mobileDrawerOpen()) event.viewTransition.skipTransition();
+    });
     // Arm the print head on the incoming sheet; it disarms once its own sweep ends.
     document.addEventListener('astro:after-swap', () => {
       const sheet = document.querySelector<HTMLElement>('.sheet');
-      if (!sheet || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (!sheet || mobileDrawerOpen() || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       sheet.dataset.plot = `PLOT ${document.querySelector('.tb div:nth-child(2) b')?.textContent ?? ''}`.trim();
       const done = (event: AnimationEvent) => {
         if (event.target !== sheet || event.pseudoElement !== '::after') return;
