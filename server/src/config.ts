@@ -32,6 +32,8 @@ export const configSchema = z.object({
   CONTACT_DRAFT_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(60),
   CONTACT_SENDS_PER_HOUR: z.coerce.number().int().min(1).default(3),
   CONTACT_SENDS_PER_DAY: z.coerce.number().int().min(1).default(20),
+  // Cloudflare Turnstile secret. Unset switches the bot check off; set it together with the site's PUBLIC_TURNSTILE_SITE_KEY.
+  TURNSTILE_SECRET_KEY: z.string().default(''),
   R2_ENDPOINT: z.string().url().optional(),
   R2_BUCKET: z.string().min(1).optional(),
   R2_ACCESS_KEY_ID: z.string().min(1).optional(),

@@ -3,6 +3,7 @@ import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { apiReference } from '@scalar/hono-api-reference';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
+import { verifyTurnstile } from './turnstile';
 import { streamSSE } from 'hono/streaming';
 import type { Context, MiddlewareHandler } from 'hono';
 import OpenAI, { toFile } from 'openai';
@@ -20,7 +21,7 @@ const MAX_CONTEXT_CHARS = 24000;
 const MAX_ANSWER_MS = 300000;
 // These events carry ids owned by the session that asked, or depend on the clock: never replayed to another.
 const SESSION_BOUND_EVENTS = new Set(['draft', 'proposal', 'artifact', 'action', 'slots']);
-export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone'];
+export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone', 'X-Turnstile-Token'];
 // A voice note travels as a base64 data URL, is transcribed once and never stored: the browser
 // keeps the audio and the text, and only the text ever reaches the chat model.
 const AUDIO_FORMATS: Record<string, string> = {
@@ -91,6 +92,10 @@ const eventSchema = z.discriminatedUnion('type', [
 ]).openapi('ChatEvent');
 const authHeader = z.object({ authorization: z.string().openapi({ description: 'Bearer <session token>', example: 'Bearer abc123' }) });
 const authFailure = { 401: { description: 'Missing, unknown or expired session', content: { 'application/json': { schema: errorSchema } } } };
+// A 403 here is a failed check; the 503 is Cloudflare being unreachable, which fails closed.
+const challengeFailures = {
+  503: { description: 'The bot check could not be reached', content: { 'application/json': { schema: errorSchema } } },
+};
 const guardFailures = {
   403: { description: 'Disallowed origin', content: { 'application/json': { schema: errorSchema } } },
   429: { description: 'Rate, concurrency or daily budget limit', content: { 'application/json': { schema: errorSchema } } },
@@ -107,6 +112,14 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
   const sessionOf = async (c: Context) => {
     const token = /^Bearer ([A-Za-z0-9_-]{43})$/.exec(c.req.header('authorization') ?? '')?.[1];
     return token ? await db.touchSession(token) : null;
+  };
+  // Null when the visitor passes; otherwise the response to send instead.
+  const siteHostname = new URL(config.SITE_ORIGIN).hostname;
+  const checkChallenge = async (c: Context, action: 'session' | 'contact') => {
+    const verdict = await verifyTurnstile(config.TURNSTILE_SECRET_KEY, c.req.header('x-turnstile-token'), c.get('clientIP'), { action, hostname: siteHostname });
+    if (verdict === 'pass') return null;
+    if (verdict === 'unavailable') return c.json({ error: 'The bot check is unavailable right now. Please try again in a minute.' }, 503);
+    return c.json({ error: 'The bot check did not pass. Reload the page and try again.' }, 403);
   };
   // Every header the browser client sends must be listed, or the preflight kills the request.
   app.use('*', cors({ origin: config.SITE_ORIGIN, allowMethods: ['GET', 'POST', 'OPTIONS'], allowHeaders: CLIENT_HEADERS, exposeHeaders: ['Retry-After'] }));
@@ -143,8 +156,12 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
   app.openapi(createRoute({
     method: 'post', path: '/v1/sessions', summary: 'Start an anonymous conversation',
     description: 'Returns a bearer token identifying one anonymous conversation. Store it client-side and send it on every /v1 call. Expiry slides forward on each use; after that the session and what it owns are deleted. Conversations are not stored on the server.',
-    responses: { 201: { description: 'Session created', content: { 'application/json': { schema: sessionSchema } } }, ...guardFailures },
-  }), async c => c.json(await db.createSession(), 201));
+    responses: { 201: { description: 'Session created', content: { 'application/json': { schema: sessionSchema } } }, ...guardFailures, ...challengeFailures },
+  }), async c => {
+    const challenge = await checkChallenge(c, 'session');
+    if (challenge) return challenge;
+    return c.json(await db.createSession(), 201);
+  });
 
   app.openapi(createRoute({
     method: 'post', path: '/v1/transcribe', summary: 'Transcribe a voice note',
@@ -471,13 +488,18 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       404: { description: 'No such draft for this session', content: { 'application/json': { schema: errorSchema } } },
       429: { description: 'Send limit reached', content: { 'application/json': { schema: errorSchema } } },
       502: { description: 'The email provider rejected the message; the draft is kept', content: { 'application/json': { schema: errorSchema } } },
-      503: { description: 'Email delivery is not configured', content: { 'application/json': { schema: errorSchema } } },
+      503: { description: 'Email delivery is not configured, or the bot check is unreachable', content: { 'application/json': { schema: errorSchema } } },
     },
   }), async c => {
     if (!mailer.configured) return c.json({ error: 'Email delivery is not configured on this server.' }, 503);
     const body = c.req.valid('json');
     // Silently accept the honeypot: a bot learns nothing from the response.
     if (body._gotcha) return c.json({ id: '', status: 'accepted' as const }, 202);
+    // A draft belongs to a session that already passed the check when it started.
+    if (!body.draftId) {
+      const challenge = await checkChallenge(c, 'contact');
+      if (challenge) return challenge;
+    }
 
     const draft = { name: body.name, email: body.email, message: body.message };
     let draftId = body.draftId;

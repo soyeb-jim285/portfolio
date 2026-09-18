@@ -281,6 +281,9 @@
 /* Floats over that fade rather than taking a row of its own and shoving the list up. */
 .assistant-jump { position: relative; z-index: 3; margin: -34px auto 6px; }
 .assistant-alert { color: #e8663f; font-size: 11px; line-height: 1.5; margin-bottom: 8px; overflow-wrap: anywhere; }
+/* Turnstile renders here only if Cloudflare wants a click before the first question. */
+.assistant-challenge:empty { display: none; }
+.assistant-challenge { display: flex; justify-content: center; margin-bottom: 8px; }
 .assistant-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 @media (min-width: 1280px) {

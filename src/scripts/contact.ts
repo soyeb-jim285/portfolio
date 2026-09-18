@@ -1,4 +1,5 @@
 // Contact dialog behaviour: open from any [data-contact], validate, POST JSON, show state.
+import { turnstileToken } from '../lib/turnstile';
 export function initContact() {
   const dialog = document.getElementById('contact-dialog') as HTMLDialogElement | null;
   if (!dialog || dialog.dataset.bound) return;
@@ -64,12 +65,13 @@ export function initContact() {
     if (!endpoint || endpoint.includes('REPLACE')) return handOffToMailClient(data);
     send.disabled = true; label.textContent = 'Sending'; status.textContent = ''; dialog.classList.add('is-sending');
     try {
+      const challenge = await turnstileToken(dialog.querySelector<HTMLElement>('[data-cd-challenge]'), 'contact');
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(challenge ? { 'X-Turnstile-Token': challenge } : {}) },
         body: JSON.stringify(data),
       });
-      // 503 means the server has no mail provider configured.
+      // 503: no mail provider on the server, or the bot check is unreachable. The mail app works either way.
       if (response.status === 503) { handOffToMailClient(data); reset(); return; }
       if (!response.ok) throw new Error(String(response.status));
       dialog.classList.remove('is-sending'); dialog.classList.add('is-sent');

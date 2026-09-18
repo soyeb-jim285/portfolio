@@ -9,6 +9,7 @@ import { artifactLink, confirmBooking, createSession, SessionExpired, proposeSlo
 import { clearConversation, loadConversation, saveConversation } from '../../lib/chat-history';
 import { workingLabel } from '../../lib/chat-progress';
 import { acknowledgeAction, runAction, type ActionStatus } from '../../lib/site-actions';
+import { turnstileToken } from '../../lib/turnstile';
 
 type Entry = {
   id: string; role: 'user' | 'assistant'; content: string;
@@ -119,6 +120,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const input = useRef<HTMLTextAreaElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const token = useRef<string | undefined>(undefined);
+  const challengeSlot = useRef<HTMLDivElement>(null);
   // Saving waits for the stored conversation to load, so an empty first render never overwrites it.
   const loaded = useRef(false);
   // Actions run exactly once: replaying a stored conversation must not navigate the visitor again.
@@ -248,7 +250,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   };
 
   async function session() {
-    if (!token.current) { token.current = await createSession(endpoint); writeToken(token.current); }
+    if (!token.current) { token.current = await createSession(endpoint, await turnstileToken(challengeSlot.current, 'session')); writeToken(token.current); }
     return token.current;
   }
 
@@ -724,6 +726,8 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         {!atBottom && !busy && <Button className="assistant-jump" onClick={toBottom}><ArrowDown size={14} aria-hidden="true" /> Latest</Button>}
         <footer className="assistant-footer">
           {alert && <p className="assistant-alert" role="alert">{alert}</p>}
+          {/* Empty unless Cloudflare wants a click before the first question is sent. */}
+          <div className="assistant-challenge" ref={challengeSlot} />
           {take && <div className="assistant-take" role="group" aria-label="Recorded voice note">
             <AudioBubble audio={{ blob: take.blob, mediaType: take.blob.type, seconds: take.seconds, transcript: '', model: '' }} />
             <div className="assistant-take-actions">

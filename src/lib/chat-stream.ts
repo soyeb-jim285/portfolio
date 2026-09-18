@@ -48,8 +48,13 @@ async function fail(response: Response): Promise<never> {
   throw new Error(typeof problem.error === 'string' ? problem.error : `Request failed (${response.status}).`);
 }
 
-export async function createSession(endpoint: string) {
-  const response = await postJson(endpoint, '/v1/sessions', {});
+// The challenge is a Turnstile token; the server only asks for one when it has a secret configured.
+export async function createSession(endpoint: string, challenge?: string) {
+  const response = await fetch(`${base(endpoint)}/v1/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(challenge ? { 'X-Turnstile-Token': challenge } : {}) },
+    body: '{}',
+  });
   if (!response.ok) await fail(response);
   const { token } = await response.json();
   if (typeof token !== 'string' || !token) throw new Error('The server did not return a session.');

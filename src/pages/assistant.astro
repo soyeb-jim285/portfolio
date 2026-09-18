@@ -65,6 +65,7 @@ const limits = [
       <li><span>stored</span><span>Your messages and the assistant's answers, in PostgreSQL, tied to an anonymous session. No account, no name, no tracking cookie.</span></li>
       <li><span>deleted</span><span>A session and its messages are deleted seven days after last use. Clear chat deletes them immediately. Generated documents expire after seven days and their files are deleted with them.</span></li>
       <li><span>shared</span><span>Message text goes to OpenRouter and the model provider it routes to. A message you send goes to Resend. A call you book becomes an event in Jim's Google Calendar. Nothing else leaves.</span></li>
+      <li><span>bot check</span><span>Starting a conversation or sending the contact form runs Cloudflare Turnstile once, which reads browser signals to tell people from scripts. Its script loads only at that moment, not on page view.</span></li>
       <li><span>never logged</span><span>Message bodies, contact text and credentials stay out of the server logs.</span></li>
     </ul>
   </section>

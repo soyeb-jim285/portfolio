@@ -285,7 +285,10 @@ tr:hover td { background: rgba(201, 214, 234, .04); }
 .cd-field [aria-invalid="true"] { border-color: var(--accent); }
 .cd-err { font-size: 12px; color: var(--accent); min-height: 1.2em; }
 .cd-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.cd-foot { display: flex; align-items: center; gap: 16px; padding: 14px 20px 20px; margin-top: 6px; border-top: 1px solid var(--line); }
+.cd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 14px 20px 20px; margin-top: 6px; border-top: 1px solid var(--line); }
+/* The Turnstile slot is empty for most visitors; when Cloudflare asks for a click it takes its own row. */
+.cd-challenge:empty { display: none; }
+.cd-challenge { flex-basis: 100%; }
 .cd-send { height: 44px; padding: 0 22px; background: var(--accent); color: var(--on-accent); border: 2px solid var(--accent); font: 500 15px var(--mono); cursor: pointer; text-transform: uppercase; letter-spacing: .04em; transition: transform .2s, opacity .2s; }
 .cd-send:hover { opacity: .9; }
 .cd-send:active { transform: translateY(1px); }
