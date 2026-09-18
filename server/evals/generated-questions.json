@@ -1,0 +1,1483 @@
+{
+  "generatedBy": "openai/gpt-5.6-luna",
+  "generatedAt": "2026-09-18",
+  "perRepo": 6,
+  "cases": [
+    {
+      "question": "How does the AI pain analysis project apply configurable preprocessing to physiological signal segments and combine raw, physiological, and time-frequency features into analysis-ready tables?",
+      "expectAnyPath": [
+        "scripts/build_preproc_feature_parquet.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "visitor"
+    },
+    {
+      "question": "configurable signal feature extraction pipeline",
+      "expectAnyPath": [
+        "scripts/build_preproc_feature_parquet.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a parallelized data pipeline that loads signal datasets, applies selectable preprocessing, extracts multiple feature families, resolves feature-name conflicts, and writes merged analysis tables?",
+      "expectAnyPath": [
+        "scripts/build_preproc_feature_parquet.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the pain analysis project classify time-series signals using multi-scale convolution, attention-based pooling, augmentation, and an ensemble of trained models?",
+      "expectAnyPath": [
+        "kaggle/stage1_cnn_v2.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "visitor"
+    },
+    {
+      "question": "multi-scale CNN signal classification ensemble",
+      "expectAnyPath": [
+        "kaggle/stage1_cnn_v2.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a robust time-series classification system with multi-scale convolutions, learned temporal attention, signal augmentation, mixup training, and seed-based model ensembling?",
+      "expectAnyPath": [
+        "kaggle/stage1_cnn_v2.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the AI pain analysis project prepare selected training and validation tensors with metadata and publish them as a versioned Kaggle dataset?",
+      "expectAnyPath": [
+        "kaggle/upload_stage2_cache.sh"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "visitor"
+    },
+    {
+      "question": "Kaggle tensor dataset upload automation",
+      "expectAnyPath": [
+        "kaggle/upload_stage2_cache.sh"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built automation to stage selected machine-learning data artifacts with metadata and publish a versioned dataset to Kaggle?",
+      "expectAnyPath": [
+        "kaggle/upload_stage2_cache.sh"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the AI4Pain dataset analysis project turn per-subject physiological recordings into padded tensors with pain labels and segment metadata?",
+      "expectAnyPath": [
+        "src/data_loader.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "visitor"
+    },
+    {
+      "question": "physiological signal tensor dataset loader",
+      "expectAnyPath": [
+        "src/data_loader.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a dataset ingestion pipeline that reads multi-signal time-series files, normalizes pain-class labels, pads variable-length segments, records metadata, and caches processed tensors?",
+      "expectAnyPath": [
+        "src/data_loader.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the AI for pain analysis project test different subject-level normalizations, physiological feature subsets, outlier clipping methods, and scalers while keeping the first prediction stage fixed?",
+      "expectAnyPath": [
+        "recovered/28_preproc_filter_sweep.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "visitor"
+    },
+    {
+      "question": "subject normalization feature filtering sweep",
+      "expectAnyPath": [
+        "recovered/28_preproc_filter_sweep.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a machine-learning experiment that systematically compares preprocessing and feature-selection configurations, evaluates them with subject-aware validation, and uses constrained predictions for a three-class pain task?",
+      "expectAnyPath": [
+        "recovered/28_preproc_filter_sweep.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the AI4Pain 2026 analysis extract physiological features from 10-second segments and visualize the results?",
+      "expectAnyPath": [
+        "recovered/03_physio_features.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "visitor"
+    },
+    {
+      "question": "physiological signal feature extraction",
+      "expectAnyPath": [
+        "recovered/03_physio_features.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a physiological time-series pipeline that extracts per-segment features from cardiovascular, skin-conductance, breathing, and oxygen-saturation signals, including cross-signal coupling analysis?",
+      "expectAnyPath": [
+        "recovered/03_physio_features.py"
+      ],
+      "repo": "ai4pain-2026-analysis",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Linux distribution installation project mount the root and boot partitions, activate swap, and clean everything up afterward?",
+      "expectAnyPath": [
+        "src/distrostrap/partition/mount.py"
+      ],
+      "repo": "distrostrap",
+      "style": "visitor"
+    },
+    {
+      "question": "mount installation partitions and activate swap",
+      "expectAnyPath": [
+        "src/distrostrap/partition/mount.py"
+      ],
+      "repo": "distrostrap",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built installation tooling that mounts target filesystems in a defined order and safely unmounts them while tolerating cleanup failures?",
+      "expectAnyPath": [
+        "src/distrostrap/partition/mount.py"
+      ],
+      "repo": "distrostrap",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the distribution bootstrap tool enable the chosen language, generate its localization data when possible, and save the system language setting?",
+      "expectAnyPath": [
+        "src/distrostrap/config/locale.py"
+      ],
+      "repo": "distrostrap",
+      "style": "visitor"
+    },
+    {
+      "question": "configure installed system language settings",
+      "expectAnyPath": [
+        "src/distrostrap/config/locale.py"
+      ],
+      "repo": "distrostrap",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built installation logic that activates a selected system language, runs the platform's language-generation utility when available, and writes a fallback configuration?",
+      "expectAnyPath": [
+        "src/distrostrap/config/locale.py"
+      ],
+      "repo": "distrostrap",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the distribution bootstrap project discover attached drives and their partitions?",
+      "expectAnyPath": [
+        "src/distrostrap/partition/detect.py"
+      ],
+      "repo": "distrostrap",
+      "style": "visitor"
+    },
+    {
+      "question": "detect disks and partition details",
+      "expectAnyPath": [
+        "src/distrostrap/partition/detect.py"
+      ],
+      "repo": "distrostrap",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built tooling that inventories block devices, partition sizes, filesystems, mount locations, and identifiers?",
+      "expectAnyPath": [
+        "src/distrostrap/partition/detect.py"
+      ],
+      "repo": "distrostrap",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Linux distribution setup tool prevent installation onto the computer’s system disk or a mounted target?",
+      "expectAnyPath": [
+        "src/distrostrap/core/safety.py"
+      ],
+      "repo": "distrostrap",
+      "style": "visitor"
+    },
+    {
+      "question": "safe Linux installation target validation",
+      "expectAnyPath": [
+        "src/distrostrap/core/safety.py"
+      ],
+      "repo": "distrostrap",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built safeguards for destructive Linux installations that detect the system disk, mounted devices, partitions, and invalid block-device targets?",
+      "expectAnyPath": [
+        "src/distrostrap/core/safety.py"
+      ],
+      "repo": "distrostrap",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does Distrostrap format boot, root, and swap partitions and record their filesystem UUIDs?",
+      "expectAnyPath": [
+        "src/distrostrap/partition/format.py"
+      ],
+      "repo": "distrostrap",
+      "style": "visitor"
+    },
+    {
+      "question": "format partitions and capture filesystem UUIDs",
+      "expectAnyPath": [
+        "src/distrostrap/partition/format.py"
+      ],
+      "repo": "distrostrap",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built installation tooling that formats multiple filesystem types, retrieves device UUIDs, and stores them by partition role?",
+      "expectAnyPath": [
+        "src/distrostrap/partition/format.py"
+      ],
+      "repo": "distrostrap",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the GRE vocabulary trainer choose the next word, balance new and overdue reviews, prevent immediate repeats, and increase exercise difficulty as memory improves?",
+      "expectAnyPath": [
+        "Sources/GRECore/Scheduler/SessionPlanner.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "visitor"
+    },
+    {
+      "question": "adaptive vocabulary review scheduling",
+      "expectAnyPath": [
+        "Sources/GRECore/Scheduler/SessionPlanner.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an adaptive spaced-repetition study queue that prioritizes vulnerable words, limits unfinished learning items, introduces new material, and progresses learners from recognition to written usage?",
+      "expectAnyPath": [
+        "Sources/GRECore/Scheduler/SessionPlanner.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the GRE vocabulary trainer show a word’s pronunciation, exam definition, examples, synonyms, antonyms, and optional AI-powered etymology and memory aids?",
+      "expectAnyPath": [
+        "App/GRE/Study/WordListView.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "visitor"
+    },
+    {
+      "question": "vocabulary word detail deep dive",
+      "expectAnyPath": [
+        "App/GRE/Study/WordListView.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a vocabulary-learning word detail experience with audio pronunciation, exam-specific senses, usage examples, and cached AI-generated learning insights?",
+      "expectAnyPath": [
+        "App/GRE/Study/WordListView.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the GRE vocabulary trainer measure a word's learning level and determine whether a deck is complete?",
+      "expectAnyPath": [
+        "Tests/GRECoreTests/MasteryTests.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "visitor"
+    },
+    {
+      "question": "vocabulary mastery progress thresholds",
+      "expectAnyPath": [
+        "Tests/GRECoreTests/MasteryTests.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a vocabulary learning progress system that classifies retention levels, averages deck progress, and tracks completion thresholds?",
+      "expectAnyPath": [
+        "Tests/GRECoreTests/MasteryTests.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the GRE vocabulary trainer choose AI models that support reliable structured grading responses?",
+      "expectAnyPath": [
+        "Tests/GRECoreTests/OpenRouterTests.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "visitor"
+    },
+    {
+      "question": "AI model capability filtering schema",
+      "expectAnyPath": [
+        "Tests/GRECoreTests/OpenRouterTests.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an asynchronous language-model integration that lists available models, filters them by structured-output support, and submits vocabulary grading requests with strict JSON validation?",
+      "expectAnyPath": [
+        "Tests/GRECoreTests/OpenRouterTests.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the GRE vocabulary trainer save spaced-repetition progress, graded answers, AI-powered word deep dives, and quiz results?",
+      "expectAnyPath": [
+        "App/GRE/Persistence/Records.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "visitor"
+    },
+    {
+      "question": "vocabulary study persistence and review history",
+      "expectAnyPath": [
+        "App/GRE/Persistence/Records.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a persistence layer for a vocabulary-learning app that tracks spaced-repetition scheduling, review analytics, paid AI enrichment, and quiz scores?",
+      "expectAnyPath": [
+        "App/GRE/Persistence/Records.swift"
+      ],
+      "repo": "gre-vocab-trainer",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Hyprland file manager discover, track, and refresh mounted drives, removable media, and remote storage?",
+      "expectAnyPath": [
+        "src/models/devicemodel.cpp",
+        "src/models/devicemodel.h"
+      ],
+      "repo": "hyprfm",
+      "style": "visitor"
+    },
+    {
+      "question": "mounted device monitoring and refresh",
+      "expectAnyPath": [
+        "src/models/devicemodel.cpp",
+        "src/models/devicemodel.h"
+      ],
+      "repo": "hyprfm",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built Linux file-manager functionality that monitors storage changes through desktop volume services and system bus events, while filtering virtual filesystems?",
+      "expectAnyPath": [
+        "src/models/devicemodel.cpp",
+        "src/models/devicemodel.h"
+      ],
+      "repo": "hyprfm",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does HyprFM provide tabbed, split-pane file browsing with search, recents, trash, remote locations, and file transfers?",
+      "expectAnyPath": [
+        "src/qml/Main.qml"
+      ],
+      "repo": "hyprfm",
+      "style": "visitor"
+    },
+    {
+      "question": "tabbed split-pane file manager",
+      "expectAnyPath": [
+        "src/qml/Main.qml"
+      ],
+      "repo": "hyprfm",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a cross-platform desktop file manager with tabs, dual-pane navigation, transfer conflict handling, archive unlocking, and configurable theming?",
+      "expectAnyPath": [
+        "src/qml/Main.qml"
+      ],
+      "repo": "hyprfm",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does hyprfm detect storage devices, show their capacity and usage, and let me attach or detach volumes?",
+      "expectAnyPath": [
+        "src/models/devicemodel.h",
+        "src/models/devicemodel.cpp"
+      ],
+      "repo": "hyprfm",
+      "style": "visitor"
+    },
+    {
+      "question": "Linux storage device management",
+      "expectAnyPath": [
+        "src/models/devicemodel.h",
+        "src/models/devicemodel.cpp"
+      ],
+      "repo": "hyprfm",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a Qt-based storage management interface that monitors removable volumes, reports filesystem capacity, and supports attaching and detaching them?",
+      "expectAnyPath": [
+        "src/models/devicemodel.h",
+        "src/models/devicemodel.cpp"
+      ],
+      "repo": "hyprfm",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does HyprFM search files in a directory, include hidden entries, limit results, and cancel long-running searches?",
+      "expectAnyPath": [
+        "src/services/searchservice.h",
+        "src/services/searchservice.cpp"
+      ],
+      "repo": "hyprfm",
+      "style": "visitor"
+    },
+    {
+      "question": "asynchronous file search with cancellation",
+      "expectAnyPath": [
+        "src/services/searchservice.h",
+        "src/services/searchservice.cpp"
+      ],
+      "repo": "hyprfm",
+      "style": "keyword"
+    },
+    {
+      "question": "Have you built a desktop file search feature that uses a fast external command when available, falls back to threaded iteration, and supports cancellation, hidden files, and result limits?",
+      "expectAnyPath": [
+        "src/services/searchservice.h",
+        "src/services/searchservice.cpp"
+      ],
+      "repo": "hyprfm",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Hyprland file manager project automatically keep its Arch package repository updated after each push?",
+      "expectAnyPath": [
+        "scripts/sync-aur.sh"
+      ],
+      "repo": "hyprfm",
+      "style": "visitor"
+    },
+    {
+      "question": "automated Arch package repository synchronization",
+      "expectAnyPath": [
+        "scripts/sync-aur.sh"
+      ],
+      "repo": "hyprfm",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built automation that versions, regenerates metadata, commits, and publishes Arch Linux packages only when changes are detected?",
+      "expectAnyPath": [
+        "scripts/sync-aur.sh"
+      ],
+      "repo": "hyprfm",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the HyprFM site display its latest release version from GitHub, with a fallback if the request fails?",
+      "expectAnyPath": [
+        "src/lib/version.ts"
+      ],
+      "repo": "hyprfm-site",
+      "style": "visitor"
+    },
+    {
+      "question": "Fetch latest release version with fallback",
+      "expectAnyPath": [
+        "src/lib/version.ts"
+      ],
+      "repo": "hyprfm-site",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a release-version lookup that caches successful results and falls back safely when the remote API is unavailable?",
+      "expectAnyPath": [
+        "src/lib/version.ts"
+      ],
+      "repo": "hyprfm-site",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the HyprFM website define its color palette, typography, dark mode, and subtle entrance and floating animations?",
+      "expectAnyPath": [
+        "tailwind.config.mjs"
+      ],
+      "repo": "hyprfm-site",
+      "style": "visitor"
+    },
+    {
+      "question": "CSS theme dark mode animations",
+      "expectAnyPath": [
+        "tailwind.config.mjs"
+      ],
+      "repo": "hyprfm-site",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a website with a configurable design system, dark-mode support, custom typography, and polished motion effects?",
+      "expectAnyPath": [
+        "tailwind.config.mjs"
+      ],
+      "repo": "hyprfm-site",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does this desktop document reader let users open, navigate, search, annotate, and export documents?",
+      "expectAnyPath": [
+        "src/qml/Main.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "visitor"
+    },
+    {
+      "question": "document viewer annotations search tabs",
+      "expectAnyPath": [
+        "src/qml/Main.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a desktop document viewer with multi-format opening, tabbed navigation, thumbnails, outlines, search, zoom, annotations, and Markdown export?",
+      "expectAnyPath": [
+        "src/qml/Main.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the PDF viewer display clickable page thumbnails and highlight the selected page?",
+      "expectAnyPath": [
+        "src/qml/ThumbnailList.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "visitor"
+    },
+    {
+      "question": "PDF page thumbnail sidebar",
+      "expectAnyPath": [
+        "src/qml/ThumbnailList.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a PDF document interface with asynchronously loaded page thumbnails, page selection, and current-page highlighting?",
+      "expectAnyPath": [
+        "src/qml/ThumbnailList.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does hyprpdf let me edit, save, or delete a PDF sticky note in a pop-up editor?",
+      "expectAnyPath": [
+        "src/qml/StickyEditor.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "visitor"
+    },
+    {
+      "question": "PDF sticky note editor",
+      "expectAnyPath": [
+        "src/qml/StickyEditor.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a PDF annotation editor with note editing, saving, deletion, keyboard dismissal, and focus management?",
+      "expectAnyPath": [
+        "src/qml/StickyEditor.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the PDF reader save highlights, notes, drawings, and other page markups between sessions?",
+      "expectAnyPath": [
+        "src/services/annotationstore.cpp",
+        "src/services/annotationstore.h"
+      ],
+      "repo": "hyprpdf",
+      "style": "visitor"
+    },
+    {
+      "question": "PDF markup persistence with JSON",
+      "expectAnyPath": [
+        "src/services/annotationstore.cpp",
+        "src/services/annotationstore.h"
+      ],
+      "repo": "hyprpdf",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a Qt data model that accepts handwritten strokes and text selections, persists document-specific markup, and restores it safely?",
+      "expectAnyPath": [
+        "src/services/annotationstore.cpp",
+        "src/services/annotationstore.h"
+      ],
+      "repo": "hyprpdf",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does hyprpdf let me open, switch between, and close document tabs?",
+      "expectAnyPath": [
+        "src/qml/TabsBar.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "visitor"
+    },
+    {
+      "question": "document tab bar interactions",
+      "expectAnyPath": [
+        "src/qml/TabsBar.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a document interface with selectable tabs, close controls, and a button for opening additional documents?",
+      "expectAnyPath": [
+        "src/qml/TabsBar.qml"
+      ],
+      "repo": "hyprpdf",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the LeakNet project turn recorded acoustic measurements from a directory into a time-series table for water-distribution leak experiments?",
+      "expectAnyPath": [
+        "Dataset of Leak Simulations in Experimental Testbed Water Distribution System/Python code to convert RAW acoustic data to pandas DataFrame.py"
+      ],
+      "repo": "LeakNet",
+      "style": "visitor"
+    },
+    {
+      "question": "convert acoustic recordings to pandas table",
+      "expectAnyPath": [
+        "Dataset of Leak Simulations in Experimental Testbed Water Distribution System/Python code to convert RAW acoustic data to pandas DataFrame.py"
+      ],
+      "repo": "LeakNet",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a pipeline that reads acoustic recordings, labels them by source, and assembles a fixed-length time-series dataset for water-distribution experiments?",
+      "expectAnyPath": [
+        "Dataset of Leak Simulations in Experimental Testbed Water Distribution System/Python code to convert RAW acoustic data to pandas DataFrame.py"
+      ],
+      "repo": "LeakNet",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does LeakNet train and evaluate leak-detection models while explaining predictions and recreating paper-style charts?",
+      "expectAnyPath": [
+        "leaknet_experiment.py"
+      ],
+      "repo": "LeakNet",
+      "style": "visitor"
+    },
+    {
+      "question": "leak detection explainability training visualizations",
+      "expectAnyPath": [
+        "leaknet_experiment.py"
+      ],
+      "repo": "LeakNet",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an end-to-end sensor-based leak classification pipeline with model evaluation, local prediction explanations, and performance visualizations?",
+      "expectAnyPath": [
+        "leaknet_experiment.py"
+      ],
+      "repo": "LeakNet",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does this leak-detection project explain which frequency and channel measurements drove a predicted class, including when the explanation library fails?",
+      "expectAnyPath": [
+        "fix_lime_experiment.py"
+      ],
+      "repo": "LeakNet",
+      "style": "visitor"
+    },
+    {
+      "question": "multiclass model feature importance visualization",
+      "expectAnyPath": [
+        "fix_lime_experiment.py"
+      ],
+      "repo": "LeakNet",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built interpretable multiclass machine-learning tooling that reshapes structured sensor data, generates per-feature explanations, and visualizes fallback importance rankings?",
+      "expectAnyPath": [
+        "fix_lime_experiment.py"
+      ],
+      "repo": "LeakNet",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the water-pipe leak detection project combine pressure and vibration measurements to identify different leak types?",
+      "expectAnyPath": [
+        "leaknet_recreation.py"
+      ],
+      "repo": "LeakNet",
+      "style": "visitor"
+    },
+    {
+      "question": "frequency-domain multimodal leak detection",
+      "expectAnyPath": [
+        "leaknet_recreation.py"
+      ],
+      "repo": "LeakNet",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a machine-learning system that preprocesses paired sensor signals, uses frequency-based features and hybrid neural networks, and explains its predictions?",
+      "expectAnyPath": [
+        "leaknet_recreation.py"
+      ],
+      "repo": "LeakNet",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the OCR visualization let visitors upload an image by browsing or dragging it in, then run recognition and update the visualized results?",
+      "expectAnyPath": [
+        "components/canvas/ImageUploader.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "visitor"
+    },
+    {
+      "question": "image upload inference drag drop",
+      "expectAnyPath": [
+        "components/canvas/ImageUploader.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an image upload interface that validates files, supports drag and drop, runs model inference, and updates visualization state safely?",
+      "expectAnyPath": [
+        "components/canvas/ImageUploader.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the OCR visualization project connect to a remote GPU service, stream training progress, and load the finished model for browser inference?",
+      "expectAnyPath": [
+        "lib/model-lab/gpuTraining.ts"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "visitor"
+    },
+    {
+      "question": "GPU training streaming epoch metrics",
+      "expectAnyPath": [
+        "lib/model-lab/gpuTraining.ts"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a browser client that queues remote GPU training, streams live epoch metrics, supports cancellation, and loads the resulting ONNX model?",
+      "expectAnyPath": [
+        "lib/model-lab/gpuTraining.ts"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the OCR visualization project train one model to recognize handwritten Latin and Bengali characters, then export intermediate visualizations and epoch checkpoints?",
+      "expectAnyPath": [
+        "scripts/train_combined.py"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "visitor"
+    },
+    {
+      "question": "combined handwritten character recognition ONNX export",
+      "expectAnyPath": [
+        "scripts/train_combined.py"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a multilingual handwritten-character recognition pipeline that combines two datasets, balances their classes, trains for many epochs, and exports models plus visualization metadata?",
+      "expectAnyPath": [
+        "scripts/train_combined.py"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the OCR visualization project let me choose character datasets, computing resources, and training settings while monitoring progress and estimated time?",
+      "expectAnyPath": [
+        "components/model-lab/TrainingControls.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "visitor"
+    },
+    {
+      "question": "OCR model training controls",
+      "expectAnyPath": [
+        "components/model-lab/TrainingControls.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an interactive OCR model-training interface with dataset selection, browser or cloud compute options, hyperparameter controls, progress tracking, and training validation?",
+      "expectAnyPath": [
+        "components/model-lab/TrainingControls.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the OCR visualization project interactively show a convolution filter scanning a handwritten digit, including pixel patches, weighted products, bias, and activation maps?",
+      "expectAnyPath": [
+        "components/visualizations/ConvolutionTheory.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "visitor"
+    },
+    {
+      "question": "interactive convolution filter visualization",
+      "expectAnyPath": [
+        "components/visualizations/ConvolutionTheory.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an interactive machine learning visualization that explains image convolution step by step with filter selection, animated scanning, numerical calculations, and heatmaps?",
+      "expectAnyPath": [
+        "components/visualizations/ConvolutionTheory.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the OCR visualization project provide a horizontal or vertical range control with one or multiple handles?",
+      "expectAnyPath": [
+        "components/ui/slider.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "visitor"
+    },
+    {
+      "question": "accessible multi-handle range control",
+      "expectAnyPath": [
+        "components/ui/slider.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a reusable, customizable range input with disabled states and horizontal or vertical layouts?",
+      "expectAnyPath": [
+        "components/ui/slider.tsx"
+      ],
+      "repo": "ocr-visualization-",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the portfolio site let visitors open AI-generated documents or diagrams in a larger view, download them, print them as PDFs, or enter fullscreen mode?",
+      "expectAnyPath": [
+        "src/components/chat/ArtifactView.tsx"
+      ],
+      "repo": "portfolio",
+      "style": "visitor"
+    },
+    {
+      "question": "AI document preview fullscreen PDF download",
+      "expectAnyPath": [
+        "src/components/chat/ArtifactView.tsx"
+      ],
+      "repo": "portfolio",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an accessible document viewer that renders generated Markdown and diagrams, supports downloads and browser printing, and adapts fullscreen behavior across devices?",
+      "expectAnyPath": [
+        "src/components/chat/ArtifactView.tsx"
+      ],
+      "repo": "portfolio",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does this portfolio project guide a user through Google Calendar permission setup and securely obtain long-term access?",
+      "expectAnyPath": [
+        "server/src/google-auth.ts"
+      ],
+      "repo": "portfolio",
+      "style": "visitor"
+    },
+    {
+      "question": "Google Calendar OAuth refresh token setup",
+      "expectAnyPath": [
+        "server/src/google-auth.ts"
+      ],
+      "repo": "portfolio",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a command-line OAuth setup flow that exchanges browser consent for persistent Google Calendar access?",
+      "expectAnyPath": [
+        "server/src/google-auth.ts"
+      ],
+      "repo": "portfolio",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the portfolio generate reliable semantic-search vectors while shortening long text, batching requests, caching repeated searches, and retrying temporary failures?",
+      "expectAnyPath": [
+        "server/src/embeddings.ts"
+      ],
+      "repo": "portfolio",
+      "style": "visitor"
+    },
+    {
+      "question": "vector generation batching caching retries",
+      "expectAnyPath": [
+        "server/src/embeddings.ts"
+      ],
+      "repo": "portfolio",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a production integration with a hosted language-vector service, including input limits, batching, caching, retries, and dimensionality validation?",
+      "expectAnyPath": [
+        "server/src/embeddings.ts"
+      ],
+      "repo": "portfolio",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does Quill present reusable, accessible panels with optional headings and flexible nested content?",
+      "expectAnyPath": [
+        "components/Card.qml"
+      ],
+      "repo": "quill",
+      "style": "visitor"
+    },
+    {
+      "question": "reusable accessible panels optional headings content",
+      "expectAnyPath": [
+        "components/Card.qml"
+      ],
+      "repo": "quill",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable UI panels with optional primary and secondary headings, nested child elements, themed styling, and accessibility metadata?",
+      "expectAnyPath": [
+        "components/Card.qml"
+      ],
+      "repo": "quill",
+      "style": "recruiter"
+    },
+    {
+      "question": "In Quill, how does the accessible selection menu stay anchored, support keyboard navigation, and remain visible above other windows?",
+      "expectAnyPath": [
+        "components/Dropdown.qml"
+      ],
+      "repo": "quill",
+      "style": "visitor"
+    },
+    {
+      "question": "accessible native dropdown keyboard navigation",
+      "expectAnyPath": [
+        "components/Dropdown.qml"
+      ],
+      "repo": "quill",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built an accessible desktop selection control with native overlay positioning, mouse and keyboard interaction, and focus-aware dismissal?",
+      "expectAnyPath": [
+        "components/Dropdown.qml"
+      ],
+      "repo": "quill",
+      "style": "recruiter"
+    },
+    {
+      "question": "In the Quill component showcase, how are hover hints, status badges, adjustable completion indicators, and loading animations demonstrated?",
+      "expectAnyPath": [
+        "showcase/FeedbackSection.qml"
+      ],
+      "repo": "quill",
+      "style": "visitor"
+    },
+    {
+      "question": "hover hints status badges loading indicators",
+      "expectAnyPath": [
+        "showcase/FeedbackSection.qml"
+      ],
+      "repo": "quill",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a reusable UI component showcase demonstrating hover-triggered hints, status markers, adjustable and indeterminate completion displays, and configurable loading animations?",
+      "expectAnyPath": [
+        "showcase/FeedbackSection.qml"
+      ],
+      "repo": "quill",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does Quill provide accessible, animated choices that work individually or as part of a group?",
+      "expectAnyPath": [
+        "components/RadioButton.qml"
+      ],
+      "repo": "quill",
+      "style": "visitor"
+    },
+    {
+      "question": "accessible animated choice selector",
+      "expectAnyPath": [
+        "components/RadioButton.qml"
+      ],
+      "repo": "quill",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable, accessible choice controls with grouped selection, disabled states, and animated visual feedback?",
+      "expectAnyPath": [
+        "components/RadioButton.qml"
+      ],
+      "repo": "quill",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Quill app display a customizable circular loading indicator that can be started or stopped?",
+      "expectAnyPath": [
+        "components/Spinner.qml"
+      ],
+      "repo": "quill",
+      "style": "visitor"
+    },
+    {
+      "question": "animated loading indicator with size options",
+      "expectAnyPath": [
+        "components/Spinner.qml"
+      ],
+      "repo": "quill",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a circular loading indicator with customizable size and color, accessibility labeling, and controllable animation?",
+      "expectAnyPath": [
+        "components/Spinner.qml"
+      ],
+      "repo": "quill",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does Quill provide reusable themed controls with icons, labels, keyboard activation, focus states, and hover feedback?",
+      "expectAnyPath": [
+        "components/Button.qml"
+      ],
+      "repo": "quill",
+      "style": "visitor"
+    },
+    {
+      "question": "accessible themed interactive controls",
+      "expectAnyPath": [
+        "components/Button.qml"
+      ],
+      "repo": "quill",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable, accessible interface controls with multiple visual variants, responsive states, keyboard support, and animated styling?",
+      "expectAnyPath": [
+        "components/Button.qml"
+      ],
+      "repo": "quill",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Quill icon project render a scalable, customizable strikethrough symbol?",
+      "expectAnyPath": [
+        "IconStrikethrough.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "visitor"
+    },
+    {
+      "question": "reusable scalable strikethrough UI icon",
+      "expectAnyPath": [
+        "IconStrikethrough.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable vector interface icons with adjustable size, color, and stroke styling?",
+      "expectAnyPath": [
+        "IconStrikethrough.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "recruiter"
+    },
+    {
+      "question": "In Quill Icons, how is the resizable circular outline icon rendered with customizable color and stroke thickness?",
+      "expectAnyPath": [
+        "IconZoomOut.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "visitor"
+    },
+    {
+      "question": "resizable circular outline icon",
+      "expectAnyPath": [
+        "IconZoomOut.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "keyword"
+    },
+    {
+      "question": "Have you built reusable vector UI icons that scale cleanly while allowing configurable color and line weight?",
+      "expectAnyPath": [
+        "IconZoomOut.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Quill icon collection render a scalable outlined text-document symbol with a folded corner and text lines?",
+      "expectAnyPath": [
+        "IconFileText.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "visitor"
+    },
+    {
+      "question": "scalable outlined document icon",
+      "expectAnyPath": [
+        "IconFileText.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable vector interface icons that scale cleanly, support custom colors and line widths, and depict document details?",
+      "expectAnyPath": [
+        "IconFileText.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Quill icons project draw a scalable outlined arithmetic-device symbol with display and button details?",
+      "expectAnyPath": [
+        "IconCalculator.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "visitor"
+    },
+    {
+      "question": "scalable outlined arithmetic device icon",
+      "expectAnyPath": [
+        "IconCalculator.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable, themeable vector icons that scale cleanly across sizes?",
+      "expectAnyPath": [
+        "IconCalculator.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does Quill Icons provide a scalable downward chevron with customizable color and rounded stroke styling?",
+      "expectAnyPath": [
+        "IconChevronDown.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "visitor"
+    },
+    {
+      "question": "scalable customizable chevron icon component",
+      "expectAnyPath": [
+        "IconChevronDown.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable Qt Quick vector icon components with configurable size, color, and stroke appearance?",
+      "expectAnyPath": [
+        "IconChevronDown.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "recruiter"
+    },
+    {
+      "question": "Does the Quill Icons project include a scalable outlined symbol for hidden or ignored content, drawn with a diagonal slash?",
+      "expectAnyPath": [
+        "IconGitIgnored.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "visitor"
+    },
+    {
+      "question": "scalable hidden content outline icon",
+      "expectAnyPath": [
+        "IconGitIgnored.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built reusable, scalable vector interface icons in QML with customizable size, color, and stroke styling?",
+      "expectAnyPath": [
+        "IconGitIgnored.qml"
+      ],
+      "repo": "quill-icons",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does Quill Polkit provide a graphical password prompt for privileged actions and report authentication results?",
+      "expectAnyPath": [
+        "agent.py"
+      ],
+      "repo": "quill-polkit",
+      "style": "visitor"
+    },
+    {
+      "question": "graphical PolicyKit password authentication agent",
+      "expectAnyPath": [
+        "agent.py"
+      ],
+      "repo": "quill-polkit",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a Linux desktop authentication agent that connects privileged-action requests to a graphical password dialog with retry limits, cancellation, and helper-process verification?",
+      "expectAnyPath": [
+        "agent.py"
+      ],
+      "repo": "quill-polkit",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Quill PolicyKit authentication overlay handle password prompts, cancellation, failures, and success feedback?",
+      "expectAnyPath": [
+        "PolkitAgent.qml"
+      ],
+      "repo": "quill-polkit",
+      "style": "visitor"
+    },
+    {
+      "question": "desktop privilege authentication overlay IPC",
+      "expectAnyPath": [
+        "PolkitAgent.qml"
+      ],
+      "repo": "quill-polkit",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a secure desktop privilege-escalation prompt with password submission, Unix-socket communication, exclusive keyboard focus, and animated error handling?",
+      "expectAnyPath": [
+        "PolkitAgent.qml"
+      ],
+      "repo": "quill-polkit",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the soydots desktop bar display and interact with system tray icons?",
+      "expectAnyPath": [
+        "quickshell/bar/SysTray.qml"
+      ],
+      "repo": "soydots",
+      "style": "visitor"
+    },
+    {
+      "question": "desktop system tray icon bar",
+      "expectAnyPath": [
+        "quickshell/bar/SysTray.qml"
+      ],
+      "repo": "soydots",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a desktop panel component that renders system tray icons, handles hover feedback, activates icons, and opens their menus?",
+      "expectAnyPath": [
+        "quickshell/bar/SysTray.qml"
+      ],
+      "repo": "soydots",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the soydots desktop customization project let users adjust the calendar grid, animation picker, and popup panel appearance?",
+      "expectAnyPath": [
+        "quickshell/settings/CalendarPage.qml"
+      ],
+      "repo": "soydots",
+      "style": "visitor"
+    },
+    {
+      "question": "calendar and popup appearance settings",
+      "expectAnyPath": [
+        "quickshell/settings/CalendarPage.qml"
+      ],
+      "repo": "soydots",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a desktop settings interface with sliders for configuring calendar layouts, animation panels, and popup dimensions?",
+      "expectAnyPath": [
+        "quickshell/settings/CalendarPage.qml"
+      ],
+      "repo": "soydots",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the soydots project generate both a readable keyboard-shortcut cheatsheet and a launcher-ready JSON copy from one source?",
+      "expectAnyPath": [
+        "scripts/gen-keybindings.py"
+      ],
+      "repo": "soydots",
+      "style": "visitor"
+    },
+    {
+      "question": "generate keyboard shortcut documentation",
+      "expectAnyPath": [
+        "scripts/gen-keybindings.py"
+      ],
+      "repo": "soydots",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a script that transforms structured shortcut data into synchronized Markdown documentation and application-consumable JSON?",
+      "expectAnyPath": [
+        "scripts/gen-keybindings.py"
+      ],
+      "repo": "soydots",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Soydots settings dropdown stay synchronized with a stored value and save a new choice?",
+      "expectAnyPath": [
+        "quickshell/settings/DropdownSetting.qml"
+      ],
+      "repo": "soydots",
+      "style": "visitor"
+    },
+    {
+      "question": "synchronize dropdown with saved settings",
+      "expectAnyPath": [
+        "quickshell/settings/DropdownSetting.qml"
+      ],
+      "repo": "soydots",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a settings control that initializes from persisted data, updates when the data changes, and saves user selections?",
+      "expectAnyPath": [
+        "quickshell/settings/DropdownSetting.qml"
+      ],
+      "repo": "soydots",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the Soydots desktop shell load, preserve, and save its extensive appearance and widget configuration in a human-readable format?",
+      "expectAnyPath": [
+        "quickshell/Config.qml"
+      ],
+      "repo": "soydots",
+      "style": "visitor"
+    },
+    {
+      "question": "human-readable configuration persistence parser",
+      "expectAnyPath": [
+        "quickshell/Config.qml"
+      ],
+      "repo": "soydots",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a desktop shell configuration system that parses typed values and arrays, watches for external edits, and debounces writes while preserving grouped UI settings?",
+      "expectAnyPath": [
+        "quickshell/Config.qml"
+      ],
+      "repo": "soydots",
+      "style": "recruiter"
+    },
+    {
+      "question": "How does the soydots settings interface let users tune animation timing and visual effects for panels, notifications, launchers, clipboard overlays, on-screen displays, and the animation chooser?",
+      "expectAnyPath": [
+        "quickshell/settings/AnimationsPage.qml"
+      ],
+      "repo": "soydots",
+      "style": "visitor"
+    },
+    {
+      "question": "configurable animation effects settings sliders",
+      "expectAnyPath": [
+        "quickshell/settings/AnimationsPage.qml"
+      ],
+      "repo": "soydots",
+      "style": "keyword"
+    },
+    {
+      "question": "Has the developer built a desktop settings interface with sliders for tuning animation speed, scaling, fading, overshoot, opacity, and transparency across multiple UI components?",
+      "expectAnyPath": [
+        "quickshell/settings/AnimationsPage.qml"
+      ],
+      "repo": "soydots",
+      "style": "recruiter"
+    }
+  ]
+}

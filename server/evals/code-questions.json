@@ -6,34 +6,39 @@
       "expectAnyPath": [
         "src/services/fileoperations.cpp",
         "src/services/giotransferworker.cpp"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "Where is undo and redo of file operations implemented?",
       "expectAnyPath": [
         "src/services/undomanager.cpp",
         "src/services/undomanager.h"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "How are TOML themes loaded and reloaded at runtime?",
       "expectAnyPath": [
         "src/services/themeloader.cpp",
         "src/services/themeloader.h"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "Which code generates image and video thumbnails?",
       "expectAnyPath": [
         "src/providers/thumbnailprovider.cpp",
         "src/providers/thumbnailprovider.h"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "How does the Miller column view work?",
       "expectAnyPath": [
         "src/qml/views/FileMillerView.qml"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "How are devices mounted through udisks2?",
@@ -41,27 +46,31 @@
         "src/models/devicemodel.cpp",
         "src/services/cloudmounts.h",
         "src/models/devicemodel.h"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "Where does bulk rename with regular expressions happen?",
       "expectAnyPath": [
         "src/qml/components/BulkRenameDialog.qml"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "How are files moved to the trash?",
       "expectAnyPath": [
         "src/services/xdgtrash.cpp",
         "src/services/xdgtrash.h"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "What tests cover file operations?",
       "expectAnyPath": [
         "tests/tst_fileoperations.cpp",
         "tests/tst_giotransferworker.cpp"
-      ]
+      ],
+      "repo": "hyprfm"
     },
     {
       "question": "How is the quill Button component styled?",
