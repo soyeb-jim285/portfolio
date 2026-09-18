@@ -268,14 +268,18 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       const usage: { promptTokens?: number; completionTokens?: number; costUsd?: number } = {};
       try {
         let finish: string | null = null;
-        for (let step = 0; step <= config.MAX_TOOL_STEPS; step++) {
-          // The last step runs without tools so the model must produce an answer instead of another call.
-          const canUseTools = step < config.MAX_TOOL_STEPS;
+        // Reserve one artifact-only step so research cannot consume the document's creation budget.
+        const finalStep = config.MAX_TOOL_STEPS + (storage.configured && config.MAX_TOOL_STEPS > 0 ? 1 : 0);
+        for (let step = 0; step <= finalStep; step++) {
+          const stepTools = step < config.MAX_TOOL_STEPS ? toolDefinitions
+            : step < finalStep ? toolDefinitions.filter(tool => tool.function.name === 'create_artifact') : [];
+          const canUseTools = stepTools.length > 0;
+          if (step === config.MAX_TOOL_STEPS && canUseTools) conversation.push({ role: 'system', content: 'Research is complete for this turn. Only create_artifact remains available. If the visitor requested a downloadable document and none was successfully created, create it now from the evidence already collected, noting any gaps. Do not request more research or repeat a successful artifact. Otherwise give your final answer.' });
           if (!canUseTools) conversation.push({ role: 'system', content: 'The tool budget is exhausted. No more tools can run in this turn. Answer using only results already received. Do not simulate tool calls in text or promise more work. If a requested document was not successfully created, say it is unavailable; otherwise point to its Download Markdown button.' });
           const response = await client.chat.completions.create({
             model: config.OPENROUTER_MODEL, messages: conversation, stream: true, max_tokens: config.MAX_OUTPUT_TOKENS,
             stream_options: { include_usage: true },
-            ...(canUseTools ? { tools: toolDefinitions, tool_choice: 'auto' as const } : {}),
+            ...(canUseTools ? { tools: stepTools, tool_choice: 'auto' as const } : {}),
           }, { signal: controller.signal });
 
           const calls: { id: string; name: string; arguments: string }[] = [];
@@ -308,6 +312,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
           }
 
           const requested = calls.filter(call => call?.name);
+          if (requested.some(call => !stepTools.some(tool => tool.function.name === call.name))) throw new Error('Tool unavailable in this step');
           if (!requested.length) break;
           conversation.push({ role: 'assistant', content: stepText || null, tool_calls: requested.map(call => ({ id: call.id, type: 'function', function: { name: call.name, arguments: call.arguments } })) });
           for (const call of requested) {

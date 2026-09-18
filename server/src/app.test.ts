@@ -279,7 +279,7 @@ test('runs a real tool call, reports it, cites the source and stores both', asyn
 test('stops calling tools at the step limit and answers without them', async () => {
   const call = toolFrame([{ index: 0, id: 'call_x', name: 'search_knowledge', args: '{"query":"loop"}' }], 'tool_calls') + 'data: [DONE]\n\n';
   const { sent, client } = scripted(call, call, sse('Here is what the code shows.'));
-  const app = createApp({ ...config, MAX_TOOL_STEPS: 2 }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const app = createApp({ ...config, MAX_TOOL_STEPS: 2 }, db, fakeRetrieval(), fakeMailer(), fakeStorage({ configured: false }), fakeScheduler(), client);
   const token = await newSession(app);
   const frames = events(await (await app.fetch(ask(token, 'Trace the copy path'))).text());
   assert.equal(frames.filter(event => event.type === 'tool' && event.status === 'done').length, 2);
@@ -497,6 +497,22 @@ test('expired drafts are swept and can no longer be sent', async () => {
 
 const artifactCall = (args: string) => toolFrame([{ index: 0, id: 'call_doc', name: 'create_artifact', args }], 'tool_calls') + 'data: [DONE]\n\n';
 const brief = JSON.stringify({ kind: 'brief', title: 'HyprFM transfer architecture', markdown: 'Transfers run on a worker thread.\n\nEvidence: hyprfm/src/services/fileoperations.cpp:2641-2700.\n\nInferred: the queue depth is not visible in the code I read.' });
+
+test('reserves document creation after the research budget is exhausted', async () => {
+  const research = toolFrame([{ index: 0, id: 'call_search', name: 'search_knowledge', args: '{"query":"transfers"}' }], 'tool_calls') + 'data: [DONE]\n\n';
+  const { sent, client } = scripted(research, artifactCall(brief), sse('Use Download Markdown on the document card.'));
+  const app = createApp({ ...config, MAX_TOOL_STEPS: 1 }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const token = await newSession(app);
+  const frames = events(await (await app.fetch(ask(token, 'Create a downloadable technical brief about HyprFM'))).text());
+  assert.deepEqual(sent[1].tools.map((tool: any) => tool.function.name), ['create_artifact']);
+  assert.match(sent[1].messages.at(-1).content, /create it now from the evidence/);
+  assert.ok(!sent[2].tools);
+  const artifacts = frames.filter(event => event.type === 'artifact');
+  assert.equal(artifacts.length, 1);
+  const download = await app.fetch(new Request(`http://localhost/v1/artifacts/${artifacts[0].artifact.id}`, { headers: { Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` } }));
+  assert.equal(download.status, 200);
+  assert.equal(frames.at(-1).type, 'done');
+});
 
 test('generates a document, stores it privately and hands out a short-lived link to its own session', async () => {
   const { sent, client } = scripted(artifactCall(brief), sse('I wrote you a one-page brief.'));
