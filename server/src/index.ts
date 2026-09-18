@@ -13,12 +13,16 @@ import { createCalScheduler } from './cal-calendar';
 import { createRetrieval } from './retrieval';
 import { createGitHub } from './github';
 import { runIndex } from './index-run';
+import OpenAI from 'openai';
+import { createReranker } from './rerank';
 import { clientAddress } from './client-address';
 
 const config = configSchema.parse(process.env);
-const db = await createDb(config.DATABASE_URL, config.SESSION_TTL_DAYS);
+const db = await createDb(config.DATABASE_URL, config.SESSION_TTL_DAYS, config.METRICS_RETENTION_DAYS);
 
-const retrieval = createRetrieval(db.pool, createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS));
+const openrouter = new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 1 });
+const retrieval = createRetrieval(db.pool, createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS),
+  { reranker: config.RERANK_MODEL ? createReranker(openrouter, config.RERANK_MODEL) : undefined });
 const indexed = await retrieval.indexedRepos().catch(error => { console.error('Could not read the code index:', error.message); return []; });
 console.log(indexed.length ? `Code index: ${indexed.map(entry => `${entry.repo}@${entry.commit.slice(0, 8)}`).join(', ')}` : 'Code index: empty, run `npm run index`');
 
@@ -58,7 +62,8 @@ let indexTimer: NodeJS.Timeout | undefined;
 if (config.INDEX_EVERY_HOURS > 0) {
   const github = createGitHub(config.GITHUB_TOKEN);
   const embedder = createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS);
-  const pass = () => void runIndex(db.pool, config, github, embedder, { log: message => console.log(`[index] ${message}`) })
+  const summarizer = config.SUMMARY_MODEL ? { client: openrouter, model: config.SUMMARY_MODEL } : undefined;
+  const pass = () => void runIndex(db.pool, config, github, embedder, { summarizer, log: message => console.log(`[index] ${message}`) })
     .catch(error => console.error('[index] pass failed:', error instanceof Error ? error.message : error));
   const first = setTimeout(pass, 5 * 60_000);
   first.unref();

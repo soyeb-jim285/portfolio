@@ -4,6 +4,7 @@ import { configSchema } from './config';
 import { createEmbedder } from './embeddings';
 import { createGitHub } from './github';
 import { runIndex } from './index-run';
+import OpenAI from 'openai';
 
 const config = configSchema.parse(process.env);
 const pool = new Pool({ connectionString: config.DATABASE_URL, connectionTimeoutMillis: 20000 });
@@ -14,6 +15,9 @@ try {
       requested: process.argv.slice(2).filter(argument => !argument.startsWith('--')),
       force: process.argv.includes('--force'),
       dryRun: process.argv.includes('--dry-run'),
+      summarizer: config.SUMMARY_MODEL && !process.argv.includes('--no-summaries')
+        ? { client: new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 1 }), model: config.SUMMARY_MODEL }
+        : undefined,
     });
   failed = result.failed || result.skipped === 'locked';
 } catch (error) {

@@ -8,6 +8,7 @@ import type { Embedder } from './embeddings';
 import type { GitHub } from './github';
 import { indexRepo } from './indexer';
 import { INCLUDED, selectRepos } from './repos';
+import { summarizeMissing, type Summarizer } from './summaries';
 
 // Any fixed number works; it only has to be the same for every process that indexes.
 const INDEX_LOCK = 7_210_421;
@@ -15,7 +16,7 @@ const INDEX_LOCK = 7_210_421;
 export type IndexRun = { skipped?: 'locked'; failed: boolean; unchanged: number; updated: number; embedded: number };
 
 export async function runIndex(pool: Pool, config: Config, github: GitHub, embedder: Embedder, options: {
-  requested?: string[]; force?: boolean; dryRun?: boolean; log?: (message: string) => void;
+  requested?: string[]; force?: boolean; dryRun?: boolean; log?: (message: string) => void; summarizer?: Summarizer;
 } = {}): Promise<IndexRun> {
   const log = options.log ?? (message => console.log(message));
   const result: IndexRun = { failed: false, unchanged: 0, updated: 0, embedded: 0 };
@@ -56,6 +57,12 @@ export async function runIndex(pool: Pool, config: Config, github: GitHub, embed
           result.failed = true;
           log(`${repo.name}: indexing failed, previous revision kept — ${error instanceof Error ? error.message : error}`);
         }
+      }
+      // Summaries are filled for every live file still missing one, including repositories that did
+      // not change today, so a new model or a first run backfills without a forced reindex.
+      if (options.summarizer) {
+        await summarizeMissing(pool, options.summarizer, embedder, { log })
+          .catch(error => log(`summaries: skipped — ${error instanceof Error ? error.message : error}`));
       }
       log(`Index pass done: ${result.updated} updated, ${result.unchanged} unchanged, ${result.embedded} windows embedded.`);
       return result;

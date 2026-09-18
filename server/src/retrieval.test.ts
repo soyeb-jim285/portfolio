@@ -10,7 +10,7 @@ import { applySchema } from './db';
 import type { Embedder } from './embeddings';
 import { indexRepo, wantedPaths } from './indexer';
 import type { GitHub } from './github';
-import { createRetrieval } from './retrieval';
+import { createRetrieval, queryTerms } from './retrieval';
 import type { Repo } from './repos';
 
 const run = promisify(execFile);
@@ -173,7 +173,7 @@ test('an index built with different embedding dimensions is ignored until it is 
   assert.equal(await mismatched.read('hyprfm', 'src/FileOps.cpp'), null);
 });
 
-test('a featured, starred repository outranks a scratch repository on an equal match', async () => {
+test('repository weighting: strong lets a featured repo beat a better match, gentle only breaks ties', async () => {
   const retrieval = createRetrieval(pool, fakeEmbedder());
   const shared = `#include "FileOps.h"\n\n// Copy jobs now report progress through a signal.\nvoid FileOps::copy(const QList<QUrl> &sources) {\n  emit progressChanged(0);\n}\n`;
   const scratch = join(workspace, 'old-scratch');
@@ -194,9 +194,13 @@ test('a featured, starred repository outranks a scratch repository on an equal m
   await pool.query("UPDATE repo_facts SET stars = 307, pushed_at = now() WHERE repo = 'hyprfm'");
   await pool.query("UPDATE repo_facts SET stars = 0, pushed_at = now() - interval '4 years' WHERE repo = 'old-scratch'");
 
+  // The old policy: a multiplier of up to 2.4 puts the featured repository first even over a better match.
+  const strong = await retrieval.search('progressChanged', { variant: { weighting: 'strong' } });
+  assert.equal(strong[0].repo, 'hyprfm', 'strong weighting overrides the better match');
+  // The default: weighting is a tie-breaker only, so the better match wins and both stay visible.
   const hits = await retrieval.search('progressChanged');
-  assert.equal(hits[0].repo, 'hyprfm', 'the featured, starred, recently pushed repository ranks first');
-  assert.ok(hits.some(hit => hit.repo === 'old-scratch'), 'weighting reorders, it never hides');
+  assert.equal(hits[0].repo, 'old-scratch', 'gentle weighting lets the better match rank first');
+  assert.ok(hits.some(hit => hit.repo === 'hyprfm'), 'weighting reorders, it never hides');
   const scoped = await retrieval.search('progressChanged', { repo: 'old-scratch' });
   assert.equal(scoped[0].repo, 'old-scratch');
 });
@@ -224,4 +228,53 @@ test('a repository whose GitHub name has capitals can still be searched, read an
     assert.equal(file?.repo, 'LeakNet', `read scoped to ${asked}`);
   }
   assert.ok((await retrieval.listFiles('leaknet')).some(file => file.path === 'leaknet_experiment.py'));
+});
+
+test('question words become a safe OR query, with camelCase split and kept whole', () => {
+  const terms = queryTerms("How does DrawingCanvas capture what the user draws? ') | !x & (y");
+  assert.equal(terms.split, 'how | does | drawing | canvas | capture | what | the | user | draws | x | y'.split(' | ').filter(word => word.length >= 2).join(' | '));
+  assert.ok(terms.whole.includes('drawingcanvas'));
+  assert.doesNotMatch(terms.split + terms.whole, /[^a-z0-9 |]/, 'nothing but words and the OR operator reaches to_tsquery');
+});
+
+test('each search improvement does what it claims on a fixture', async () => {
+  const sketch = join(workspace, 'SketchPad');
+  await mkdir(join(sketch, 'src'), { recursive: true });
+  await run('git', ['init', '-q', '-b', 'main', sketch]);
+  await writeFile(join(sketch, 'src/DrawingCanvas.tsx'), 'export function DrawingCanvas() {\n  const strokes: Point[] = [];\n  const onPointerMove = (event: PointerEvent) => strokes.push([event.x, event.y]);\n  return onPointerMove;\n}\n');
+  // Shares no word with the question it answers: only a summary can connect them.
+  await writeFile(join(sketch, 'src/Scheduler.swift'), 'func nextInterval(stability: Double, grade: Int) -> Double {\n  return stability * pow(1.3, Double(grade))\n}\n');
+  await writeFile(join(sketch, 'src/palette.ts'), 'export const palette = ["#000", "#fff"];\n');
+  await run('git', ['add', '-A'], { cwd: sketch });
+  await run('git', ['-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '-m', 'sketch'], { cwd: sketch });
+  const previous = origin;
+  origin = sketch;
+  try {
+    await indexRepo(pool, { name: 'SketchPad', owner: 'soyeb-jim285', url: sketch, branch: 'main', blurb: 'fixture' }, join(workspace, 'cache'), fakeEmbedder(), fakeGitHub);
+  } finally { origin = previous; }
+  const scope = { repo: 'sketchpad' };
+
+  // OR matching over split, stemmed identifiers: "draws" and "capture" meet DrawingCanvas.
+  const retrieval = createRetrieval(pool, fakeEmbedder());
+  const asked = await retrieval.search('how does it capture what the user draws', scope);
+  assert.equal(asked[0].path, 'src/DrawingCanvas.tsx');
+  assert.equal((await retrieval.search('DrawingCanvas', { ...scope, variant: { lexical: 'and', identifiers: false } }))[0].path, 'src/DrawingCanvas.tsx', 'exact identifiers still work in the old mode');
+
+  // Summaries: the description carries the words the code does not.
+  const summary = 'Decides when a vocabulary word is reviewed again, using spaced repetition.';
+  const [summaryVector] = await fakeEmbedder().embed([`SketchPad/src/Scheduler.swift\n${summary}`]);
+  await pool.query(`UPDATE source_files SET summary = $1, summary_model = 'test', summary_embedding = $2::vector
+                    WHERE path = 'src/Scheduler.swift' AND revision_id = (SELECT id FROM index_revisions WHERE repo = 'SketchPad' AND status = 'live')`,
+    [summary, `[${summaryVector.join(',')}]`]);
+  const withSummaries = await retrieval.search('when is a vocabulary word reviewed again', scope);
+  assert.equal(withSummaries[0].path, 'src/Scheduler.swift', 'found through its summary');
+
+  // Rerank only reorders what search returned, and a failure keeps the fused order.
+  const fused = await retrieval.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: false } });
+  const reversing = createRetrieval(pool, fakeEmbedder(), { reranker: async (_query, candidates) => candidates.map((_, index) => candidates.length - 1 - index) });
+  const reranked = await reversing.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: true } });
+  assert.deepEqual(new Set(reranked.map(hit => hit.path)), new Set(fused.map(hit => hit.path)), 'same files, reordered');
+  assert.notDeepEqual(reranked.map(hit => hit.path), fused.map(hit => hit.path));
+  const broken = createRetrieval(pool, fakeEmbedder(), { reranker: async () => { throw new Error('model down'); } });
+  assert.deepEqual((await broken.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: true } })).map(hit => hit.path), fused.map(hit => hit.path));
 });
