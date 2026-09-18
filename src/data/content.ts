@@ -6,7 +6,7 @@ export const person = {
   name: 'Soyeb Pervez Jim',
   short: 'SPJ',
   role: 'Software Engineer at Fuego.io',
-  tagline: 'Apa, a Shopify shopping agent, by day; biosignal classifiers and open-source Qt tools by night.',
+  tagline: 'Software engineer at Fuego.io. I build production AI systems for online stores, and open-source desktop tools for Linux.',
   location: 'Dhaka, Bangladesh',
   email: 'soyeb.jim@gmail.com',
   phone: '+8801718007639',
@@ -27,17 +27,26 @@ export const person = {
 
 export const work = {
   employer: 'Fuego.io',
+  url: 'https://fuego.io',
   product: 'Apa',
   title: 'Software Engineer',
   period: 'July 2025 to present',
   remote: true,
   context: 'a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps',
+  // Counted from the production database on 2026-09-18, test storefronts excluded. Provenance in cv.json.
+  ownership: 'main engineer on a two-person team',
+  scale: [
+    { value: '36K', label: 'conversations since launch, with 30K shoppers' },
+    { value: '10K', label: 'messages a month at peak, across five live storefronts' },
+    { value: '675K', label: 'products indexed for semantic search' },
+    { value: '47%', label: 'of messages answered from cache, with no model call' },
+  ],
   bullets: [
     'Built a multi-tenant shopping agent with a streamed Next.js interface, Express API, persistent conversations and per-brand tools, context and model settings.',
     'Implemented structured tools for semantic and Shopify-native search, collections, product details, reviews, recommendations, customer orders and storefront actions.',
     'Developed hybrid catalog retrieval with embeddings, vector search, commerce filters and live Shopify revalidation for price, availability and matching variants.',
     'Shipped multimodal interactions including image upload, product visualisation, virtual try-on, speech transcription and rich streamed result cards.',
-    'Added bounded tool loops, answer deduplication, background catalog refreshes, latency and cost instrumentation, rate limiting and failure recovery.',
+    'Built the answer cache: concurrent requests share one generation, and a background check regenerates an answer once its prompt or tool results have changed. Also bounded tool loops, background catalog refreshes, latency and cost instrumentation, rate limiting and failure recovery.',
   ],
   stack: ['TypeScript', 'Next.js', 'React', 'Express', 'Vercel AI SDK', 'OpenRouter', 'Shopify', 'Sequelize', 'TurboPuffer'],
 } as const;

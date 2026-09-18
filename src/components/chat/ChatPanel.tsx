@@ -52,7 +52,7 @@ const SESSION_KEY = 'assistant-session';
 const readToken = () => { try { return localStorage.getItem(SESSION_KEY) ?? undefined; } catch { return undefined; } };
 const writeToken = (token?: string) => { try { token ? localStorage.setItem(SESSION_KEY, token) : localStorage.removeItem(SESSION_KEY); } catch {} };
 const starters = [
-  { tag: '01 / Systems', question: 'What makes HyprFM interesting?' },
+  { tag: '01 / Read the source', question: 'How does HyprFM copy files without freezing the UI? Show me the code.' },
   { tag: '02 / AI engineering', question: 'Tell me about Jim’s AI engineering work.' },
   { tag: '03 / Match a role', question: 'I will paste a job description. Which requirements does Jim actually have evidence for?' },
 ];
