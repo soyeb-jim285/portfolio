@@ -5,7 +5,14 @@ const featured = projects.slice(0, 3);
 const hyprfm = projects.find((p) => p.slug === 'hyprfm')!;
 // Proofs a reader can check, each linked to the sheet that backs it. Looked up, never retyped, so
 // the daily star refresh stays in one place.
+// Counted at build time so the page is right without JavaScript, then recounted in the browser on
+// every visit, so a quiet month without a deploy cannot leave it behind.
+// ponytail: shown in months; switch to years once it passes 24.
+const [startYear, startMonth] = work.start.split('-').map(Number);
+const today = new Date();
+const monthsAtWork = (today.getFullYear() - startYear) * 12 + (today.getMonth() + 1 - startMonth);
 const proofs = [
+  { value: String(monthsAtWork), since: work.start, label: `months at ${work.employer} as the main engineer on ${work.product}, its AI shopping agent`, href: '/work/' },
   { value: String(hyprfm.stars), label: `GitHub stars on HyprFM, with ${(hyprfm.contributors ?? 1) - 1} outside contributors`, href: '/projects/hyprfm/' },
   { value: '1714', label: 'Codeforces peak, Expert. ICPC Dhaka regional finalist twice', href: '/record/' },
   { value: '2', label: 'journal papers on physics-informed ML. One published by Elsevier, one under review', href: '/research/' },
@@ -32,8 +39,8 @@ const proofs = [
   </section>
 
   <section class="r" data-anchor="home-proof">
-    <div class="nums">
-      {proofs.map((p) => <div><a href={p.href}><strong>{p.value}</strong><span>{p.label}</span></a></div>)}
+    <div class="nums four">
+      {proofs.map((p) => <div><a href={p.href}><strong data-months-since={'since' in p ? p.since : undefined}>{p.value}</strong><span>{p.label}</span></a></div>)}
     </div>
   </section>
 
@@ -78,4 +85,14 @@ const proofs = [
       </div>
     </div>
   </section>
+  <script>
+    // Same sum as the build-time count in the frontmatter.
+    const recount = () => document.querySelectorAll<HTMLElement>('[data-months-since]').forEach((el) => {
+      const [year, month] = el.dataset.monthsSince!.split('-').map(Number);
+      const now = new Date();
+      el.textContent = String((now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month));
+    });
+    recount();
+    document.addEventListener('astro:page-load', recount);
+  </script>
 </Layout>

@@ -213,6 +213,15 @@ tr:hover td { background: rgba(201, 214, 234, .04); }
 .nums a { display: block; color: inherit; }
 .nums a:hover { text-decoration: none; }
 .nums a:hover span { color: var(--ink); }
+/* Four proofs read as one strip on a wide sheet, and as two by two on anything narrower. */
+.nums.four { grid-template-columns: repeat(4, 1fr); }
+.nums.four strong { font-size: clamp(40px, 4.6vw, 64px); }
+@media (max-width: 1023px) {
+  .nums.four { grid-template-columns: 1fr 1fr; }
+  .nums.four div { border-right: 1px solid var(--line); border-bottom: 0; }
+  .nums.four div:nth-child(even) { border-right: 0; }
+  .nums.four div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+}
 .nums strong { display: block; font-family: var(--display); font-size: clamp(44px, 6vw, 72px); font-weight: 700; line-height: 1; color: var(--accent); }
 .nums span { font-size: 13px; color: var(--muted); }
 
