@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-18T13:43:14.643Z",
+  "generatedAt": "2026-09-18T13:58:07.855Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -201,7 +201,7 @@
     "period": "July 2025 to present",
     "remote": true,
     "context": "a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps",
-    "ownership": "main engineer on a two-person team",
+    "ownership": "main engineer",
     "scale": [
       {
         "value": "36K",

@@ -204,10 +204,10 @@
         "note": "Company marketing copy — client list is their claim, not independently checked."
       },
       "ownership": {
-        "v": "Main engineer on a two-person team: 464 of 687 human commits (68%) and about 89% of lines added under api/src and web. Wrote the answer cache (22 of 24 commits on those files).",
+        "v": "Main engineer: 464 of 687 human commits (68%) and about 89% of lines added under api/src and web. Wrote the answer cache (22 of 24 commits on those files).",
         "src": ["fuego-git-2026-09-18"],
         "conf": "verified",
-        "note": "Say 'main engineer' or 'built and own'. Never 'led': there was no team to lead."
+        "note": "Say 'main engineer' or 'built and own'. Never 'led': there was no team to lead. Do not publish the team size."
       },
       "scale": {
         "v": {

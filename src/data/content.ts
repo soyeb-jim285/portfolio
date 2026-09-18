@@ -34,7 +34,7 @@ export const work = {
   remote: true,
   context: 'a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps',
   // Counted from the production database on 2026-09-18, test storefronts excluded. Provenance in cv.json.
-  ownership: 'main engineer on a two-person team',
+  ownership: 'main engineer',
   scale: [
     { value: '36K', label: 'conversations since launch, with 30K shoppers' },
     { value: '10K', label: 'messages a month at peak, across five live storefronts' },
