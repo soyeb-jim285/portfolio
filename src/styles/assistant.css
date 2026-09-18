@@ -214,8 +214,8 @@
 .chat-incomplete { color: #e8663f; font-size: 11px; }
 /* Room under the newest turn so it can sit at the top of the viewport while the answer streams. */
 .chat-tailspace { flex-shrink: 0; }
-.chat-loading { display: flex; gap: 5px; padding: 10px 0; }
-.chat-loading span { width: 5px; height: 5px; background: var(--muted); }
+.chat-loading { display: flex; align-items: center; gap: 9px; padding: 10px 0; color: var(--muted); font-size: 12px; }
+.chat-loading span { flex-shrink: 0; width: 5px; height: 5px; background: var(--accent); }
 .assistant-jump { align-self: center; margin-bottom: 10px; background: var(--bg-2); }
 
 
@@ -323,8 +323,6 @@
   .assistant-panel[data-state=closed][data-shown] { animation: assistant-exit .15s ease-in; }
   .assistant-panel[data-mobile][data-state=closed][data-shown] { animation-name: assistant-drop-out; }
   .chat-loading span { animation: assistant-wait 1.2s ease-in-out infinite; }
-  .chat-loading span:nth-child(2) { animation-delay: .15s; }
-  .chat-loading span:nth-child(3) { animation-delay: .3s; }
 }
 @keyframes assistant-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes assistant-enter { from { transform: translateX(100%); } to { transform: translateX(0); } }

@@ -6,6 +6,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTri
 import { Message, MessageActions, MessageContent, MessageResponse, preloadResponse } from '../ai-elements/message';
 import { artifactLink, confirmBooking, createSession, SessionExpired, proposeSlot, sendContact, streamAnswer, transcribeAudio, type Artifact, type Availability, type BookingProposal, type ContactDraft, type RequestedUiAction, type Slot, type SourceCitation, type ShownImage, type ToolActivity, type Usage, type ChatMessage } from '../../lib/chat-stream';
 import { clearConversation, loadConversation, saveConversation } from '../../lib/chat-history';
+import { workingLabel } from '../../lib/chat-progress';
 import { acknowledgeAction, runAction, type ActionStatus } from '../../lib/site-actions';
 
 type Entry = {
@@ -271,7 +272,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         frame ||= requestAnimationFrame(() => { frame = 0; setStatus('Receiving answer…'); patch(entry => ({ ...entry, content: latest })); });
       },
       tool: (activity: ToolActivity) => {
-        setStatus(activity.status === 'running' ? `Reading source: ${activity.name.replace(/_/g, ' ')}…` : 'Receiving answer…');
+        setStatus(workingLabel([activity], Boolean(latest)));
         patch(entry => ({ ...entry, tools: [...(entry.tools ?? []).filter(previous => previous.id !== activity.id), activity] }));
       },
       sources: (sources: SourceCitation[]) => patch(entry => ({ ...entry, sources })),
@@ -538,7 +539,10 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                 </> : entry.content ?
                   <MessageResponse isAnimating={entry.state === 'streaming'} {...MARKDOWN}>
                     {entry.content}
-                  </MessageResponse> : entry.state === 'streaming' ? <div className="chat-loading" aria-label="Waiting for the model"><span /><span /><span /></div> : <p>No answer received.</p>}
+                  </MessageResponse> : entry.state !== 'streaming' ? <p>No answer received.</p> : null}
+                {entry.role === 'assistant' && entry.state === 'streaming' && <p className="chat-loading" role="status" aria-live="polite">
+                  <span aria-hidden="true" />{workingLabel(entry.tools, Boolean(entry.content))}
+                </p>}
               </MessageContent>
               {/* Steps and sources sit under the answer. The trace is open while the model works and folds away as
                   the first words arrive, so the answer never streams above a wall of code. */}
