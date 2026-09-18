@@ -47,7 +47,7 @@
 \end{center}
 
 \section*{Professional Summary}
-Software engineer building production LLM agents, semantic retrieval, and multi-tenant SaaS for e-commerce. Main engineer on a Shopify shopping assistant that has handled 36,000 conversations. Maintainer of HyprFM, a C++/Qt file manager with 313 GitHub stars and outside contributors. Co-author of a published Elsevier paper on physics-informed deep learning, with a second under review.
+Software engineer building production LLM agents, semantic retrieval, and multi-tenant SaaS for e-commerce. Main engineer on Apa, the AI shopping agent in Fuego's native Shopify apps. Maintainer of HyprFM, a C++/Qt file manager with 313 GitHub stars and outside contributors. Co-author of a published Elsevier paper on physics-informed deep learning, with a second under review.
 
 \section*{Technical Skills}
 \textbf{Languages:} TypeScript, JavaScript, Python, C++ (Qt 6/QML), SQL, Bash\\
@@ -58,9 +58,9 @@ Software engineer building production LLM agents, semantic retrieval, and multi-
 \section*{Professional Experience}
 \role{Software Engineer}{July 2025 -- Present}{\href{https://fuego.io}{Fuego.io}}{Remote}
 \begin{itemize}
-  \item Main engineer on the tool-calling shopping assistant behind a multi-tenant Shopify platform, with streamed responses and product search, recommendations, and reviews returned as structured tool results. 36,000 conversations with 30,000 shoppers since launch, about 3,600 a month across five live storefronts.
-  \item Built semantic product search over 675,000 indexed products, kept current per tenant by a scheduled re-embedding job.
-  \item Built the answer cache that serves 47\% of messages with no model call: concurrent requests share one generation, and a background check regenerates an answer once its prompt or tool results have changed.
+  \item Main engineer on Apa, the tool-calling AI shopping agent inside Fuego's multi-tenant Shopify mobile apps, in production across live storefronts: streamed responses, with product search, recommendations, reviews, and order help returned as structured tool results.
+  \item Built semantic product search over live store catalogs, kept current for every tenant.
+  \item Built the response caching, rate limiting, and failure recovery that keep the agent fast and affordable under production traffic.
   \item Automated per-brand context generation from each tenant's own site, and built the admin surface: conversation analytics, token metering, and Stripe billing.
 \end{itemize}
 

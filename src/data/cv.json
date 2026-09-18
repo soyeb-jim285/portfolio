@@ -8,14 +8,6 @@
     "trendshift-hyprfm": { "kind": "direct", "detail": "https://trendshift.io/repositories/182310, read 2026-09-18" },
     "reddit-hyprland-launch": { "kind": "direct", "detail": "https://www.reddit.com/r/hyprland/comments/1vwnsze/, saved page read 2026-09-18" },
     "reddit-unixporn-launch": { "kind": "direct", "detail": "https://www.reddit.com/r/unixporn/comments/1vwmo5y/, saved page read 2026-09-18" },
-    "fuego-prod-db-2026-09-18": {
-      "kind": "direct",
-      "detail": "Aggregate counts read from Fuego's production database on 2026-09-18, replica, read-only transaction. No message content or customer data was read. Five test storefronts excluded (31 messages, 0.3%)."
-    },
-    "fuego-git-2026-09-18": {
-      "kind": "direct",
-      "detail": "git shortlog, numstat and blame over the private Fuego repository, 2026-09-18, bots and agents excluded."
-    },
     "user": {
       "kind": "direct",
       "detail": "Stated by Soyeb in conversation, 2026-09-02"
@@ -208,27 +200,16 @@
         "note": "Company marketing copy — client list is their claim, not independently checked."
       },
       "ownership": {
-        "v": "Main engineer: 464 of 687 human commits (68%) and about 89% of lines added under api/src and web. Wrote the answer cache (22 of 24 commits on those files).",
-        "src": ["fuego-git-2026-09-18"],
+        "v": "Main engineer on Apa.",
+        "src": ["user"],
         "conf": "verified",
         "note": "Say 'main engineer' or 'built and own'. Never 'led': there was no team to lead. Do not publish the team size."
       },
-      "scale": {
-        "v": {
-          "conversations_all_time": 36041,
-          "shoppers_all_time": 30582,
-          "messages_all_time": 84086,
-          "conversations_last_30d_live_stores": 3631,
-          "shoppers_last_30d_live_stores": 3625,
-          "live_storefronts": 5,
-          "products_indexed": 676246,
-          "cache_hit_pct_last_30d": 46.9,
-          "messages_last_30d_live_stores": 9063,
-          "messages_peak_months": { "2026-07": 10638, "2026-08": 10069 }
-        },
-        "src": ["fuego-prod-db-2026-09-18"],
+      "confidentiality": {
+        "v": "Fuego's CTO asked that engineering details stay confidential (stated by Soyeb, 2026-09-18).",
+        "src": ["user"],
         "conf": "verified",
-        "note": "Publish rounded: 36K conversations, 30K shoppers, 3.6K a month, 675K products, 47%. A conversation is a thread, a shopper is a distinct device id. Do NOT say 10K conversations a month: that figure is messages. '10K messages a month' is true only as a peak (July and August 2026); the last 30 days were 9K, so always keep the words 'at peak' with it. Do not publish store names, latency (first token averaged 6s after the September model change), cost, or the satisfaction rate (27 votes)."
+        "note": "Publish only what Fuego's own marketing says: Apa is an AI shopping agent in its Shopify mobile apps, and what it does for a shopper. Never publish production numbers, architecture, internal mechanisms, vendor names, latency, cost or store names, and never record them in this file: the repository is public."
       }
     }
   ],

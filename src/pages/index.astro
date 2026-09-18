@@ -3,10 +3,9 @@ import Layout from '../layouts/SchematicLayout.astro';
 import { person, work, projects } from '../data/content';
 const featured = projects.slice(0, 3);
 const hyprfm = projects.find((p) => p.slug === 'hyprfm')!;
-// Four proofs a reader can check, each linked to the sheet that backs it. Looked up, never retyped,
-// so the daily star refresh and the production counts stay in one place.
+// Proofs a reader can check, each linked to the sheet that backs it. Looked up, never retyped, so
+// the daily star refresh stays in one place.
 const proofs = [
-  { value: work.scale[0].value, label: `shopping conversations handled by ${work.product}, the assistant I build at ${work.employer}`, href: '/work/' },
   { value: String(hyprfm.stars), label: `GitHub stars on HyprFM, with ${(hyprfm.contributors ?? 1) - 1} outside contributors`, href: '/projects/hyprfm/' },
   { value: '1714', label: 'Codeforces peak, Expert. ICPC Dhaka regional finalist twice', href: '/record/' },
   { value: '2', label: 'journal papers on physics-informed ML. One published by Elsevier, one under review', href: '/research/' },
@@ -33,7 +32,7 @@ const proofs = [
   </section>
 
   <section class="r" data-anchor="home-proof">
-    <div class="nums four">
+    <div class="nums">
       {proofs.map((p) => <div><a href={p.href}><strong>{p.value}</strong><span>{p.label}</span></a></div>)}
     </div>
   </section>
@@ -41,7 +40,7 @@ const proofs = [
   <section class="split r">
     <h2>What I do</h2>
     <div>
-      <p class="sub">At <a href={work.url} target="_blank" rel="noopener">{work.employer}</a> I am the {work.ownership} behind {work.product}, {work.context}: streamed chat, commerce tools, hybrid retrieval and multimodal input.</p>
+      <p class="sub">At <a href={work.url} target="_blank" rel="noopener">{work.employer}</a> I am the {work.ownership} behind {work.product}, {work.context}: streamed chat, commerce tools, product search and image and voice input.</p>
       <p class="sub">On the side: biosignal classifiers for affective-computing challenges, and Linux desktop tooling in C++ and QML.</p>
       <ul class="specs">
         <li><span>day job</span><span>LLM agents, tool calling, retrieval, caching, evals</span></li>

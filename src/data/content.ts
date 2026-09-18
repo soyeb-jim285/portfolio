@@ -33,22 +33,17 @@ export const work = {
   period: 'July 2025 to present',
   remote: true,
   context: 'a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps',
-  // Counted from the production database on 2026-09-18, test storefronts excluded. Provenance in cv.json.
+  // Fuego's engineering and its numbers are confidential. This describes what the product does for a
+  // shopper, at the level Fuego's own marketing does, and nothing about how it is built or how much it handles.
   ownership: 'main engineer',
-  scale: [
-    { value: '36K', label: 'conversations since launch, with 30K shoppers' },
-    { value: '10K', label: 'messages a month at peak, across five live storefronts' },
-    { value: '675K', label: 'products indexed for semantic search' },
-    { value: '47%', label: 'of messages answered from cache, with no model call' },
-  ],
   bullets: [
-    'Built a multi-tenant shopping agent with a streamed Next.js interface, Express API, persistent conversations and per-brand tools, context and model settings.',
-    'Implemented structured tools for semantic and Shopify-native search, collections, product details, reviews, recommendations, customer orders and storefront actions.',
-    'Developed hybrid catalog retrieval with embeddings, vector search, commerce filters and live Shopify revalidation for price, availability and matching variants.',
-    'Shipped multimodal interactions including image upload, product visualisation, virtual try-on, speech transcription and rich streamed result cards.',
-    'Built the answer cache: concurrent requests share one generation, and a background check regenerates an answer once its prompt or tool results have changed. Also bounded tool loops, background catalog refreshes, latency and cost instrumentation, rate limiting and failure recovery.',
+    'Main engineer on Apa, the AI shopping agent inside Fuego\'s native Shopify apps: streamed chat, configured per brand.',
+    'Tool calling for product search, collections, product details, reviews, recommendations and order help.',
+    'Semantic product search over live store catalogs.',
+    'Image and voice input alongside text, with results streamed back as product cards.',
+    'Caching, rate limiting, usage metering and failure recovery for production traffic, plus Stripe billing across brands.',
   ],
-  stack: ['TypeScript', 'Next.js', 'React', 'Express', 'Vercel AI SDK', 'OpenRouter', 'Shopify', 'Sequelize', 'TurboPuffer'],
+  stack: ['TypeScript', 'Next.js', 'React', 'Node.js', 'Shopify', 'Stripe'],
 } as const;
 
 export type Project = {

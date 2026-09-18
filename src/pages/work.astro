@@ -7,17 +7,10 @@ const groups = [
   ['Languages', skills.languages], ['ML', skills.ml], ['LLM', skills.llm], ['Backend and web', skills.web], ['Infrastructure', skills.infra], ['Systems', skills.systems],
 ] as const;
 ---
-<Layout title="Work, Soyeb Pervez Jim" description="Apa, the Shopify shopping assistant Soyeb builds at Fuego.io: 36K conversations, 675K products indexed." sheet="2" big="Apa / Work" stamp={{ k: 'Status', v: 'in production' }}>
+<Layout title="Work, Soyeb Pervez Jim" description="Apa, the AI shopping agent Soyeb builds at Fuego.io for native Shopify apps." sheet="2" big="Apa / Work" stamp={{ k: 'Status', v: 'in production' }}>
   <section class="head r" data-anchor="work-intro">
     <h1 class="title">Work</h1>
     <p class="sub">At <a href={work.url} target="_blank" rel="noopener">{work.employer}</a> I am the {work.ownership} behind <span class="ora">{work.product}</span>, {work.context}. {work.title}, remote, {work.period}.</p>
-  </section>
-
-  <section class="r" data-anchor="work-scale">
-    <div class="nums four">
-      {work.scale.map((s) => <div><strong>{s.value}</strong><span>{s.label}</span></div>)}
-    </div>
-    <p class="cap" style="margin-top:10px">Production counts, September 2026. Test storefronts excluded.</p>
   </section>
 
   <section data-anchor="work-architecture">
