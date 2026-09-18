@@ -18,7 +18,7 @@ const limits = [
   ['It can be wrong', 'Answers are generated. Citations point at the exact lines read, so check those rather than the prose.'],
   ['It cannot act alone', 'No tool sends a message or books a call. Both need your own click on a preview you can edit first.'],
   ['It cannot run code', 'It reads source, it does not execute anything, and it has no access to private systems or data.'],
-  ['It forgets', 'A conversation is deleted seven days after its last use, and Clear chat deletes it at once.'],
+  ['It forgets', 'The conversation lives in your browser, not on the server. Clear chat erases it, and there is no server copy to delete.'],
 ];
 ---
 <Layout
@@ -35,7 +35,7 @@ const limits = [
     <h2 class="t2" style="margin-bottom:16px">Path of a question</h2>
     <ul class="specs tight">
       <li><span>1 / session</span><span>The browser asks for an anonymous session token. Only its hash is stored, so a leaked row cannot be replayed.</span></li>
-      <li><span>2 / context</span><span>The API loads that session's history from PostgreSQL. The page sends only the new message, never the transcript.</span></li>
+      <li><span>2 / context</span><span>The browser keeps the conversation and sends its recent turns with each question. The API trims them to its own limits and stores none of it.</span></li>
       <li><span>3 / tools</span><span>The model may search and read indexed source, move you around this site, draft a message, write a document, or read calendar availability. Tool results are labelled untrusted data.</span></li>
       <li><span>4 / answer</span><span>Tokens stream back as they arrive, with the tool calls that ran, their timings, and the source ranges read.</span></li>
       <li><span>5 / your move</span><span>Anything outward-facing waits for you: a message is sent, and a call is booked, only when you press the button.</span></li>
@@ -62,8 +62,8 @@ const limits = [
   <section class="r">
     <h2 class="t2" style="margin-bottom:16px">Your data</h2>
     <ul class="specs tight">
-      <li><span>stored</span><span>Your messages and the assistant's answers, in PostgreSQL, tied to an anonymous session. No account, no name, no tracking cookie.</span></li>
-      <li><span>deleted</span><span>A session and its messages are deleted seven days after last use. Clear chat deletes them immediately. Generated documents expire after seven days and their files are deleted with them.</span></li>
+      <li><span>stored</span><span>The conversation stays in your browser. The server keeps the hash of an anonymous session token, and for 24 hours a copy of each answer, filed under a hash of the whole conversation so an identical conversation is answered without a new model call. No account, no name, no tracking cookie.</span></li>
+      <li><span>deleted</span><span>Clear chat erases the conversation from your browser. On the server, a session goes seven days after last use, a cached answer after 24 hours, and a contact draft within the hour. Generated documents expire after seven days and their files are deleted with them.</span></li>
       <li><span>shared</span><span>Message text goes to OpenRouter and the model provider it routes to. A message you send goes to Resend. A call you book becomes an event in Jim's Google Calendar. Nothing else leaves.</span></li>
       <li><span>bot check</span><span>Starting a conversation or sending the contact form runs Cloudflare Turnstile once, which reads browser signals to tell people from scripts. Its script loads only at that moment, not on page view.</span></li>
       <li><span>never logged</span><span>Message bodies, contact text and credentials stay out of the server logs.</span></li>
