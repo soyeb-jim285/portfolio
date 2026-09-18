@@ -200,3 +200,28 @@ test('a featured, starred repository outranks a scratch repository on an equal m
   const scoped = await retrieval.search('progressChanged', { repo: 'old-scratch' });
   assert.equal(scoped[0].repo, 'old-scratch');
 });
+
+test('a repository whose GitHub name has capitals can still be searched, read and listed', async () => {
+  const retrieval = createRetrieval(pool, fakeEmbedder());
+  const mixed = join(workspace, 'LeakNet');
+  await mkdir(mixed, { recursive: true });
+  await run('git', ['init', '-q', '-b', 'main', mixed]);
+  await writeFile(join(mixed, 'leaknet_experiment.py'), 'def run_leak_experiment():\n    return "acoustic leak detection"\n');
+  await run('git', ['add', '-A'], { cwd: mixed });
+  await run('git', ['-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '-m', 'leak'], { cwd: mixed });
+  const previous = origin;
+  origin = mixed;
+  try {
+    await indexRepo(pool, { name: 'LeakNet', owner: 'soyeb-jim285', url: mixed, branch: 'main', blurb: 'mixed-case fixture' },
+      join(workspace, 'cache'), fakeEmbedder(), fakeGitHub);
+  } finally { origin = previous; }
+  // The model is free to lowercase the name; GitHub keeps the capitals.
+  for (const asked of ['LeakNet', 'leaknet']) {
+    const hits = await retrieval.search('acoustic leak detection', { repo: asked });
+    assert.equal(hits[0]?.path, 'leaknet_experiment.py', `search scoped to ${asked}`);
+    assert.equal(hits[0].repo, 'LeakNet', 'citations keep the real name');
+    const file = await retrieval.read(asked, 'leaknet_experiment.py');
+    assert.equal(file?.repo, 'LeakNet', `read scoped to ${asked}`);
+  }
+  assert.ok((await retrieval.listFiles('leaknet')).some(file => file.path === 'leaknet_experiment.py'));
+});

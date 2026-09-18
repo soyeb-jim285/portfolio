@@ -12,7 +12,7 @@ const RRF_K = 60;
 // Which repository a match came from is evidence about relevance, not about truth: a featured,
 // starred or recently touched project outranks an old scratch repo when both match equally well.
 // It only reorders real matches, and an explicit repo filter makes it moot.
-const FEATURED = knowledge.featuredRepos as string[];
+const FEATURED = (knowledge.featuredRepos as string[]).map(name => name.toLowerCase());
 
 export type SourceHit = {
   repo: string; path: string; language: string; symbols: string[];
@@ -22,19 +22,20 @@ export type IndexedRepo = { repo: string; commit: string; files: number; chunks:
 
 const clip = (text: string, limit: number) => (text.length <= limit ? text : `${text.slice(0, limit)}\n… truncated`);
 // Repository names arrive from a model or a URL, so they are normalised before they reach a query.
+// Names are compared lowercased on both sides: GitHub names keep their case (LeakNet), the model's may not.
 const key = (repo: string) => repo.toLowerCase().trim();
 
 export function createRetrieval(pool: Pool, embedder: Embedder) {
   // One stored file of the live revision, or nothing: an unindexed path has no row to return.
   const indexedFile = async (repo: string, path: string) => {
     const name = key(repo);
-    const { rows } = await pool.query<{ commit_sha: string; line_count: number; content: string; language: string; url: string }>(
-      `SELECT r.commit_sha, f.line_count, f.content, f.language, coalesce(rf.url, '') AS url
+    const { rows } = await pool.query<{ repo: string; commit_sha: string; line_count: number; content: string; language: string; url: string }>(
+      `SELECT r.repo, r.commit_sha, f.line_count, f.content, f.language, coalesce(rf.url, '') AS url
        FROM source_files f
        JOIN index_revisions r ON r.id = f.revision_id
        LEFT JOIN repo_facts rf ON rf.repo = r.repo
-       WHERE r.status = 'live' AND r.embedding_dims = $3 AND r.repo = $1 AND f.path = $2`, [name, path, embedder.dims]);
-    return rows[0] ? { ...rows[0], repo: name } : null;
+       WHERE r.status = 'live' AND r.embedding_dims = $3 AND lower(r.repo) = $1 AND f.path = $2`, [name, path, embedder.dims]);
+    return rows[0] ?? null;
   };
 
   return {
@@ -62,12 +63,12 @@ export function createRetrieval(pool: Pool, embedder: Embedder) {
         `WITH live AS (
            SELECT r.id, r.repo, r.commit_sha, coalesce(f.url, '') AS url,
                   1.0
-                  + CASE WHEN r.repo = ANY($8::text[]) THEN 0.6 ELSE 0 END
+                  + CASE WHEN lower(r.repo) = ANY($8::text[]) THEN 0.6 ELSE 0 END
                   + CASE WHEN coalesce(f.stars, 0) >= 50 THEN 0.5 WHEN coalesce(f.stars, 0) >= 5 THEN 0.25 ELSE 0 END
                   + CASE WHEN f.pushed_at > now() - interval '180 days' THEN 0.3
                          WHEN f.pushed_at > now() - interval '730 days' THEN 0.1 ELSE 0 END AS weight
            FROM index_revisions r LEFT JOIN repo_facts f ON f.repo = r.repo
-           WHERE r.status = 'live' AND r.embedding_dims = $3 AND ($2::text IS NULL OR r.repo = $2)
+           WHERE r.status = 'live' AND r.embedding_dims = $3 AND ($2::text IS NULL OR lower(r.repo) = $2)
          ),
          matched AS (
            SELECT c.id, ts_rank_cd(c.search, tsq.query) AS score
@@ -127,7 +128,7 @@ export function createRetrieval(pool: Pool, embedder: Embedder) {
       const name = key(repo);
       const { rows } = await pool.query(
         `SELECT f.path, f.line_count FROM source_files f JOIN index_revisions r ON r.id = f.revision_id
-         WHERE r.status = 'live' AND r.embedding_dims = $3 AND r.repo = $1 ORDER BY f.path LIMIT $2`, [name, limit, embedder.dims]);
+         WHERE r.status = 'live' AND r.embedding_dims = $3 AND lower(r.repo) = $1 ORDER BY f.path LIMIT $2`, [name, limit, embedder.dims]);
       return rows.map(row => ({ path: row.path, lines: row.line_count }));
     },
   };

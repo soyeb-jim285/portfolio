@@ -113,6 +113,8 @@
     {
       "question": "How does searching for text inside a PDF work?",
       "expectAnyPath": [
+        "src/services/pdfdoc.cpp",
+        "src/services/pdfdoc.h",
         "src/qml/PdfView.qml",
         "src/qml/SearchBar.qml"
       ],
@@ -234,6 +236,7 @@
     {
       "question": "How does the two-stage model adapt to each subject?",
       "expectAnyPath": [
+        "results/reports/31_two_stage_subject_adapt_suite.md",
         "recovered/31_two_stage_subject_adapt_suite.py",
         "recovered/24_subject_constrained_decoding.py"
       ],
