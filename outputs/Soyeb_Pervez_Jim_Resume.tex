@@ -47,21 +47,21 @@
 \end{center}
 
 \section*{Professional Summary}
-Software engineer with remote experience building production LLM agents, semantic retrieval, and multi-tenant SaaS for e-commerce. Co-author on two Elsevier journal papers applying physics-informed deep learning to industrial systems; author of C++/Qt desktop software with 313 GitHub stars. English at CEFR C1.
+Software engineer building production LLM agents, semantic retrieval, and multi-tenant SaaS for e-commerce. Main engineer on a Shopify shopping assistant that has handled 36,000 conversations. Maintainer of HyprFM, a C++/Qt file manager with 313 GitHub stars and outside contributors. Co-author of a published Elsevier paper on physics-informed deep learning, with a second under review.
 
 \section*{Technical Skills}
-\textbf{Languages:} TypeScript, Python, C++, QML, JavaScript, Swift, Lua, Bash\\
-\textbf{AI/ML:} LLM agents, tool calling, retrieval-augmented generation (RAG), vector search, embeddings, AI SDK, OpenAI/Anthropic/Google models, PyTorch, ONNX, scikit-learn, CNN/TCN, biosignal processing\\
-\textbf{Backend:} Node.js, Hono, Express, Next.js, React, Drizzle, Sequelize, Postgres, Vitess, Redis, Stripe, Qt 6/QML\\
-\textbf{Infrastructure:} Docker, GitHub Actions, Traefik, Dokploy, Hetzner, Cloudflare R2, Vercel, k6, Playwright, Nix
+\textbf{Languages:} TypeScript, JavaScript, Python, C++ (Qt 6/QML), SQL, Bash\\
+\textbf{AI/ML:} LLM agents, tool calling, RAG, vector search, embeddings, AI SDK, PyTorch, ONNX, scikit-learn\\
+\textbf{Backend:} Node.js, Express, Hono, Next.js, React, Postgres, MySQL (Vitess), Redis, Stripe, Shopify APIs\\
+\textbf{Infrastructure:} Docker, GitHub Actions, Hetzner, Dokploy, Cloudflare R2, Vercel, Playwright, Nix
 
 \section*{Professional Experience}
 \role{Software Engineer}{July 2025 -- Present}{\href{https://fuego.io}{Fuego.io}}{Remote}
 \begin{itemize}
-  \item Led development of the tool-calling chat assistant behind a multi-tenant Shopify commerce platform: streaming responses, product search, recommendations, and reviews returned as structured tool results.
-  \item Built semantic product search over live catalogs, with a scheduled re-embedding job keeping every tenant's index current.
-  \item Automated per-brand context generation, so a new tenant gets a customer-care knowledge base from its own site with no manual authoring.
-  \item Built the admin surface and metering: conversation analytics, token-usage tracking, and Stripe billing across tenants.
+  \item Main engineer on the tool-calling shopping assistant behind a multi-tenant Shopify platform, with streamed responses and product search, recommendations, and reviews returned as structured tool results. 36,000 conversations with 30,000 shoppers since launch, about 3,600 a month across five live storefronts.
+  \item Built semantic product search over 675,000 indexed products, kept current per tenant by a scheduled re-embedding job.
+  \item Built the answer cache that serves 47\% of messages with no model call: concurrent requests share one generation, and a background check regenerates an answer once its prompt or tool results have changed.
+  \item Automated per-brand context generation from each tenant's own site, and built the admin surface: conversation analytics, token metering, and Stripe billing.
 \end{itemize}
 
 \section*{Selected Projects}
@@ -79,19 +79,19 @@ Software engineer with remote experience building production LLM agents, semanti
 \textbf{Physics-Informed Multi-Task Neural Network for Leak Detection in Multiphase Pipelines} \hfill \textit{Published, 2026}\\[1pt]
 \textit{Process Safety and Environmental Protection} (Elsevier) \enspace $|$ \enspace \href{https://doi.org/10.1016/j.psep.2026.109609}{doi.org/10.1016/j.psep.2026.109609}
 \begin{itemize}
-  \item PCE-PINN, a multi-task network predicting leak presence, diameter, and location from inlet/outlet pressure and flow alone: F1 = 1.00 detection, $R^2$ = 0.906 and 0.941, a 16.5\% location gain over the best classical baseline.
+  \item PCE-PINN, a multi-task network predicting leak presence, diameter, and location from inlet/outlet pressure and flow alone: F1 = 1.00 detection and $R^2$ = 0.906 and 0.941 under stratified 5-fold cross-validation, a 16.5\% location gain over the best classical baseline.
 \end{itemize}
 \textbf{Physics-Informed Embed-to-Control with Per-Producer MLP Heads for CO$_2$ Storage Surrogate Modelling}\\[1pt]
 \textit{Fuel Processing Technology} (Elsevier), submitted 2026 \hfill \textit{Under review}
 \begin{itemize}
-  \item Replaced the shared linear well model in an E2CO reservoir surrogate with per-producer MLP heads, trained under PINN residuals on the simulator's own finite-volume operator: saturation RMSE $-$38\%, pressure RMSE $-$35\%, per-well $R^2$ from 0.82 to 0.91 in 16 min on one T4.
+  \item Replaced the shared linear well model in a reservoir surrogate with per-producer MLP heads trained under physics residuals: saturation RMSE $-$38\%, pressure RMSE $-$35\%, per-well $R^2$ from 0.82 to 0.91.
 \end{itemize}
-\textbf{Challenge papers.} AI4Pain 2026, ACII Grand Challenge (under review): two-stage physiological pain classifier, 0.572 test accuracy against a 0.398 baseline. MUMIDC, ABC2026: CNN2D-TCN over EEG, EMG, and IMU, 87.9\% macro F1 under 16-fold mixed LOSO.
+\textbf{Challenge papers.} AI4Pain 2026 at ACII (under review): physiological pain classifier, 0.572 test accuracy against a 0.398 baseline. MUMIDC at ABC2026: activity recognition from EEG, EMG, and IMU, 87.9\% macro F1.
 
 \section*{Education \& Achievements}
-\textbf{BSc in Electrical and Electronic Engineering}, University of Dhaka \hfill \textit{2021 -- 2026 (expected)}\\[1pt]
+\textbf{BSc in Electrical and Electronic Engineering}, University of Dhaka \hfill \textit{2021 -- 2026}\\[1pt]
 Final-year thesis on abnormal activity recognition \enspace $|$ \enspace \href{https://cert.efset.org/LEvQnj}{EF SET English certificate: C1}\\[2pt]
-{\small\textbf{Competitive programming.} \href{https://codeforces.com/profile/soyeb_p_jim}{Codeforces} peak 1714 (Expert), 769 problems solved; \href{https://www.codechef.com/users/soyebjim}{CodeChef} peak 2032 (Div 1). ICPC Dhaka Regional finalist twice: \href{https://icpc.global/regionals/finder/Dhaka-2025/standings}{37th/308} (2024), \href{https://icpc.global/regionals/finder/Dhaka-2024/standings}{37th/225} (2023). \href{https://bapsoj.org/contests/ncpc-onsite-2023-hosted-by-ju/standings}{National Collegiate Programming Contest} 27th/196; Meta Hacker Cup round 2 in \href{https://www.facebook.com/codingcompetitions/hacker-cup/2023/certificate/2005569239823325}{2023} and \href{https://www.facebook.com/codingcompetitions/hacker-cup/2024/certificate/2005569239823325}{2024}.\\[1pt]
-\textbf{Olympiad.} Bangladesh Mathematical Olympiad national first runner-up (2017) and second runner-up (2016); co-authored \href{https://www.rokomari.com/book/288868/gonit-olympiad-er-hate-khori-secondary}{\textit{Ganit Olympiader Hatekhori}}, an olympiad primer (Swapno '71, 2024). Published \href{https://www.facebook.com/mpms.solve}{worked olympiad solutions} to 6.5K followers.}
+{\small\textbf{Competitive programming.} \href{https://codeforces.com/profile/soyeb_p_jim}{Codeforces} peak 1714 (Expert); \href{https://www.codechef.com/users/soyebjim}{CodeChef} peak 2032 (Div 1). ICPC Dhaka Regional finalist twice: \href{https://icpc.global/regionals/finder/Dhaka-2025/standings}{37th/308} (2024), \href{https://icpc.global/regionals/finder/Dhaka-2024/standings}{37th/225} (2023). \href{https://bapsoj.org/contests/ncpc-onsite-2023-hosted-by-ju/standings}{National Collegiate Programming Contest} 27th/196; Meta Hacker Cup round 2 in \href{https://www.facebook.com/codingcompetitions/hacker-cup/2023/certificate/2005569239823325}{2023} and \href{https://www.facebook.com/codingcompetitions/hacker-cup/2024/certificate/2005569239823325}{2024}.\\[1pt]
+\textbf{Olympiad.} Bangladesh Mathematical Olympiad national first runner-up (2017), second runner-up (2016); co-authored \href{https://www.rokomari.com/book/288868/gonit-olympiad-er-hate-khori-secondary}{\textit{Ganit Olympiader Hatekhori}}, an olympiad primer (2024).}
 
 \end{document}
