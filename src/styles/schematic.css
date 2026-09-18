@@ -64,10 +64,12 @@ h2, .title { font-size: clamp(40px, 6vw, 80px); }
 .title { font-size: clamp(40px, 6vw, 80px); }
 .t2 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
 h3 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
-.sub { color: var(--muted); max-width: 62ch; font-size: 16px; }
+/* Wide enough to fill a single-column section instead of stranding text at half the sheet.
+   Inside a .split the grid column is narrower than this, so the column still sets the measure. */
+.sub { color: var(--muted); max-width: 860px; font-size: 16px; }
 .sub + .sub { margin-top: 12px; }
 .ora { color: var(--accent); }
-.lead { max-width: 62ch; }
+.lead { max-width: 860px; }
 .lead + .lead { margin-top: 14px; }
 .head { display: grid; gap: 18px; }
 .head .sub { margin-top: 4px; }
@@ -95,9 +97,6 @@ h3 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
 .fig .lab { position: absolute; z-index: 1; left: -10px; top: -10px; }
 .fig .cap, .cap { margin-top: 8px; font-size: 12px; color: var(--muted); }
 
-/* A prose-led section has no second column to fill, so the reading measure is widened to the
-   diagram's own ceiling rather than leaving the text stranded against the sheet edge. */
-.prose .lead, .sub.prose { max-width: 860px; }
 /* An identifier broken across two lines stops being one, so a DOI or handle never wraps. */
 .nowrap { white-space: nowrap; }
 

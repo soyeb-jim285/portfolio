@@ -79,6 +79,7 @@ const limits = [
   <section class="r">
     <h2 class="t2" style="margin-bottom:16px">Built with</h2>
     <p class="lead">Astro and a React island on the front, Hono on Node with an OpenAPI schema on the back, PostgreSQL with pgvector for sessions and retrieval, OpenRouter for the model and embeddings, Cloudflare R2 for generated documents, Resend for mail, and the Google Calendar API for scheduling. The API documents itself; every route, event and error shape is in the generated specification.</p>
+    <p class="lead">The reference is public: <a href="https://api.soyebjim.me/docs" target="_blank" rel="noopener">api.soyebjim.me/docs</a>, with the raw schema at <a href="https://api.soyebjim.me/openapi.json" target="_blank" rel="noopener">/openapi.json</a>. Sending a request from that page returns 403. Every <code>/v1</code> route checks the calling origin against this site, and the documentation is served from a different one, so the refusal is the check working rather than a fault.</p>
     <p class="btns">
       <button type="button" class="btn fill" data-assistant-ask="How does HyprFM keep file transfers off the UI thread? Cite the code.">Ask it something hard</button>
       <button type="button" class="btn" data-contact>Send a message</button>
