@@ -42,7 +42,7 @@ export const work = {
     'Tool calling for product search, collections, product details, reviews, recommendations and order help.',
     'Semantic product search over live store catalogs.',
     'Image and voice input alongside text, with results streamed back as product cards.',
-    'Caching, rate limiting, usage metering and failure recovery for production traffic, plus Stripe billing across brands.',
+    'Caching, rate limiting and failure recovery for production traffic, plus Stripe billing across brands.',
   ],
   stack: ['TypeScript', 'Next.js', 'React', 'Node.js', 'Shopify', 'Stripe'],
 } as const;
