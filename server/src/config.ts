@@ -13,6 +13,9 @@ export const configSchema = z.object({
   MAX_CONCURRENT_REQUESTS: z.coerce.number().int().min(1).max(20).default(3),
   REQUESTS_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   MAX_REQUESTS_PER_DAY: z.coerce.number().int().min(1).default(200),
+  // Voice notes are transcribed once, in the browser's own request, and only the text reaches the chat model.
+  OPENROUTER_TRANSCRIPTION_MODEL: z.string().min(1).default('openai/gpt-4o-transcribe'),
+  TRANSCRIPTION_MAX_BYTES: z.coerce.number().int().min(100_000).max(25_000_000).default(8_000_000),
   OPENROUTER_EMBEDDING_MODEL: z.string().min(1).default('openai/text-embedding-3-small'),
   OPENROUTER_EMBEDDING_DIMS: z.coerce.number().int().min(8).max(8192).default(1536),
   GITHUB_OWNER: z.string().min(1).default('soyeb-jim285'),

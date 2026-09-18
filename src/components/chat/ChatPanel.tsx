@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, ImagePlus, Mail, MessageSquare, RotateCcw, Send, Square, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, AudioLines, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, Mail, MessageSquare, Mic, RotateCcw, Send, Square, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
 import Diagram from './Diagram';
 import { Button } from '../ui/button';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Message, MessageActions, MessageContent, MessageResponse, preloadResponse } from '../ai-elements/message';
-import { artifactLink, confirmBooking, createSession, prepareAttachment, SessionExpired, proposeSlot, sendContact, streamAnswer, type Artifact, type Availability, type BookingProposal, type ContactDraft, type RequestedUiAction, type Slot, type SourceCitation, type Attachment, type ShownImage, type ToolActivity, type Usage, type ChatMessage } from '../../lib/chat-stream';
+import { artifactLink, confirmBooking, createSession, SessionExpired, proposeSlot, sendContact, streamAnswer, transcribeAudio, type Artifact, type Availability, type BookingProposal, type ContactDraft, type RequestedUiAction, type Slot, type SourceCitation, type ShownImage, type ToolActivity, type Usage, type ChatMessage } from '../../lib/chat-stream';
 import { clearConversation, loadConversation, saveConversation } from '../../lib/chat-history';
 import { acknowledgeAction, runAction, type ActionStatus } from '../../lib/site-actions';
 
@@ -21,7 +21,8 @@ type Entry = {
   error?: string;
   vote?: 'up' | 'down';
   images?: ShownImage[];
-  attachment?: { dataUrl: string; name: string };
+  // A voice note keeps its recording and its transcript together; the transcript is what was sent.
+  audio?: { blob: Blob; mediaType: string; seconds: number; transcript: string; model: string };
 };
 
 const slotLabel = (iso: string, timeZone: string) =>
@@ -74,7 +75,22 @@ function Fold({ className, summary, children }: { className: string; summary: Re
     {opened && children()}
   </details>;
 }
+// How much of the scroller the floating header covers, which is scroll-padding-top where it floats.
+const headRoom = (box: HTMLElement) => parseFloat(getComputedStyle(box).scrollPaddingTop) || 0;
 const DEFAULT_WIDTH = 420;
+// Spelled-out codecs: Chrome claims plain audio/mp4 and then records opus in it, which nothing plays.
+const VOICE_MIME_TYPES = ['audio/mp4;codecs=mp4a.40.2', 'audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+const MAX_TAKE_SECONDS = 120;
+// A blob URL per audio bubble, created once and revoked when the entry goes away.
+function AudioBubble({ audio }: { audio: NonNullable<Entry['audio']> }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => { const next = URL.createObjectURL(audio.blob); setUrl(next); return () => URL.revokeObjectURL(next); }, [audio.blob]);
+  return <div className="chat-audio">
+    <AudioLines size={14} aria-hidden="true" />
+    {url && <audio controls preload="metadata" src={url} aria-label={`Voice note, ${audio.seconds} seconds`} />}
+    <span className="chat-audio-length">{Math.floor(audio.seconds / 60)}:{String(audio.seconds % 60).padStart(2, '0')}</span>
+  </div>;
+}
 const clampWidth = (value: number) => Math.round(Math.min(Math.max(value, MIN_WIDTH), Math.max(MIN_WIDTH, Math.min(760, window.innerWidth - 96))));
 
 export default function ChatPanel({ endpoint }: { endpoint: string }) {
@@ -91,8 +107,13 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const [atBottom, setAtBottom] = useState(true);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [openDays, setOpenDays] = useState<Record<string, string>>({});
-  const [attachment, setAttachment] = useState<Attachment | null>(null);
-  const picker = useRef<HTMLInputElement>(null);
+  // A finished take waits in the footer until the visitor sends or discards it.
+  const [take, setTake] = useState<{ blob: Blob; seconds: number } | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const recorder = useRef<MediaRecorder | null>(null);
+  // stop() is the only way out of a recording, so discard is a flag its handler reads.
+  const discard = useRef(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const token = useRef<string | undefined>(undefined);
@@ -168,13 +189,14 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     const last = pad.previousElementSibling;
     if (!top || !last || last === pad) { pad.style.height = '0px'; return; }
     const turn = last.getBoundingClientRect().bottom - top.getBoundingClientRect().top;
-    pad.style.height = `${Math.max(0, box.clientHeight - turn - 36)}px`;
+    // On mobile the header floats over the list, so the room it covers is not room the turn can use.
+    pad.style.height = `${Math.max(0, box.clientHeight - turn - 36 - headRoom(box))}px`;
   }, []);
   const toAnchor = useCallback((behavior: ScrollBehavior = 'auto') => {
     const box = viewport.current;
     const top = anchor.current && box?.querySelector(`[data-entry="${anchor.current}"]`);
     if (!box || !top) return;
-    box.scrollTo({ top: box.scrollTop + top.getBoundingClientRect().top - box.getBoundingClientRect().top - 12, behavior });
+    box.scrollTo({ top: box.scrollTop + top.getBoundingClientRect().top - box.getBoundingClientRect().top - 12 - headRoom(box), behavior });
   }, []);
   useEffect(() => {
     fit();
@@ -213,7 +235,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     return token.current;
   }
 
-  async function ask(value: string, replacing?: string[]) {
+  async function ask(value: string, replacing?: string[], audio?: Entry['audio']) {
     const prompt = value.trim();
     if (controller.current || !prompt || prompt.length > 4000) return;
     if (!endpoint) { setAlert('Assistant is not connected yet. Use the contact button to reach Jim.'); return; }
@@ -223,17 +245,15 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
       const answer = entries[index + 1];
       if (entry.role !== 'user' || answer?.role !== 'assistant' || answer.state !== 'complete' || replacing?.includes(entry.id)) return [];
       return [
-        { role: 'user' as const, content: entry.attachment ? `${entry.content}\n\n[image attached]` : entry.content },
+        { role: 'user' as const, content: entry.content },
         { role: 'assistant' as const, content: answer.content },
       ];
     }).slice(-HISTORY_TURNS);
     while (history.length && history.reduce((sum, turn) => sum + turn.content.length, prompt.length) > HISTORY_CHARS) history.splice(0, 2);
     const userId = crypto.randomUUID(); const answerId = crypto.randomUUID();
-    const sending = attachment;
     setEntries(previous => [...previous.filter(entry => !replacing?.includes(entry.id)),
-      { id: userId, role: 'user', content: prompt, ...(sending ? { attachment: { dataUrl: sending.dataUrl, name: sending.name } } : {}) },
+      { id: userId, role: 'user', content: prompt, ...(audio ? { audio } : {}) },
       { id: answerId, role: 'assistant', content: '', state: 'streaming' }]);
-    setAttachment(null);
     const abort = new AbortController(); controller.current = abort;
     let timer = setTimeout(() => abort.abort('timeout'), IDLE_TIMEOUT_MS);
     const alive = () => { clearTimeout(timer); timer = setTimeout(() => abort.abort('timeout'), IDLE_TIMEOUT_MS); };
@@ -283,11 +303,11 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     try {
       // An expired session is replaced and the question resent once.
       let result;
-      try { result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, watched, sending ?? undefined); }
+      try { result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, watched); }
       catch (error) {
         if (!(error instanceof SessionExpired)) throw error;
         token.current = undefined; writeToken();
-        result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, watched, sending ?? undefined);
+        result = await streamAnswer(endpoint, await session(), prompt, history, abort.signal, watched);
       }
       const cut = result.finishReason === 'length' ? 'Length limit reached. Ask a follow-up to continue.' : undefined;
       setEntries(previous => previous.map(entry => entry.id === answerId ? { ...entry, content: result.text, state: 'complete', error: cut } : entry));
@@ -392,11 +412,69 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     }
   }
 
-  async function attach(file: File | null | undefined) {
-    if (!file) return;
-    setStatus('Preparing the image…');
-    try { setAttachment(await prepareAttachment(file)); setStatus('Image ready. Add a question and send.'); }
-    catch (error) { setAlert(error instanceof Error ? error.message : 'That image could not be attached.'); }
+  async function startRecording() {
+    setAlert('');
+    // The mic only exists on a secure origin; over plain http the API is simply absent.
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { setAlert('Voice notes need a secure (https) connection and a browser with microphone support.'); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = VOICE_MIME_TYPES.find(type => MediaRecorder.isTypeSupported(type));
+      const rec = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const chunks: Blob[] = [];
+      const startedAt = Date.now();
+      discard.current = false;
+      rec.ondataavailable = event => { if (event.data.size > 0) chunks.push(event.data); };
+      rec.onstop = () => {
+        // Releasing the tracks is what turns the browser's recording indicator off.
+        stream.getTracks().forEach(track => track.stop());
+        recorder.current = null; setRecording(false); setSeconds(0);
+        if (discard.current) return;
+        const blob = new Blob(chunks, { type: rec.mimeType || mimeType || 'audio/webm' });
+        const length = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+        // A container the browser claimed to support can still mux nothing.
+        if (blob.size < 1000) { setAlert('That take came out empty. Try again.'); return; }
+        setTake({ blob, seconds: length });
+        setStatus(`Recorded ${length} seconds. Send it or discard it.`);
+      };
+      rec.start(250);
+      recorder.current = rec; setRecording(true); setSeconds(0); setStatus('Recording. Tap the square to stop.');
+    } catch (error) {
+      setAlert(error instanceof DOMException && error.name === 'NotAllowedError' ? 'Microphone access was refused. Allow it in the browser to record a note.' : 'The microphone could not be started.');
+    }
+  }
+  const stopRecording = (cancel = false) => { discard.current = cancel; recorder.current?.stop(); };
+  // The clock and the hard stop live here, so a forgotten recording ends on its own.
+  useEffect(() => {
+    if (!recording) return;
+    const tick = setInterval(() => setSeconds(current => {
+      if (current + 1 >= MAX_TAKE_SECONDS) { recorder.current?.stop(); return current; }
+      return current + 1;
+    }), 1000);
+    return () => clearInterval(tick);
+  }, [recording]);
+  useEffect(() => () => { discard.current = true; recorder.current?.stop(); }, []);
+
+  async function sendTake() {
+    if (!take || controller.current) return;
+    if (!endpoint) { setAlert('Assistant is not connected yet. Use the contact button to reach Jim.'); return; }
+    const { blob, seconds: length } = take;
+    setBusy(true); setAlert(''); setStatus('Transcribing…');
+    try {
+      let transcript;
+      try { transcript = await transcribeAudio(endpoint, await session(), blob); }
+      catch (error) {
+        if (!(error instanceof SessionExpired)) throw error;
+        token.current = undefined; writeToken();
+        transcript = await transcribeAudio(endpoint, await session(), blob);
+      }
+      setTake(null);
+      setBusy(false);
+      await ask(transcript.text, undefined, { blob, mediaType: blob.type, seconds: length, transcript: transcript.text, model: transcript.model });
+    } catch (error) {
+      setBusy(false);
+      setAlert(error instanceof Error ? error.message : 'The recording could not be transcribed.');
+      setStatus('Transcription failed. The recording is still here to retry or discard.');
+    }
   }
 
   async function copy(entry: Entry) {
@@ -413,7 +491,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           <MessageSquare size={16} aria-hidden="true" /> Ask about my work
         </Button>
       </SheetTrigger>
-      <SheetContent container={portal} data-shown={shown || undefined}
+      <SheetContent container={portal} data-shown={shown || undefined} data-mobile={mobile || undefined}
         onOpenAutoFocus={event => { event.preventDefault(); input.current?.focus(); }}
         onInteractOutside={event => { if (!mobile) event.preventDefault(); }}>
         {!mobile && <div className="assistant-resizer" role="separator" aria-orientation="vertical" aria-label="Resize assistant panel"
@@ -424,10 +502,10 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
             if (step) { event.preventDefault(); setWidth(current => clampWidth(current + step)); }
           }} />}
         <header className="assistant-header">
-          <SheetTitle className="assistant-title">SPJ <span aria-hidden="true">/</span> Assistant</SheetTitle>
+          <SheetTitle className="assistant-title">Legend</SheetTitle>
           <div className="assistant-header-actions">
             <Button size="icon" variant="ghost" aria-label="Clear chat" title="Clear chat" disabled={busy || !entries.length} onClick={() => {
-              setEntries([]); setQuestion(''); setCopied(''); setAlert(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; pinned.current = false; anchor.current = ''; input.current?.focus();
+              setEntries([]); setQuestion(''); setTake(null); setCopied(''); setAlert(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; pinned.current = false; anchor.current = ''; input.current?.focus();
             }}><Trash2 size={15} aria-hidden="true" /></Button>
             <SheetClose asChild><Button size="icon" variant="ghost" aria-label="Close assistant"><X size={17} aria-hidden="true" /></Button></SheetClose>
           </div>
@@ -452,8 +530,11 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
               <div className="chat-message-label"><span>{entry.role === 'user' ? 'You' : 'Assistant'}</span>{entry.state === 'streaming' && <span className="chat-live-label">Responding</span>}</div>
               <MessageContent>
                 {entry.role === 'user' ? <>
-                  {entry.attachment && <img className="chat-attachment" src={entry.attachment.dataUrl} alt={`Attached ${entry.attachment.name}`} />}
-                  <p className="chat-user-text">{entry.content}</p>
+                  {entry.audio ? <>
+                    <AudioBubble audio={entry.audio} />
+                    {/* The transcript is already in hand: opening the fold costs nothing and calls nothing. */}
+                    <Fold className="chat-transcript" summary="View transcription">{() => <p className="chat-user-text">{entry.audio!.transcript}</p>}</Fold>
+                  </> : <p className="chat-user-text">{entry.content}</p>}
                 </> : entry.content ?
                   <MessageResponse isAnimating={entry.state === 'streaming'} {...MARKDOWN}>
                     {entry.content}
@@ -622,28 +703,26 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         {!atBottom && !busy && <Button className="assistant-jump" onClick={toBottom}><ArrowDown size={14} aria-hidden="true" /> Latest</Button>}
         <footer className="assistant-footer">
           {alert && <p className="assistant-alert" role="alert">{alert}</p>}
-          {attachment && <div className="assistant-attachment">
-            <img src={attachment.dataUrl} alt={`Attached ${attachment.name}`} />
-            <span>{attachment.name}</span>
-            <Button type="button" size="icon" variant="ghost" aria-label="Remove the attached image" onClick={() => setAttachment(null)}><X size={14} aria-hidden="true" /></Button>
+          {take && <div className="assistant-take" role="group" aria-label="Recorded voice note">
+            <AudioBubble audio={{ blob: take.blob, mediaType: take.blob.type, seconds: take.seconds, transcript: '', model: '' }} />
+            <div className="assistant-take-actions">
+              <Button type="button" variant="default" disabled={busy} onClick={() => void sendTake()}><ArrowUp size={14} aria-hidden="true" /> {busy ? 'Transcribing…' : 'Send'}</Button>
+              <Button type="button" size="icon" variant="ghost" aria-label="Discard the recording" title="Discard" disabled={busy} onClick={() => { setTake(null); setStatus('Recording discarded.'); }}><Trash2 size={14} aria-hidden="true" /></Button>
+            </div>
           </div>}
-          <form className="assistant-form" onSubmit={event => { event.preventDefault(); void ask(question); }}
-            onDragOver={event => event.preventDefault()}
-            onDrop={event => { event.preventDefault(); void attach(event.dataTransfer.files?.[0]); }}>
+          <form className="assistant-form" data-recording={recording || undefined} onSubmit={event => { event.preventDefault(); void ask(question); }}>
             <label htmlFor="assistant-question" className="assistant-sr-only">Your question</label>
             <textarea id="assistant-question" ref={input} value={question} onChange={event => setQuestion(event.target.value)} maxLength={4000} rows={1} required
-              placeholder="Ask about a project, a decision, a detail…" aria-describedby="assistant-privacy" readOnly={busy}
-              onPaste={event => { const file = [...event.clipboardData.items].find(item => item.type.startsWith('image/'))?.getAsFile(); if (file) { event.preventDefault(); void attach(file); } }}
+              placeholder={recording ? `Recording… ${seconds}s` : 'Ask about the work…'} aria-describedby="assistant-privacy" readOnly={busy || recording}
               onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (!busy) void ask(question); } }} />
-            <input ref={picker} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden
-              onChange={event => { void attach(event.target.files?.[0]); event.target.value = ''; }} />
-            <Button type="button" size="icon" variant="ghost" aria-label="Attach an image" title="Attach an image"
-              disabled={busy} onClick={() => picker.current?.click()}><ImagePlus size={16} aria-hidden="true" /></Button>
-            {busy ? <Button type="button" size="icon" aria-label="Stop response" title="Stop response" onClick={() => controller.current?.abort()}><Square size={14} aria-hidden="true" /></Button> :
-              <Button type="submit" variant="default" size="icon" aria-label="Send message" title="Send message" disabled={!question.trim()}><ArrowUp size={16} aria-hidden="true" /></Button>}
+            {recording
+              ? <Button type="button" size="icon" variant="default" className="assistant-record" data-recording aria-label="Stop recording" title="Stop recording" onClick={() => stopRecording()}><Square size={14} aria-hidden="true" /></Button>
+              : <Button type="button" size="icon" variant="ghost" className="assistant-record" aria-label="Record a voice note" title="Record a voice note" disabled={busy || !!take} onClick={() => void startRecording()}><Mic size={16} aria-hidden="true" /></Button>}
+            {busy && controller.current ? <Button type="button" size="icon" aria-label="Stop response" title="Stop response" onClick={() => controller.current?.abort()}><Square size={14} aria-hidden="true" /></Button> :
+              <Button type="submit" variant="default" size="icon" aria-label="Send message" title="Send message" disabled={!question.trim() || recording || busy}><ArrowUp size={16} aria-hidden="true" /></Button>}
           </form>
           <p className="assistant-sr-only" role="status" aria-live="polite">{status}</p>
-          <p id="assistant-privacy" className="assistant-sr-only">Enter sends, Shift + Enter adds a line.</p>
+          <p id="assistant-privacy" className="assistant-sr-only">Enter sends, Shift + Enter adds a line. The microphone records a voice note that is transcribed before it is sent.</p>
         </footer>
       </SheetContent>
     </Sheet>

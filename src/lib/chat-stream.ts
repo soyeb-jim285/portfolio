@@ -5,7 +5,7 @@ export type SourceCitation = { repo: string; path: string; language: string; sym
 export type RequestedUiAction = { id: string; target: string; route: string; anchor: string; label: string; action: 'reveal' | 'contact' };
 export type ContactDraft = { id: string; name: string; email: string; message: string; to: string };
 export type ShownImage = { id: string; src: string; alt: string; caption: string };
-export type Attachment = { mediaType: string; dataUrl: string; name: string };
+export type Transcript = { text: string; model: string; seconds?: number; costUsd?: number };
 export type Artifact = { id: string; kind: string; title: string; bytes: number; markdown: string; expiresAt: string };
 export type Slot = { start: string; end: string };
 export type Availability = { timeZone: string; durationMinutes: number; label: string; key: string; slots: Slot[] };
@@ -57,11 +57,11 @@ export async function createSession(endpoint: string) {
 }
 
 // The server keeps no conversation, so the recent turns travel with every question.
-export async function streamAnswer(endpoint: string, token: string, message: string, history: ChatMessage[], signal: AbortSignal, handlers: StreamHandlers, attachment?: Attachment) {
+export async function streamAnswer(endpoint: string, token: string, message: string, history: ChatMessage[], signal: AbortSignal, handlers: StreamHandlers) {
   const response = await fetch(`${base(endpoint)}/v1/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Time-Zone': browserTimeZone(), ...auth(token) },
-    body: JSON.stringify({ message, history, ...(attachment ? { attachment: { mediaType: attachment.mediaType, dataUrl: attachment.dataUrl } } : {}) }), signal,
+    body: JSON.stringify({ message, history }), signal,
   });
   if (!response.ok) await fail(response);
   if (!response.body || !response.headers.get('content-type')?.includes('text/event-stream')) throw new Error('The server did not return an answer stream.');
@@ -143,20 +143,24 @@ export async function proposeSlot(endpoint: string, token: string, slot: { start
   return await response.json() as BookingProposal;
 }
 
-// Downscale in the browser so a phone photo does not become a six megabyte request.
-export async function prepareAttachment(file: File, maxEdge = 1400, quality = 0.82): Promise<Attachment> {
-  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) throw new Error('Attach a PNG, JPEG, WebP or GIF image.');
-  if (file.size > 20_000_000) throw new Error('That image is too large. Try one under 20 MB.');
-  const bitmap = await createImageBitmap(file);
-  try {
-    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    // Re-encoding also strips metadata, so location and camera details never leave the browser.
-    const dataUrl = canvas.toDataURL('image/jpeg', quality);
-    if (dataUrl.length > 3_800_000) throw new Error('That image is too detailed to send. Try a smaller one.');
-    return { mediaType: 'image/jpeg', dataUrl, name: file.name };
-  } finally { bitmap.close(); }
+// A recording goes up once as a data URL and comes back as text. The blob itself stays in this
+// browser: the transcript is what the conversation carries, and what the model ever sees.
+const toDataUrl = (blob: Blob) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result));
+  reader.onerror = () => reject(reader.error ?? new Error('Could not read the recording.'));
+  reader.readAsDataURL(blob);
+});
+export async function transcribeAudio(endpoint: string, token: string, blob: Blob, signal?: AbortSignal): Promise<Transcript> {
+  if (blob.size > 8_000_000) throw new Error('That recording is too long to send. Keep it under a couple of minutes.');
+  const response = await fetch(`${base(endpoint)}/v1/transcribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...auth(token) },
+    body: JSON.stringify({ mediaType: blob.type || 'audio/webm', dataUrl: await toDataUrl(blob) }),
+    signal,
+  });
+  if (!response.ok) await fail(response);
+  const transcript = await response.json() as Transcript;
+  if (typeof transcript.text !== 'string' || !transcript.text.trim()) throw new Error('Nothing was heard in that recording.');
+  return transcript;
 }

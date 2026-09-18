@@ -87,7 +87,7 @@ test('documents the real routes and streams a session-grounded answer', async ()
   const spec = await (await app.request('/openapi.json')).json();
   assert.ok(spec.paths['/v1/chat'].post.responses['200'].content['text/event-stream']);
   assert.ok(spec.components.schemas.ChatEvent);
-  assert.deepEqual(Object.keys(spec.paths).sort(), ['/health', '/v1/actions/{id}', '/v1/artifacts/{id}', '/v1/bookings', '/v1/chat', '/v1/contact', '/v1/proposals', '/v1/sessions']);
+  assert.deepEqual(Object.keys(spec.paths).sort(), ['/health', '/v1/actions/{id}', '/v1/artifacts/{id}', '/v1/bookings', '/v1/chat', '/v1/contact', '/v1/proposals', '/v1/sessions', '/v1/transcribe']);
   const token = await newSession(app);
   const response = await app.fetch(ask(token));
   assert.equal(response.headers.get('access-control-allow-origin'), config.SITE_ORIGIN);
@@ -167,8 +167,8 @@ test('rejects invalid input, disallowed origins and oversized bodies before the 
   const token = await newSession(app);
   assert.equal((await app.fetch(ask(token, 'hi', 'https://evil.example'))).status, 403);
   assert.equal((await app.fetch(ask(token, ' '))).status, 400);
-  // The limit is now sized for an image attachment, so only a genuinely huge body is refused.
-  assert.equal((await app.fetch(ask(token, 'a'.repeat(6_500_000)))).status, 413);
+  // The limit is sized for a base64 voice note, so only a genuinely huge body is refused.
+  assert.equal((await app.fetch(ask(token, 'a'.repeat(12_000_000)))).status, 413);
   const extra = await app.fetch(new Request('http://localhost/v1/chat', { method: 'POST', body: JSON.stringify({ message: 'hi', role: 'system' }), headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` } }));
   assert.equal(extra.status, 400);
   assert.equal(calls, 0);
@@ -900,35 +900,66 @@ test('a slot that is not free, or a meeting length that does not exist, cannot b
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM bookings')).rows[0].n, 0);
 });
 
-test('an attached image reaches the model for that turn and is never stored', async () => {
-  const dataUrl = `data:image/png;base64,${Buffer.from('not really a png').toString('base64')}`;
-  const { sent, client } = replying('That is a screenshot of a file manager.');
-  const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+// The SDK posts multipart to /audio/transcriptions; the mock answers that URL and records what arrived.
+const transcribing = (text = 'What makes HyprFM interesting?') => {
+  const seen: { url?: string; model?: string; filename?: string; bytes?: number } = {};
+  const client = mockClient(async (url, init) => {
+    seen.url = String(url);
+    const body = init?.body as FormData;
+    const file = body.get('file') as File;
+    seen.model = String(body.get('model')); seen.filename = file.name; seen.bytes = file.size;
+    return new Response(JSON.stringify({ text, usage: { seconds: 4.2, cost: 0.0007 } }), { headers: { 'Content-Type': 'application/json' } });
+  });
+  return { seen, client };
+};
+const voice = (bytes = 4000, type = 'audio/webm;codecs=opus') => ({ mediaType: type, dataUrl: `data:${type};base64,${Buffer.alloc(bytes, 7).toString('base64')}` });
+
+test('a voice note is transcribed through the configured model and only the text comes back', async () => {
+  const { seen, client } = transcribing();
+  const app = createApp({ ...config, OPENROUTER_TRANSCRIPTION_MODEL: 'openai/gpt-4o-transcribe' }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
   const token = await newSession(app);
-  const response = await app.fetch(new Request('http://localhost/v1/chat', {
-    method: 'POST', body: JSON.stringify({ message: 'What is this?', attachment: { mediaType: 'image/png', dataUrl } }),
+  const response = await app.fetch(new Request('http://localhost/v1/transcribe', {
+    method: 'POST', body: JSON.stringify(voice()),
     headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` },
   }));
   assert.equal(response.status, 200);
-  await response.text();
-
-  const parts = sent.body.messages.at(-1).content;
-  assert.equal(parts[0].text, 'What is this?');
-  assert.equal(parts[1].image_url.url, dataUrl);
+  assert.deepEqual(await response.json(), { text: 'What makes HyprFM interesting?', model: 'openai/gpt-4o-transcribe', seconds: 4.2, costUsd: 0.0007 });
+  assert.match(seen.url!, /\/audio\/transcriptions$/);
+  assert.equal(seen.model, 'openai/gpt-4o-transcribe');
+  // The codec suffix is dropped and the container names the file, which is how the provider picks the decoder.
+  assert.equal(seen.filename, 'voice.webm');
+  assert.equal(seen.bytes, 4000);
+  // A transcription spends the same daily budget as an answer.
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM usage_daily')).rows[0].n, 1);
 });
 
-test('a bogus attachment is refused before the model is called', async () => {
+test('a bogus or oversized voice note is refused before the provider is called', async () => {
   let calls = 0;
-  const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), mockClient(async () => { calls++; return new Response(sse('ok')); }));
+  const app = createApp({ ...config, TRANSCRIPTION_MAX_BYTES: 100_000 }, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), mockClient(async () => { calls++; return new Response('{}'); }));
   const token = await newSession(app);
-  const post = (attachment: unknown) => app.fetch(new Request('http://localhost/v1/chat', {
-    method: 'POST', body: JSON.stringify({ message: 'look', attachment }),
+  const post = (body: unknown) => app.fetch(new Request('http://localhost/v1/transcribe', {
+    method: 'POST', body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` },
   }));
-  assert.equal((await post({ mediaType: 'image/png', dataUrl: 'https://evil.example/x.png' })).status, 400);
-  assert.equal((await post({ mediaType: 'text/html', dataUrl: 'data:text/html;base64,PHNjcmlwdD4=' })).status, 400);
-  assert.equal((await post({ mediaType: 'image/png', dataUrl: 'data:image/png;base64,<script>' })).status, 400);
+  assert.equal((await post({ mediaType: 'image/png', dataUrl: 'data:image/png;base64,AAAA' })).status, 400);
+  assert.equal((await post({ mediaType: 'audio/webm', dataUrl: 'https://evil.example/x.webm' })).status, 400);
+  assert.equal((await post({ mediaType: 'audio/x-midi', dataUrl: voice(4000, 'audio/x-midi').dataUrl })).status, 400);
+  assert.equal((await post(voice(200))).status, 400);
+  assert.equal((await post(voice(150_000))).status, 413);
   assert.equal(calls, 0);
+  const anonymous = await app.fetch(new Request('http://localhost/v1/transcribe', { method: 'POST', body: JSON.stringify(voice()), headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN } }));
+  assert.equal(anonymous.status, 401);
+});
+
+test('a provider failure on a voice note is reported without crashing the turn', async () => {
+  const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), mockClient(async () => new Response('{"error":{"message":"upstream down"}}', { status: 500, headers: { 'Content-Type': 'application/json' } })));
+  const token = await newSession(app);
+  const response = await app.fetch(new Request('http://localhost/v1/transcribe', {
+    method: 'POST', body: JSON.stringify(voice()),
+    headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` },
+  }));
+  assert.equal(response.status, 502);
+  assert.match((await response.json()).error, /could not be transcribed/);
 });
 
 test('show_image can only display one of the portfolio images', async () => {
@@ -974,7 +1005,7 @@ test('the same last five turns replay the stored answer without calling the mode
   assert.equal((await pool.query('SELECT hits FROM answer_cache')).rows[0].hits, 1);
 });
 
-test('the cache misses on a new index, an attachment or a disabled cache', async () => {
+test('the cache misses on a new index or a disabled cache', async () => {
   let calls = 0;
   const client = mockClient(async () => { calls++; return new Response(sse('Answer.'), { headers: { 'Content-Type': 'text/event-stream' } }); });
   const token = await newSession(createApp(cachedConfig, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client));
@@ -988,19 +1019,10 @@ test('the cache misses on a new index, an attachment or a disabled cache', async
   await run(createApp(cachedConfig, db, reindexed, fakeMailer(), fakeStorage(), fakeScheduler(), client), ask(token, 'Same question'));
   assert.equal(calls, 2, 'a new indexed commit must miss');
 
-  const dataUrl = `data:image/png;base64,${Buffer.from('png').toString('base64')}`;
-  const withImage = () => new Request('http://localhost/v1/chat', {
-    method: 'POST', body: JSON.stringify({ message: 'What is this?', attachment: { mediaType: 'image/png', dataUrl } }),
-    headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}` },
-  });
-  await run(app, withImage());
-  await run(app, withImage());
-  assert.equal(calls, 4, 'an attachment is never cached');
-
   const off = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
   await run(off, ask(token, 'Uncached question'));
   await run(off, ask(token, 'Uncached question'));
-  assert.equal(calls, 6);
+  assert.equal(calls, 4);
 });
 
 test('answers carrying session-bound events, failed tools or a length cut are never cached', async () => {

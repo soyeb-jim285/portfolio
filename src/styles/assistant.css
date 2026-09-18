@@ -47,6 +47,12 @@
 .assistant-header-actions { display: flex; gap: 2px; }
 
 .assistant-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; padding: var(--assistant-pad); }
+/* The default bar is a bright full-height rail. A transparent border clipped to the content box
+   leaves a 4px mark inside a 10px gutter: present when you need it, quiet when you do not. */
+.assistant-body::-webkit-scrollbar { width: 10px; }
+.assistant-body::-webkit-scrollbar-track { background: transparent; }
+.assistant-body::-webkit-scrollbar-thumb { background: var(--line-2); background-clip: content-box; border: 3px solid transparent; }
+.assistant-body::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: content-box; }
 .assistant-empty h3 { font: 500 13px/1.5 var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink); }
 .assistant-empty > p { color: var(--muted); margin-top: 6px; max-width: 46ch; }
 .assistant-prompts { display: grid; margin-top: 18px; border-top: 1px solid var(--line); }
@@ -208,20 +214,34 @@
 .chat-tailspace { flex-shrink: 0; }
 .chat-loading { display: flex; gap: 5px; padding: 10px 0; }
 .chat-loading span { width: 5px; height: 5px; background: var(--muted); }
-.assistant-jump { align-self: center; margin-bottom: 10px; }
+.assistant-jump { align-self: center; margin-bottom: 10px; background: var(--bg-2); }
 
 
 .assistant-footer { padding: 12px var(--assistant-pad) max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line-2); }
-.assistant-attachment { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; border: 1px solid var(--line-2); background: var(--bg-2); font-size: 10px; color: var(--muted); }
-.assistant-attachment img { width: 44px; height: 44px; object-fit: cover; border: 1px solid var(--line); }
-.assistant-attachment span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.chat-attachment { max-height: 220px; width: auto; margin-bottom: 8px; border: 1px solid var(--line-2); }
+/* A finished take waits here until it is sent or discarded. */
+.assistant-take { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px 8px 8px 12px; border: 1px solid var(--line-2); background: var(--bg-2); }
+.assistant-take .chat-audio { flex: 1; min-width: 0; }
+.assistant-take-actions { display: flex; gap: 4px; }
+.assistant-record[data-recording] { animation: assistant-pulse 1.1s ease-in-out infinite; }
+.assistant-form[data-recording] { border-color: var(--accent); }
+/* The note and its player; the transcript folds beneath so the bubble stays short. */
+.chat-audio { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--muted); }
+.chat-audio audio { flex: 1; min-width: 0; height: 32px; max-width: 260px; color-scheme: dark; }
+.chat-audio-length { font-variant-numeric: tabular-nums; font-size: 11px; }
+.chat-transcript { margin-top: 8px; font-size: 11px; color: var(--muted); }
+.chat-transcript > summary { cursor: pointer; list-style: none; color: var(--accent); }
+.chat-transcript > summary::-webkit-details-marker { display: none; }
+.chat-transcript > summary::before { content: '+ '; }
+.chat-transcript[open] > summary::before { content: '\2013  '; }
+.chat-transcript .chat-user-text { margin-top: 6px; color: var(--ink); }
 .chat-image { margin: 12px 0 0; border: 1px solid var(--line-2); background: var(--bg-2); }
 .chat-image img { width: 100%; height: auto; display: block; }
 .chat-image figcaption { padding: 8px 10px; color: var(--muted); font-size: 10px; border-top: 1px solid var(--line); }
-.assistant-form { display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 12px; background: var(--bg-2); border: 1px solid var(--line-2); }
+.assistant-form { display: flex; align-items: flex-end; gap: 6px; padding: 6px 6px 6px 12px; background: var(--bg-2); border: 1px solid var(--line-2); }
 .assistant-form:focus-within { border-color: var(--accent); }
-.assistant-form textarea { flex: 1; min-width: 0; resize: none; field-sizing: content; min-height: 34px; max-height: 30dvh; border: 0; outline: none; border-radius: 0; background: transparent; color: var(--ink); font: 13px/1.55 var(--mono); padding: 7px 0; }
+.assistant-form textarea { flex: 1; min-width: 0; resize: none; field-sizing: content; min-height: 34px; max-height: 30dvh; border: 0; outline: none; border-radius: 0; background: transparent; color: var(--ink); font: 13px/1.55 var(--mono); padding: 8px 0; }
+/* The placeholder has to fit one line at drawer width, or the composer opens as a tall empty box. */
+.assistant-form textarea::placeholder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .assistant-form textarea::placeholder { color: var(--muted); }
 .assistant-alert { color: #e8663f; font-size: 11px; line-height: 1.5; margin-bottom: 8px; overflow-wrap: anywhere; }
 .assistant-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -236,8 +256,49 @@
   .chat-trace > summary { padding-block: 12px; }
 }
 @media (max-width: 767px) {
-  .assistant-panel { width: 100%; border-left: 0; }
-  .assistant-header { padding-top: env(safe-area-inset-top); height: calc(48px + env(safe-area-inset-top)); }
+  /* A drawer from the bottom: the page stays visible above it, and a tap outside closes it. */
+  .assistant-panel[data-mobile] { inset: auto 0 0 0; width: 100%; height: min(86dvh, 100% - 40px); border-left: 0; border-top: 1px solid var(--line-2); border-radius: 12px 12px 0 0; box-shadow: 0 -14px 44px rgba(8, 18, 35, .35); }
+  .assistant-panel[data-mobile]::before { content: ''; position: absolute; top: 6px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-2); }
+  /* One masked backdrop layer, not the eight an iOS progressive blur really uses: the blur is
+     strongest against the drawer's top edge and fades out up the screen. Where backdrop-filter
+     is unsupported the overlay is still dimmed, which is the whole job. */
+  .assistant-panel[data-mobile] ~ .assistant-overlay,
+  .assistant-overlay:has(~ .assistant-panel[data-mobile]) { background: linear-gradient(to bottom, rgba(8, 18, 35, .35), rgba(8, 18, 35, .72)); }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .assistant-panel[data-mobile] ~ .assistant-overlay,
+    .assistant-overlay:has(~ .assistant-panel[data-mobile]) {
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, .25) 34%, #000 82%);
+      mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, .25) 34%, #000 82%);
+    }
+  }
+  /* The header floats over the messages, iOS style: the list scrolls under it, a masked blur layer
+     behind it fades the content out instead of a rule, and the title and buttons stay crisp on top. */
+  .assistant-panel[data-mobile] { --assistant-head: 52px; }
+  .assistant-panel[data-mobile] .assistant-header { position: absolute; inset: 0 0 auto 0; z-index: 2; height: var(--assistant-head); padding-top: 8px; border-bottom: 0; background: transparent; }
+  .assistant-panel[data-mobile] .assistant-header::after {
+    content: ''; position: absolute; inset: 0 0 -22px 0; z-index: -1; border-radius: 12px 12px 0 0; pointer-events: none;
+    background: linear-gradient(to bottom, var(--bg) 0 42%, rgba(15, 31, 58, .55) 74%, transparent);
+  }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .assistant-panel[data-mobile] .assistant-header::after {
+      background: linear-gradient(to bottom, var(--bg) 0 34%, rgba(15, 31, 58, .4) 68%, transparent);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0 58%, rgba(0, 0, 0, .55) 80%, transparent);
+      mask-image: linear-gradient(to bottom, #000 0 58%, rgba(0, 0, 0, .55) 80%, transparent);
+    }
+  }
+  /* Room for the floating header, and the same distance reserved when a question is pinned to the top. */
+  .assistant-panel[data-mobile] .assistant-body { padding-top: calc(var(--assistant-head) + var(--assistant-pad)); scroll-padding-top: var(--assistant-head); }
+  /* The list dissolves into the composer instead of stopping at a rule. A mask, not a backdrop
+     blur: the footer is in normal flow, so there is nothing behind it that a blur could act on. */
+  .assistant-panel[data-mobile] .assistant-body { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent); }
+  .assistant-panel[data-mobile] .assistant-footer { border-top: 0; }
+  /* Floats over that fade rather than taking a row of its own and shoving the list up. */
+  .assistant-panel[data-mobile] .assistant-jump { position: relative; z-index: 3; margin: -34px auto 6px; }
+  /* Radix locks scrolling with an inline style on body, and Astro swaps body on navigation, so
+     the lock is lost while the drawer is still open. A rule in the stylesheet survives the swap. */
+  body:has(.assistant-panel[data-mobile][data-state=open]) { overflow: hidden; }
   .chat-button[data-size=icon] { width: 40px; height: 40px; }
   .assistant-form textarea { font-size: 16px; }
   .assistant-launch { right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); }
@@ -249,6 +310,7 @@
   .chat-trace::details-content, .chat-source::details-content { block-size: 0; overflow: clip; transition: block-size .32s cubic-bezier(.16, 1, .3, 1), content-visibility .32s allow-discrete; }
   .chat-trace[open]::details-content, .chat-source[open]::details-content { block-size: auto; }
   .assistant-panel[data-state=open] { animation: assistant-enter .22s cubic-bezier(.16,1,.3,1); }
+  .assistant-panel[data-mobile][data-state=open] { animation-name: assistant-rise-in; }
   /* Each message and card fades up once as it arrives; nothing loops. */
   .chat-message, .chat-slots, .chat-booking, .chat-draft, .chat-artifact { animation: assistant-rise .28s cubic-bezier(.16,1,.3,1) backwards; }
   .assistant-prompts .chat-button { animation: assistant-rise .3s cubic-bezier(.16,1,.3,1) backwards; }
@@ -257,6 +319,7 @@
   .chat-button, .chat-day-list button, .chat-trace > summary { transition: border-color .15s ease, background .15s ease, color .15s ease; }
   .chat-slot-list .chat-button[aria-pressed=true] { transition: background .12s ease, color .12s ease; }
   .assistant-panel[data-state=closed][data-shown] { animation: assistant-exit .15s ease-in; }
+  .assistant-panel[data-mobile][data-state=closed][data-shown] { animation-name: assistant-drop-out; }
   .chat-loading span { animation: assistant-wait 1.2s ease-in-out infinite; }
   .chat-loading span:nth-child(2) { animation-delay: .15s; }
   .chat-loading span:nth-child(3) { animation-delay: .3s; }
@@ -264,6 +327,9 @@
 @keyframes assistant-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes assistant-enter { from { transform: translateX(100%); } to { transform: translateX(0); } }
 @keyframes assistant-exit { from { visibility: visible; } to { transform: translateX(100%); visibility: visible; } }
+@keyframes assistant-rise-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes assistant-drop-out { from { visibility: visible; } to { transform: translateY(100%); visibility: visible; } }
+@keyframes assistant-pulse { 50% { opacity: .55; } }
 @keyframes assistant-wait { 50% { opacity: .3; } }
 @media print { .assistant-root { display: none; } body:has(.assistant-panel[data-state=open]) { padding-right: 0; } }
 

@@ -5,7 +5,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import { streamSSE } from 'hono/streaming';
 import type { Context, MiddlewareHandler } from 'hono';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import type { Config } from './config';
 import type { Db } from './db';
 import { buildSystemPrompt } from './knowledge';
@@ -23,12 +23,18 @@ const MAX_ANSWER_MS = 300000;
 // These events carry ids owned by the session that asked, or depend on the clock: never replayed to another.
 const SESSION_BOUND_EVENTS = new Set(['draft', 'proposal', 'artifact', 'action', 'slots']);
 export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone'];
-// An attached image travels as a data URL and is never stored: it is passed to the model for
-// this turn only, and later turns carry a note in its place.
-const attachmentSchema = z.object({
-  mediaType: z.enum(['image/png', 'image/jpeg', 'image/webp', 'image/gif']),
-  dataUrl: z.string().max(4_000_000).regex(/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/, 'Attachment must be a base64 image data URL'),
+// A voice note travels as a base64 data URL, is transcribed once and never stored: the browser
+// keeps the audio and the text, and only the text ever reaches the chat model.
+const AUDIO_FORMATS: Record<string, string> = {
+  'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/aac': 'aac', 'audio/flac': 'flac',
+};
+const transcribeSchema = z.object({
+  mediaType: z.string().regex(/^audio\/[a-z0-9.+-]+(;\s*codecs=[a-z0-9.," -]+)?$/i, 'mediaType must be an audio type'),
+  dataUrl: z.string().max(12_000_000).regex(/^data:audio\/[a-z0-9.+-]+(;\s*codecs=[^;,]+)?;base64,[A-Za-z0-9+/=]+$/i, 'Send a base64 audio data URL'),
 }).strict();
+const transcriptSchema = z.object({
+  text: z.string(), seconds: z.number().optional(), costUsd: z.number().optional(), model: z.string(),
+}).openapi('Transcript');
 // The browser owns the conversation and sends its recent turns with each question. It is the
 // visitor's own transcript, so a forged turn only steers that visitor's answer; every tool that
 // reaches the outside world still waits for the visitor's click.
@@ -36,7 +42,6 @@ const historySchema = z.array(z.object({ role: z.enum(['user', 'assistant']), co
 const chatSchema = z.object({
   message: z.string().trim().min(1).max(8000),
   history: historySchema.default([]),
-  attachment: attachmentSchema.optional(),
 }).strict();
 const errorSchema = z.object({ error: z.string() });
 const sessionSchema = z.object({ token: z.string(), expiresAt: z.string() });
@@ -118,8 +123,8 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
 
   // Every header the browser client sends must be listed, or the preflight kills the request.
   app.use('*', cors({ origin: config.SITE_ORIGIN, allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'], allowHeaders: CLIENT_HEADERS }));
-  // Large enough for a downscaled image attachment, small enough to bound the upload.
-  app.use('/v1/*', bodyLimit({ maxSize: 6_000_000, onError: c => c.json({ error: 'Request is too large' }, 413) }));
+  // Large enough for a base64 voice note under TRANSCRIPTION_MAX_BYTES, small enough to bound the upload.
+  app.use('/v1/*', bodyLimit({ maxSize: Math.ceil(config.TRANSCRIPTION_MAX_BYTES * 4 / 3) + 200_000, onError: c => c.json({ error: 'Request is too large' }, 413) }));
   app.use('/v1/*', async (c, next) => {
     if (c.req.method === 'OPTIONS') return next();
     if (c.req.header('origin') !== config.SITE_ORIGIN) return c.json({ error: 'Origin is not allowed' }, 403);
@@ -134,7 +139,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     c.set('sessionId', sessionId);
     await next();
   };
-  for (const path of ['/v1/chat', '/v1/actions/*', '/v1/artifacts/*', '/v1/bookings', '/v1/proposals']) app.use(path, authenticate);
+  for (const path of ['/v1/chat', '/v1/transcribe', '/v1/actions/*', '/v1/artifacts/*', '/v1/bookings', '/v1/proposals']) app.use(path, authenticate);
 
   app.openapi(createRoute({ method: 'get', path: '/health', responses: { 200: { description: 'Process is running', content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } } } } }),
     c => c.json({ status: 'ok' as const }));
@@ -146,8 +151,52 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
   }), async c => c.json(await db.createSession(), 201));
 
   app.openapi(createRoute({
+    method: 'post', path: '/v1/transcribe', summary: 'Transcribe a voice note',
+    description: 'Requires the configured site Origin and a session bearer token. Takes one recorded clip as a base64 audio data URL, returns its transcript, and stores nothing: the browser keeps the audio and the text. The transcript is what the visitor then sends to /v1/chat.',
+    request: { headers: authHeader, body: { required: true, content: { 'application/json': { schema: transcribeSchema } } } },
+    responses: {
+      200: { description: 'The transcript', content: { 'application/json': { schema: transcriptSchema } } },
+      400: { description: 'Invalid request', content: { 'application/json': { schema: errorSchema } } },
+      413: { description: 'Body too large', content: { 'application/json': { schema: errorSchema } } },
+      502: { description: 'The transcription provider failed', content: { 'application/json': { schema: errorSchema } } },
+      ...authFailure, ...guardFailures,
+    },
+  }), async c => {
+    const { mediaType, dataUrl } = c.req.valid('json');
+    // MediaRecorder reports the codec in the type; the container is what the provider wants.
+    const container = mediaType.split(';')[0].trim().toLowerCase();
+    const format = AUDIO_FORMATS[container];
+    if (!format) return c.json({ error: 'That audio format is not supported.' }, 400);
+    const audio = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
+    if (audio.length < 1000) return c.json({ error: 'That recording is empty.' }, 400);
+    if (audio.length > config.TRANSCRIPTION_MAX_BYTES) return c.json({ error: 'That recording is too long to send.' }, 413);
+    if (!await db.reserveDailyRequest(config.MAX_REQUESTS_PER_DAY)) return c.json({ error: 'The assistant’s daily request budget is spent. Please try tomorrow.' }, 429);
+    const startedAt = Date.now();
+    try {
+      const result = await client.audio.transcriptions.create({
+        file: await toFile(audio, `voice.${format}`, { type: container }),
+        model: config.OPENROUTER_TRANSCRIPTION_MODEL,
+        temperature: 0,
+      }, { signal: AbortSignal.timeout(config.REQUEST_TIMEOUT_MS) });
+      const text = typeof result === 'string' ? result : result.text;
+      if (!text?.trim()) return c.json({ error: 'Nothing was heard in that recording.' }, 502);
+      const usage = (result as { usage?: { seconds?: number; cost?: number } }).usage;
+      return c.json({
+        text: text.trim().slice(0, 8000),
+        model: config.OPENROUTER_TRANSCRIPTION_MODEL,
+        ...(typeof usage?.seconds === 'number' ? { seconds: usage.seconds } : {}),
+        ...(typeof usage?.cost === 'number' ? { costUsd: usage.cost } : {}),
+      }, 200);
+    } catch (error) {
+      const timedOut = error instanceof Error && error.name === 'TimeoutError';
+      console.error('transcription failed', { ms: Date.now() - startedAt, error: error instanceof Error ? error.message : String(error) });
+      return c.json({ error: timedOut ? 'Transcription took too long. Try a shorter clip.' : 'The recording could not be transcribed. Try again.' }, 502);
+    }
+  });
+
+  app.openapi(createRoute({
     method: 'post', path: '/v1/chat', summary: 'Stream a portfolio answer',
-    description: 'Requires the configured site Origin and a session bearer token. The browser keeps the conversation and sends its recent turns as history; the server keeps the newest MAX_MESSAGES_PER_SESSION turns and trims the oldest to fit the context budget. When the last five turns, model, prompt and indexed commits match a finished answer from the last ANSWER_CACHE_TTL_HOURS, that answer is replayed with usage.cached set, without calling the model or spending the daily budget. An optional image attachment is passed to the model for this turn only. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. OpenAPI describes each event, not the whole stream.',
+    description: 'Requires the configured site Origin and a session bearer token. The browser keeps the conversation and sends its recent turns as history; the server keeps the newest MAX_MESSAGES_PER_SESSION turns and trims the oldest to fit the context budget. When the last five turns, model, prompt and indexed commits match a finished answer from the last ANSWER_CACHE_TTL_HOURS, that answer is replayed with usage.cached set, without calling the model or spending the daily budget. A voice note is transcribed first at /v1/transcribe and arrives here as text. POST using fetch; SSE data is one JSON ChatEvent per frame, and a done or error event terminates the response. OpenAPI describes each event, not the whole stream.',
     request: { headers: authHeader, body: { required: true, content: { 'application/json': { schema: chatSchema } } } },
     responses: {
       200: { description: 'SSE frames containing versioned ChatEvent JSON', content: { 'text/event-stream': { schema: eventSchema } } },
@@ -156,7 +205,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       ...authFailure, ...guardFailures,
     },
   }), async c => {
-    const { message, history: sent, attachment } = c.req.valid('json');
+    const { message, history: sent } = c.req.valid('json');
     const sessionId = c.get('sessionId');
     const history = sent.slice(-config.MAX_MESSAGES_PER_SESSION);
     while (history.length && history.reduce((sum, entry) => sum + entry.content.length, message.length) > MAX_CONTEXT_CHARS) history.splice(0, 2);
@@ -167,7 +216,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
 
     // The same last turns against the same model, prompt and indexed commits get the same answer, so
     // it is replayed instead of generated. A reindex or prompt change moves the key and misses on its own.
-    const cacheKey = attachment || !config.ANSWER_CACHE_TTL_HOURS ? undefined : createHash('sha256').update(JSON.stringify({
+    const cacheKey = !config.ANSWER_CACHE_TTL_HOURS ? undefined : createHash('sha256').update(JSON.stringify({
       model: config.OPENROUTER_MODEL, system: systemPrompt,
       commits: indexed.map(entry => `${entry.repo}@${entry.commit}`),
       turns: [...history, { role: 'user', content: message }].slice(-CACHE_TURNS).map(({ role, content }) => [role, content]),
@@ -202,9 +251,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       const conversation: OpenAI.Chat.ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
         ...history.map(entry => ({ role: entry.role, content: entry.content })),
-        attachment
-          ? { role: 'user' as const, content: [{ type: 'text' as const, text: message }, { type: 'image_url' as const, image_url: { url: attachment.dataUrl } }] }
-          : { role: 'user' as const, content: message },
+        { role: 'user' as const, content: message },
       ];
       const visitorTimeZone = timeZoneOf(c.req.header('x-time-zone'));
       const repoNames = indexed.map(entry => entry.repo);
