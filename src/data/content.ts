@@ -55,22 +55,45 @@ export type Project = {
   slug: string; name: string; kicker: string; summary: string; body: string[];
   image?: string; thumb?: string; images?: string[]; stars?: number; forks?: number; contributors?: number; stack: string[];
   links: { label: string; href: string }[]; facts?: { label: string; value: string }[];
+  // What people who used it said, quoted word for word and linked to the comment it came from.
+  reception?: {
+    quotes: { text: string; author: string; href: string; date: string }[];
+    threads: { label: string; href: string; stats: string }[];
+    // Unprompted mentions by people who had not tried it yet: coverage, never a user quote.
+    mentions: { who: string; href: string; what: string; stats: string }[];
+  };
 };
 
 export const projects: Project[] = [
   {
-    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', stars: 313, forks: 17, contributors: 10,
+    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', stars: 313, forks: 17, contributors: 11,
     summary: 'Qt6/QML file manager with Miller columns, split panes, async transfers and live-reloading TOML themes. Packaged for AUR, Flatpak, AppImage and Nix.',
     body: [
       'HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.',
       'Grid, detail and Miller-column views; image and video thumbnails with a Space-key quick preview; split panes for two-directory workflows; a bookmarks sidebar that mounts devices through udisks2; regex bulk rename with undo and redo; drag and drop across panes and to other apps.',
       'Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it.',
-      'Nine people from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets.',
+      'People from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets.',
     ],
     image: '/assets/miller-view.jpg', thumb: '/assets/miller-view-720.jpg', images: ['/assets/grid-view.jpg', '/assets/miller-view.jpg', '/assets/quick-preview.jpg'],
     stack: ['C++', 'Qt 6', 'QML', 'Wayland', 'udisks2', 'Flatpak', 'Nix'],
-    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/hyprfm' }, { label: 'Site', href: 'https://hyprfm.soyebjim.me' }, { label: 'LinuxLinks review', href: 'https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/' }],
-    facts: [{ label: 'Stars', value: '313' }, { label: 'Contributors', value: '9 from outside' }, { label: 'Packages', value: 'AUR, Flatpak, AppImage, Nix' }, { label: 'Language', value: 'C++ and QML' }],
+    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/hyprfm' }, { label: 'Site', href: 'https://hyprfm.soyebjim.me' }, { label: 'LinuxLinks review', href: 'https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/' }, { label: 'Trendshift', href: 'https://trendshift.io/repositories/182310' }],
+    // Picked from both launch threads on 2026-09-18: only comments written after using it. Quotes are
+    // exact substrings of the comment; stats are as of that date.
+    reception: {
+      quotes: [
+        { text: 'Just installed it and have to say wow. nemo and yazi combined is my first impression.', author: 'Majoga87', href: 'https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/pakr8ba/', date: 'September 2026' },
+        { text: 'This is EXACTLY what I was looking for and was thinking of building it myself!', author: 'Fergtato', href: 'https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p5l2nve/', date: 'August 2026' },
+        { text: 'Na this is excellent dude. Will be using it on all my machines I think', author: 'major_jazza', href: 'https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p6s7n28/', date: 'August 2026' },
+      ],
+      threads: [
+        { label: 'r/hyprland', href: 'https://www.reddit.com/r/hyprland/comments/1vwnsze/', stats: '675 upvotes, 57 comments' },
+        { label: 'r/unixporn', href: 'https://www.reddit.com/r/unixporn/comments/1vwmo5y/hyprland_hyprfm_quickshell_qt6_file_manager/', stats: '70 upvotes' },
+      ],
+      mentions: [
+        { who: '@0xBOYD', href: 'https://x.com/0xBOYD/status/2093676066791387237', what: 'as a Finder-style column view for Linux', stats: '5K views, August 2026' },
+      ],
+    },
+    facts: [{ label: 'Stars', value: '313' }, { label: 'Trending', value: '#3 C++ repository of the day on Trendshift, 25 Aug 2026, and #14 of the week' }, { label: 'Packages', value: 'AUR, Flatpak, AppImage, Nix' }, { label: 'Language', value: 'C++ and QML' }],
   },
   {
     slug: 'neural-network-x-ray', name: 'Neural Network X-Ray', kicker: 'Draw a character, watch 13 CNN layers fire',

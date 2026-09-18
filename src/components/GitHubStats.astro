@@ -8,7 +8,7 @@ const { owner, repo, stars, forks, contributors } = Astro.props;
   <span>Forks</span><span class="gh-value" data-gh-forks aria-live="polite">{forks}</span>
 </li>
 <li data-github-stat-row>
-  <span>Contributors</span><span class="gh-value" data-gh-contributors aria-live="polite">{contributors}</span>
+  <span>Contributors</span><span aria-live="polite"><span class="gh-value" data-gh-contributors>{contributors}</span>, <span data-gh-outside>{contributors - 1}</span> from outside</span>
 </li>
 
 <script>
@@ -35,7 +35,10 @@ const { owner, repo, stars, forks, contributors } = Astro.props;
 
       set('[data-gh-stars]', repository.stargazers_count);
       set('[data-gh-forks]', repository.forks_count);
-      set('[data-gh-contributors]', lastPage ? Number(lastPage) : contributorPage.length);
+      const contributors = lastPage ? Number(lastPage) : contributorPage.length;
+      set('[data-gh-contributors]', contributors);
+      // ponytail: "outside" is everyone but the owner; an owner commit under an unlinked email would count twice.
+      set('[data-gh-outside]', Math.max(0, contributors - 1));
     } catch {
       root.dataset.loaded = 'fallback';
     }

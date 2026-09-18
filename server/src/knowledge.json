@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-18T13:58:07.855Z",
+  "generatedAt": "2026-09-18T15:39:09.696Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -34,7 +34,7 @@
         "HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.",
         "Grid, detail and Miller-column views; image and video thumbnails with a Space-key quick preview; split panes for two-directory workflows; a bookmarks sidebar that mounts devices through udisks2; regex bulk rename with undo and redo; drag and drop across panes and to other apps.",
         "Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it.",
-        "Nine people from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets."
+        "People from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets."
       ],
       "stack": [
         "C++",
@@ -57,8 +57,76 @@
         {
           "label": "LinuxLinks review",
           "href": "https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/"
+        },
+        {
+          "label": "Trendshift",
+          "href": "https://trendshift.io/repositories/182310"
         }
-      ]
+      ],
+      "reception": {
+        "quotes": [
+          {
+            "text": "Just installed it and have to say wow. nemo and yazi combined is my first impression.",
+            "author": "Majoga87",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/pakr8ba/",
+            "date": "September 2026"
+          },
+          {
+            "text": "This is EXACTLY what I was looking for and was thinking of building it myself!",
+            "author": "Fergtato",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p5l2nve/",
+            "date": "August 2026"
+          },
+          {
+            "text": "Na this is excellent dude. Will be using it on all my machines I think",
+            "author": "major_jazza",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p6s7n28/",
+            "date": "August 2026"
+          }
+        ],
+        "threads": [
+          {
+            "label": "r/hyprland",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/",
+            "stats": "675 upvotes, 57 comments"
+          },
+          {
+            "label": "r/unixporn",
+            "href": "https://www.reddit.com/r/unixporn/comments/1vwmo5y/hyprland_hyprfm_quickshell_qt6_file_manager/",
+            "stats": "70 upvotes"
+          }
+        ],
+        "mentions": [
+          {
+            "who": "@0xBOYD",
+            "href": "https://x.com/0xBOYD/status/2093676066791387237",
+            "what": "as a Finder-style column view for Linux",
+            "stats": "5K views, August 2026"
+          }
+        ]
+      },
+      "stars": 313,
+      "forks": 17,
+      "facts": [
+        {
+          "label": "Stars",
+          "value": "313"
+        },
+        {
+          "label": "Trending",
+          "value": "#3 C++ repository of the day on Trendshift, 25 Aug 2026, and #14 of the week"
+        },
+        {
+          "label": "Packages",
+          "value": "AUR, Flatpak, AppImage, Nix"
+        },
+        {
+          "label": "Language",
+          "value": "C++ and QML"
+        }
+      ],
+      "contributors": 11,
+      "outsideContributors": 10
     },
     {
       "slug": "neural-network-x-ray",
@@ -94,6 +162,20 @@
           "label": "Dataset",
           "href": "https://huggingface.co/datasets/soyeb-jim285/ocr-handwriting-data"
         }
+      ],
+      "facts": [
+        {
+          "label": "Classes",
+          "value": "146"
+        },
+        {
+          "label": "Training images",
+          "value": "~980K"
+        },
+        {
+          "label": "Epochs",
+          "value": "75"
+        }
       ]
     },
     {
@@ -113,6 +195,20 @@
         {
           "label": "GitHub",
           "href": "https://github.com/soyeb-jim285/hyprpdf"
+        }
+      ],
+      "facts": [
+        {
+          "label": "Renderer",
+          "value": "Poppler"
+        },
+        {
+          "label": "Interface",
+          "value": "Qt 6 and QML"
+        },
+        {
+          "label": "Tools",
+          "value": "Annotations, search, split views"
         }
       ]
     },

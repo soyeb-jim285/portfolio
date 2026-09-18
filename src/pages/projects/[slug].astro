@@ -59,6 +59,23 @@ const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid vie
     <div>{p.body.map((t) => <p class="lead">{t}</p>)}</div>
   </section>
 
+  {p.reception && (
+    <section class="split r" data-anchor="project-reception">
+      <h2 class="t2">From users</h2>
+      <div>
+        <ul class="quotes">
+          {p.reception.quotes.map((q) => (
+            <li>
+              <blockquote cite={q.href}><p>“{q.text}”</p></blockquote>
+              <a class="cap" href={q.href} target="_blank" rel="noopener">u/{q.author}, r/hyprland, {q.date}</a>
+            </li>
+          ))}
+        </ul>
+        <p class="cap" style="margin-top:24px">Shared on {p.reception.threads.map((t, k) => <>{k > 0 && ' and '}<a href={t.href} target="_blank" rel="noopener">{t.label}</a> ({t.stats})</>)}, September 2026.{p.reception.mentions.map((m) => <> Picked up on X by <a href={m.href} target="_blank" rel="noopener">{m.who}</a> {m.what} ({m.stats}).</>)}</p>
+      </div>
+    </section>
+  )}
+
   <nav class="pn r" aria-label="Previous and next part">
     <a href={`/projects/${prev.slug}/`}><small>Previous, sheet 5.{((i - 1 + n) % n) + 1}</small><b>{prev.name}</b></a>
     <a href={`/projects/${next.slug}/`}><small>Next, sheet 5.{((i + 1) % n) + 1}</small><b>{next.name}</b></a>

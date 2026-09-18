@@ -23,13 +23,43 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/update-stars.mjs
 
-      - name: Commit if anything moved
+      - name: See what moved
+        id: moved
         run: |
-          if git diff --quiet; then
-            echo "counts unchanged"
-            exit 0
-          fi
+          git diff --quiet || echo "any=true" >> "$GITHUB_OUTPUT"
+          git diff --quiet -- outputs/Soyeb_Pervez_Jim_Resume.tex || echo "resume=true" >> "$GITHUB_OUTPUT"
+
+      # The PDF is what people download, so a changed count in the source is worthless until it is rebuilt.
+      - name: Rebuild the resume PDF
+        if: steps.moved.outputs.resume == 'true'
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: Soyeb_Pervez_Jim_Resume.tex
+          working_directory: outputs
+
+      # A longer number can push the resume onto a second page. Publish nothing rather than a two-page resume.
+      - name: Refuse a resume longer than one page
+        if: steps.moved.outputs.resume == 'true'
+        run: |
+          sudo apt-get install -y -qq poppler-utils >/dev/null
+          pages=$(pdfinfo outputs/Soyeb_Pervez_Jim_Resume.pdf | awk '/^Pages:/ {print $2}')
+          echo "resume pages: $pages"
+          test "$pages" = "1"
+          cp outputs/Soyeb_Pervez_Jim_Resume.pdf public/Soyeb_Pervez_Jim_Resume.pdf
+
+      # The assistant answers from an exported copy of the site data; keep it on the same numbers.
+      - name: Refresh the assistant's knowledge
+        if: steps.moved.outputs.any == 'true'
+        working-directory: server
+        run: |
+          npm ci --no-audit --no-fund
+          npm run export:knowledge
+
+      - name: Commit if anything moved
+        if: steps.moved.outputs.any == 'true'
+        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -am 'Refresh GitHub star counts'
+          git add src/data/content.ts src/data/cv.json outputs/Soyeb_Pervez_Jim_Resume.tex public/Soyeb_Pervez_Jim_Resume.pdf server/src/knowledge.json
+          git commit -m 'Refresh GitHub counts'
           git push

@@ -98,6 +98,12 @@ h3 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; }
 .fig .lab { position: absolute; z-index: 1; left: -10px; top: -10px; }
 .fig .cap, .cap { margin-top: 8px; font-size: 12px; color: var(--muted); }
 
+/* Quotes from users: the words carry it, so no card, just a rule on the left like a drawing note. */
+.quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+.quotes li { border-left: 2px solid var(--accent); padding-left: 18px; }
+.quotes blockquote { margin: 0; font-size: 17px; line-height: 1.55; color: var(--ink); }
+.quotes .cap { display: inline-block; margin-top: 6px; }
+
 /* An identifier broken across two lines stops being one, so a DOI or handle never wraps. */
 .nowrap { white-space: nowrap; }
 

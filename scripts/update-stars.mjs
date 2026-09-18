@@ -3,8 +3,8 @@
 //
 // Sources of truth it rewrites:
 //   src/data/content.ts  — projects[].stars / .forks / .contributors (hyprfm) and the Stars fact
-//   src/data/cv.json     — open_source[].stars and github_stats.total_stars
-//   outputs/*.tex        — the "N GitHub stars" claim in the resume
+//   src/data/cv.json     — open_source[].stars, github_stats.total_stars, HyprFM external_contributors
+//   outputs/*.tex        — the resume's star and outside-contributor counts (the workflow rebuilds the PDF)
 import { readFile, writeFile } from 'node:fs/promises';
 
 const USER = 'soyeb-jim285';
@@ -35,6 +35,8 @@ if (!tracked) throw new Error(`${TRACKED} not found in the repo list`);
 const stars = tracked.stargazers_count;
 const forks = tracked.forks_count;
 const contributors = await contributorCount(TRACKED);
+// Everyone but the owner. The site's live widget counts the same way.
+const outside = Math.max(0, contributors - 1);
 const totalStars = repos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
 const starsByRepo = new Map(repos.map((repo) => [repo.name.toLowerCase(), repo.stargazers_count]));
 
@@ -64,10 +66,13 @@ await edit('src/data/cv.json', (text) => {
   });
   return withRepoStars
     .replace(/("name": "HyprFM"[\s\S]{0,200}?"stars": )\d+/, `$1${stars}`)
-    .replace(/("total_stars": \{ "v": )\d+/, `$1${totalStars}`);
+    .replace(/("total_stars": \{ "v": )\d+/, `$1${totalStars}`)
+    .replace(/("external_contributors": )\d+/, `$1${outside}`);
 });
 
 await edit('outputs/Soyeb_Pervez_Jim_Resume.tex', (text) =>
-  text.replace(/\d+ GitHub stars/, `${stars} GitHub stars`));
+  text
+    .replace(/\d+ GitHub stars/, `${stars} GitHub stars`)
+    .replace(/\d+ stars, \d+ outside contributors/, `${stars} stars, ${outside} outside contributors`));
 
-console.log(`${TRACKED}: ${stars} stars, ${forks} forks, ${contributors} contributors; ${totalStars} stars across all repos`);
+console.log(`${TRACKED}: ${stars} stars, ${forks} forks, ${contributors} contributors (${outside} outside); ${totalStars} stars across all repos`);

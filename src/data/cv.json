@@ -4,6 +4,10 @@
   "subject": "Soyeb Pervez Jim",
 
   "sources": {
+    "x-0xboyd": { "kind": "direct", "detail": "https://x.com/0xBOYD/status/2093676066791387237, read 2026-09-18 via the fxtwitter API" },
+    "trendshift-hyprfm": { "kind": "direct", "detail": "https://trendshift.io/repositories/182310, read 2026-09-18" },
+    "reddit-hyprland-launch": { "kind": "direct", "detail": "https://www.reddit.com/r/hyprland/comments/1vwnsze/, saved page read 2026-09-18" },
+    "reddit-unixporn-launch": { "kind": "direct", "detail": "https://www.reddit.com/r/unixporn/comments/1vwmo5y/, saved page read 2026-09-18" },
     "fuego-prod-db-2026-09-18": {
       "kind": "direct",
       "detail": "Aggregate counts read from Fuego's production database on 2026-09-18, replica, read-only transaction. No message content or customer data was read. Five test storefronts excluded (31 messages, 0.3%)."
@@ -360,6 +364,8 @@
       "src": ["gh-hyprfm", "gh-api-repos", "linuxlinks"],
       "conf": "verified",
       "summary": "Fast keyboard-driven Qt6/QML file manager for Hyprland and Wayland.",
+      "trending": { "v": "#3 C++ Repository of the Day on Trendshift (2026-08-25), #14 C++ Repository of the Week (week 35, 2026)", "src": ["trendshift-hyprfm"], "conf": "verified" },
+      "reception": { "v": "Launch threads: r/hyprland 675 upvotes, 57 comments; r/unixporn 70 upvotes (as of 2026-09-18). Unprompted X post by @0xBOYD (2026-08-29, ~5K views) pointing Finder column-view fans at it; he had not used it, so it is coverage, not a user quote. v0.6.1 shipped two days after a launch-day bug report in the r/hyprland thread.", "src": ["reddit-hyprland-launch", "reddit-unixporn-launch", "x-0xboyd"], "conf": "verified", "note": "Quotes on the site are exact substrings of the linked comments, from users who had tried it. The thread also carries vibe-coding criticism; never quote around it to imply otherwise." },
       "features": [
         "Grid, detail and Miller-column views",
         "Split panes, image/video thumbnails, space-key preview",
@@ -375,7 +381,7 @@
         "unique_cloners_14d": 350,
         "clones_14d": 521,
         "repo_views_14d": 854,
-        "external_contributors": 9,
+        "external_contributors": 10,
         "external_commits": 32,
         "reddit": { "r/hyprland": { "upvotes": 675, "comments": 56, "views": "67K" }, "r/unixporn": { "upvotes": 70, "comments": 9, "views": "18K" } },
         "src": ["gh-traffic", "reddit-threads"],

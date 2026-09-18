@@ -15,7 +15,11 @@ const knowledge = {
   generatedAt: new Date().toISOString(),
   featuredRepos,
   person: { name: person.name, role: person.role, location: person.location, email: person.email, links: person.links },
-  projects: projects.map(({ slug, name, summary, body, stack, links }) => ({ slug, name, summary, body, stack, links })),
+  // The numbers ride along so the assistant can quote them; the daily count refresh re-exports this file.
+  projects: projects.map(({ slug, name, summary, body, stack, links, reception, stars, forks, contributors, facts }) => ({
+    slug, name, summary, body, stack, links, reception, stars, forks, facts,
+    ...(contributors ? { contributors, outsideContributors: contributors - 1 } : {}),
+  })),
   work: { employer: work.employer, product: work.product, title: work.title, period: work.period, remote: work.remote, context: work.context, ownership: work.ownership, scale: work.scale, bullets: work.bullets, stack: work.stack },
   research: research.map(({ slug, title, short, venue, status, abstract, finding, results, keywords }) => ({ slug, title, short, venue, status, abstract, finding, results, keywords })),
   skills,
