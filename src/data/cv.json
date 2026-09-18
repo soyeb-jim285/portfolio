@@ -167,8 +167,7 @@
 
   "languages": [
     { "lang": "Bengali", "level": "Native", "src": ["old-cv-pdf"], "conf": "verified" },
-    { "lang": "English", "level": "C1", "src": ["efset-cert"], "conf": "verified" },
-    { "lang": "Hindi", "level": "Moderate", "src": ["old-cv-pdf"], "conf": "reported" }
+    { "lang": "English", "level": "C1", "src": ["efset-cert"], "conf": "verified" }
   ],
 
   "employment": [

@@ -11,7 +11,7 @@ export const person = {
   email: 'soyeb.jim@gmail.com',
   phone: '+8801718007639',
   education: 'BSc Electrical and Electronic Engineering, University of Dhaka, 2021 to 2026',
-  languages: ['Bengali, native', 'English, C1', 'Hindi, moderate'],
+  languages: ['Bengali, native', 'English, C1'],
   scores: { efset: 'C1', efsetCert: 'https://cert.efset.org/LEvQnj' },
   links: {
     github: 'https://github.com/soyeb-jim285',
