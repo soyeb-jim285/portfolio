@@ -285,6 +285,9 @@ test('stops calling tools at the step limit and answers without them', async () 
   assert.equal(frames.filter(event => event.type === 'tool' && event.status === 'done').length, 2);
   assert.equal(sent.length, 3);
   assert.ok(!sent[2].tools, 'the final request must omit tools so the model has to answer');
+  assert.equal(sent[2].messages.at(-1).role, 'system');
+  assert.match(sent[2].messages.at(-1).content, /Do not simulate tool calls/);
+  assert.match(sent[2].messages.at(-1).content, /document was not successfully created/);
   assert.equal(frames.at(-1).type, 'done');
 });
 

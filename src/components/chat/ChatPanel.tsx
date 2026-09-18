@@ -635,18 +635,18 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
               </form>;
               })}
               {entry.artifacts?.map(artifact => {
-                const diagram = artifact.markdown?.match(/```mermaid\n([\s\S]*?)```/)?.[1];
+                const diagram = artifact.kind === 'diagram' ? artifact.markdown?.match(/```mermaid\n([\s\S]*?)```/)?.[1] : undefined;
                 return <article className="chat-artifact" key={artifact.id}>
                   <p className="chat-artifact-head"><FileText size={13} aria-hidden="true" /> {artifact.kind} · {artifact.title}</p>
                   {diagram && <Diagram source={diagram} title={artifact.title} />}
-                  {/* A diagram is its own preview and exports as SVG or PNG; only documents get the Markdown and its download. */}
+                  {/* A brief can contain diagrams without losing its document preview or download. */}
                   {!diagram && artifact.markdown && <Fold className="chat-artifact-preview" summary="Preview the document">
                     {() => <MessageResponse {...MARKDOWN}>{artifact.markdown}</MessageResponse>}
                   </Fold>}
-                  {!diagram && <div className="chat-artifact-foot">
-                    <Button type="button" onClick={() => void download(artifact)}><Download size={13} aria-hidden="true" /> Download</Button>
+                  <div className="chat-artifact-foot">
+                    <Button type="button" onClick={() => void download(artifact)}><Download size={13} aria-hidden="true" /> Download Markdown</Button>
                     <small>{Math.max(1, Math.round(artifact.bytes / 1024))} KB · kept until {new Date(artifact.expiresAt).toLocaleDateString()}</small>
-                  </div>}
+                  </div>
                 </article>;
               })}
               {entry.draft && (() => { const draft = entry.draft; const locked = draft.state !== 'editing' && draft.state !== 'failed';

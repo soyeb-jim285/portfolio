@@ -271,6 +271,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
         for (let step = 0; step <= config.MAX_TOOL_STEPS; step++) {
           // The last step runs without tools so the model must produce an answer instead of another call.
           const canUseTools = step < config.MAX_TOOL_STEPS;
+          if (!canUseTools) conversation.push({ role: 'system', content: 'The tool budget is exhausted. No more tools can run in this turn. Answer using only results already received. Do not simulate tool calls in text or promise more work. If a requested document was not successfully created, say it is unavailable; otherwise point to its Download Markdown button.' });
           const response = await client.chat.completions.create({
             model: config.OPENROUTER_MODEL, messages: conversation, stream: true, max_tokens: config.MAX_OUTPUT_TOKENS,
             stream_options: { include_usage: true },

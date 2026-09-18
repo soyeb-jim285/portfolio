@@ -16,7 +16,8 @@
 /* Width is owned by the panel script (drag handle + localStorage); this is the first-paint default. */
 :root { --assistant-width: 420px; --assistant-pad: 18px; }
 /* Panel: layer 5 above sheet navigation. Native contact dialogs retain top-layer priority. */
-.assistant-root { font: 13px/1.6 var(--mono); color: var(--ink); }
+/* Keep Safari from inflating text when an expanded code sample is wider than the drawer. */
+.assistant-root { font: 13px/1.6 var(--mono); color: var(--ink); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .assistant-root [hidden] { display: none !important; }
 .assistant-resizing { cursor: col-resize; user-select: none; }
 
@@ -191,7 +192,8 @@
 .chat-draft-sent { display: flex; align-items: center; gap: 7px; color: var(--accent); font-size: 11px; }
 .chat-draft-note { color: var(--muted); font-size: 10px; }
 .chat-draft[data-state=failed] .chat-draft-note { color: #e8663f; }
-.chat-sources { display: grid; margin-bottom: 10px; font-size: 11px; }
+.chat-sources { display: grid; grid-template-columns: minmax(0, 1fr); margin-bottom: 10px; font-size: 11px; }
+.chat-source { min-width: 0; }
 .chat-source > summary { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; list-style: none; color: var(--ink); }
 .chat-source > summary::-webkit-details-marker { display: none; }
 .chat-source > summary::before { content: "▸"; color: var(--muted); font-size: 9px; }
