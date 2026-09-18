@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowRight, ArrowUp, AudioLines, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, Mail, MessageSquare, Mic, RotateCcw, Send, Square, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
 import Diagram from './Diagram';
+import ArtifactView from './ArtifactView';
 import { Button } from '../ui/button';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Message, MessageActions, MessageContent, MessageResponse, preloadResponse } from '../ai-elements/message';
@@ -643,12 +644,10 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                 return <article className="chat-artifact" key={artifact.id}>
                   <p className="chat-artifact-head"><FileText size={13} aria-hidden="true" /> {artifact.kind} · {artifact.title}</p>
                   {diagram && <Diagram source={diagram} title={artifact.title} />}
-                  {/* A brief can contain diagrams without losing its document preview or download. */}
-                  {!diagram && artifact.markdown && <Fold className="chat-artifact-preview" summary="Preview the document">
-                    {() => <MessageResponse {...MARKDOWN}>{artifact.markdown}</MessageResponse>}
-                  </Fold>}
                   <div className="chat-artifact-foot">
-                    <Button type="button" onClick={() => void download(artifact)}><Download size={13} aria-hidden="true" /> Download Markdown</Button>
+                    {/* The document opens on its own surface; the chat keeps the summary, not the whole text. */}
+                    {artifact.markdown && <ArtifactView artifact={artifact} markdown={artifact.markdown} markdownOptions={MARKDOWN} onDownload={() => void download(artifact)} />}
+                    <Button type="button" variant="ghost" onClick={() => void download(artifact)}><Download size={13} aria-hidden="true" /> .md</Button>
                     <small>{Math.max(1, Math.round(artifact.bytes / 1024))} KB · kept until {new Date(artifact.expiresAt).toLocaleDateString()}</small>
                   </div>
                 </article>;

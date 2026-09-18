@@ -331,7 +331,63 @@
 @keyframes assistant-drop-out { from { visibility: visible; } to { transform: translateY(100%); visibility: visible; } }
 @keyframes assistant-pulse { 50% { opacity: .55; } }
 @keyframes assistant-wait { 50% { opacity: .3; } }
-@media print { .assistant-root { display: none; } body:has(.assistant-panel[data-state=open]) { padding-right: 0; } }
+/* The opened document: covers the panel, or the viewport once fullscreen. */
+.chat-artifact-view { position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column; background: var(--bg); }
+.chat-artifact-view[data-expanded], .chat-artifact-view:fullscreen { position: fixed; }
+.chat-artifact-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--line-2); background: var(--bg-2); }
+.chat-artifact-bar-title { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.chat-artifact-bar-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.chat-artifact-bar .chat-button { padding: 6px 9px; font-size: 10px; }
+.chat-artifact-page { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 28px clamp(16px, 6%, 56px) 56px; }
+/* A document measure, not a chat bubble's: it reads the same in the panel and at fullscreen width. */
+.chat-artifact-doc { max-width: 820px; margin: 0 auto; }
+.chat-artifact-doc > h1 { font-family: var(--display); font-size: clamp(30px, 5vw, 46px); font-weight: 700; line-height: 1.04; letter-spacing: .01em; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--line-2); }
+.chat-artifact-doc .chat-response { font-size: 14px; line-height: 1.75; }
+.chat-artifact-colophon { margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+
+/* Printing an artifact prints the document and nothing else: the sheet, the panel chrome and the
+   viewer's own toolbar all go, and the page is laid out for paper rather than for the dark panel. */
+@media print {
+  .assistant-root { display: none; }
+  body:has(.assistant-panel[data-state=open]) { padding-right: 0; }
+  html[data-printing-artifact] .assistant-root { display: block; }
+  html[data-printing-artifact] .assistant-launch,
+  html[data-printing-artifact] .assistant-overlay,
+  html[data-printing-artifact] .assistant-header,
+  html[data-printing-artifact] .assistant-body,
+  html[data-printing-artifact] .assistant-footer,
+  html[data-printing-artifact] .assistant-jump,
+  html[data-printing-artifact] .chat-artifact-bar,
+  html[data-printing-artifact] .chat-diagram figcaption { display: none !important; }
+  html[data-printing-artifact] .stack { display: none; }
+  html[data-printing-artifact] .assistant-panel { display: block; position: static; inset: auto; width: auto; height: auto; border: 0; border-radius: 0; box-shadow: none; background: #fff; }
+  html[data-printing-artifact] .chat-artifact-view { display: block; position: static; inset: auto; width: auto; height: auto; background: #fff; color: #111; }
+  html[data-printing-artifact] .chat-artifact-page { display: block; flex: none; min-height: 0; height: auto; overflow: visible; padding: 0; }
+  html[data-printing-artifact] .chat-artifact-doc { max-width: none; }
+  /* Streamdown paints from --bg/--ink through its Tailwind tokens, and Mermaid renders inline SVG
+     against the same palette. Repointing the variables for the printed document turns the code
+     block, the table and the diagram light in one move, rather than chasing utility classes. */
+  html[data-printing-artifact] .chat-artifact-view {
+    --bg: #fff; --bg-2: #f5f5f5; --ink: #111; --muted: #555; --line: #ddd; --line-2: #bbb;
+  }
+  html[data-printing-artifact] .chat-artifact-doc :is(h1, h2, h3, h4, p, li, td, th, figcaption, .chat-artifact-colophon) { color: #111; }
+  /* Copy, download, fullscreen and the zoom stack are page furniture, not document content. */
+  html[data-printing-artifact] .chat-artifact-doc button { display: none !important; }
+  /* Mermaid was themed dark at initialize time and scopes its own CSS by the SVG id, which outranks
+     any class selector here, so the paper palette has to be forced. */
+  html[data-printing-artifact] .chat-artifact-doc svg :is(.node, .cluster) :is(rect, polygon, circle) { fill: #fff !important; stroke: #333 !important; }
+  html[data-printing-artifact] .chat-artifact-doc svg :is(text, tspan, .nodeLabel, .edgeLabel) { fill: #111 !important; color: #111 !important; }
+  html[data-printing-artifact] .chat-artifact-doc svg :is(.edgeLabel, .edgeLabel *) { background: #fff !important; fill: #fff !important; }
+  html[data-printing-artifact] .chat-artifact-doc svg .edgeLabel :is(text, tspan, span, p) { fill: #111 !important; color: #111 !important; background: transparent !important; }
+  html[data-printing-artifact] .chat-artifact-doc svg :is(.edgePath, .flowchart-link, .marker) :is(path, line, polygon) { stroke: #333 !important; }
+  html[data-printing-artifact] .chat-artifact-doc svg .marker { fill: #333 !important; }
+  html[data-printing-artifact] .chat-artifact-doc :is(h1, h2, h3, h4) { break-after: avoid; }
+  html[data-printing-artifact] .chat-artifact-doc :is(pre, table, figure, .chat-diagram) { break-inside: avoid; }
+  /* Mermaid is an inline SVG, so it prints as vectors; the dark panel fill would waste the ink. */
+  html[data-printing-artifact] .chat-diagram { border: 1px solid #ccc; background: #fff; padding: 8px; }
+  html[data-printing-artifact] .chat-artifact-doc :is(pre, code) { background: #f5f5f5; color: #111; }
+  @page { margin: 18mm; }
+}
 
 /* Target of a show_section action: a brief frame, no layout shift, no focus theft. */
 .assistant-target { outline: 2px solid var(--accent); outline-offset: 10px; }
