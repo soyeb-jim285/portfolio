@@ -141,8 +141,14 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     return () => { media.removeEventListener('change', update); removeEventListener('resize', resize); controller.current?.abort(); };
   }, []);
   useEffect(() => {
-    document.documentElement.style.setProperty('--assistant-width', `${width}px`);
+    // The island is persisted across a page swap but the custom property is not: it lives in an
+    // inline style on <html>, which Astro replaces, so the panel snapped back to its default width
+    // on every navigation. Re-applied once the new document is in place.
+    const apply = () => document.documentElement.style.setProperty('--assistant-width', `${width}px`);
+    apply();
     try { localStorage.setItem('assistant-width', String(width)); } catch {}
+    document.addEventListener('astro:page-load', apply);
+    return () => document.removeEventListener('astro:page-load', apply);
   }, [width]);
   // Any element on the site can open the panel with a question or a repository already chosen.
   // Re-registered every render on purpose, so the handler always calls the current ask().
@@ -156,10 +162,19 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     return () => removeEventListener('assistant:ask', onAsk);
   });
 
-  // The panel stays mounted while closed, so it would play its closing slide on page load. It only
-  // animates closed once it has actually been open.
-  const [shown, setShown] = useState(false);
-  useEffect(() => { if (open) { setShown(true); void preloadResponse(); } }, [open]);
+  // The slide belongs to the moment the panel opens or closes, not to the state it rests in. Astro
+  // re-inserts the persisted panel on every page swap, and a CSS animation keyed on a resting
+  // state restarts with each insertion. The phase exists only while the slide plays.
+  const [phase, setPhase] = useState<'entering' | 'leaving'>();
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open === wasOpen.current) return;
+    wasOpen.current = open;
+    if (open) void preloadResponse();
+    setPhase(open ? 'entering' : 'leaving');
+    const timer = setTimeout(() => setPhase(undefined), 320);
+    return () => clearTimeout(timer);
+  }, [open]);
   // The conversation is read from this browser at mount, so opening the panel never waits on the network.
   useEffect(() => {
     token.current = readToken();
@@ -493,7 +508,10 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
           <MessageSquare size={16} aria-hidden="true" /> Ask about my work
         </Button>
       </SheetTrigger>
-      <SheetContent container={portal} data-shown={shown || undefined} data-mobile={mobile || undefined}
+      <SheetContent container={portal} data-phase={phase} data-mobile={mobile || undefined}
+        // A message rises once, when it arrives. Retiring the animation inline outlives the page
+        // swap, where the re-inserted conversation would otherwise fade up again in full.
+        onAnimationEnd={event => { if (event.animationName === 'assistant-rise') (event.target as HTMLElement).style.animation = 'none'; }}
         onOpenAutoFocus={event => { if (!mobile) { event.preventDefault(); input.current?.focus(); } }}
         onInteractOutside={event => { if (!mobile) event.preventDefault(); }}>
         {!mobile && <div className="assistant-resizer" role="separator" aria-orientation="vertical" aria-label="Resize assistant panel"

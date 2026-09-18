@@ -15,6 +15,8 @@ export const loadMermaid = () => (mermaidReady ??= import('mermaid').then(module
     themeVariables: {
       darkMode: true, background: '#132646', primaryColor: '#132646', primaryTextColor: '#e7edf7',
       primaryBorderColor: '#e8933f', lineColor: '#a3b3cb', secondaryColor: '#0f1f3a', tertiaryColor: '#0f1f3a',
+      // Unset, an edge label paints itself on solid black, which on a navy panel reads as a hole.
+      edgeLabelBackground: '#132646', clusterBkg: '#0f1f3a', clusterBorder: '#26406e',
       fontFamily: 'IBM Plex Mono, ui-monospace, monospace', fontSize: '13px',
     },
   });
