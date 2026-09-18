@@ -9,17 +9,35 @@ const hash = (token: string) => createHash('sha256').update(token).digest();
 // A serverless database may be suspended, and the first connection pays its cold start, so retry once.
 export async function applySchema(pool: Pool) {
   const schema = await readFile(schemaPath, 'utf8');
-  try { await pool.query(schema); }
+  // A migration may rewrite a table (adding a stored generated column does), which can outlast the
+  // pool's statement timeout, so it runs on its own connection with the timeout lifted and restored.
+  const run = async () => {
+    const client = await pool.connect();
+    try {
+      await client.query('SET statement_timeout = 0');
+      await client.query(schema);
+    } finally {
+      await client.query('RESET statement_timeout').catch(() => {});
+      client.release();
+    }
+  };
+  try { await run(); }
   catch (error) {
     console.error('First database connection failed, retrying:', error instanceof Error ? error.message : error);
     await new Promise(resolve => setTimeout(resolve, 2000));
-    await pool.query(schema);
+    await run();
   }
 }
 
+export type AnswerMetric = {
+  kind: 'chat' | 'transcribe'; cached?: boolean; outcome: 'complete' | 'truncated' | 'error' | 'timeout' | 'aborted';
+  totalMs: number; firstTokenMs?: number; model: string; promptTokens?: number; completionTokens?: number; costUsd?: number;
+  steps?: number; tools?: string[]; toolMs?: number; sources?: number; audioSeconds?: number;
+};
+
 export type Db = Awaited<ReturnType<typeof createDb>>;
 
-export async function createDb(url: string, ttlDays: number) {
+export async function createDb(url: string, ttlDays: number, metricsDays = 90) {
   const pool = new Pool({ connectionString: url, max: 10, connectionTimeoutMillis: 20000, statement_timeout: 15000, idle_in_transaction_session_timeout: 15000 });
   pool.on('error', error => console.error('Database pool error:', error.message));
   await applySchema(pool);
@@ -182,6 +200,15 @@ export async function createDb(url: string, ttlDays: number) {
     reserveDailyRequest: (max: number) => reserve('requests', max),
     releaseBooking: () => release('bookings'),
     releaseContactSend: () => release('contact_sends'),
+    // Best effort by design: a metrics insert must never fail or slow the answer it describes.
+    async recordMetric(metric: AnswerMetric) {
+      await pool.query(
+        `INSERT INTO answer_metrics (kind, cached, outcome, total_ms, first_token_ms, model, prompt_tokens, completion_tokens, cost_usd, steps, tools, tool_ms, sources, audio_seconds)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        [metric.kind, metric.cached ?? false, metric.outcome, Math.round(metric.totalMs), metric.firstTokenMs == null ? null : Math.round(metric.firstTokenMs),
+          metric.model, metric.promptTokens ?? null, metric.completionTokens ?? null, metric.costUsd ?? null, metric.steps ?? 0,
+          metric.tools ?? [], Math.round(metric.toolMs ?? 0), metric.sources ?? 0, metric.audioSeconds ?? null]);
+    },
     async sweep() {
       await pool.query(`DELETE FROM contact_drafts WHERE expires_at <= now()`);
       await pool.query(`DELETE FROM bookings WHERE expires_at <= now()`);
@@ -190,6 +217,7 @@ export async function createDb(url: string, ttlDays: number) {
       await pool.query(`DELETE FROM usage_daily WHERE day < CURRENT_DATE - 30`);
       await pool.query(`DELETE FROM answer_cache WHERE expires_at <= now()`);
       await pool.query(`DELETE FROM rate_limits WHERE expires_at <= now()`);
+      await pool.query(`DELETE FROM answer_metrics WHERE created_at < now() - make_interval(days => $1)`, [metricsDays]);
       return rowCount ?? 0;
     },
     close: () => pool.end(),

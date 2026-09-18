@@ -196,6 +196,8 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       const text = typeof result === 'string' ? result : result.text;
       if (!text?.trim()) return c.json({ error: 'Nothing was heard in that recording.' }, 502);
       const usage = (result as { usage?: { seconds?: number; cost?: number } }).usage;
+      void db.recordMetric({ kind: 'transcribe', outcome: 'complete', totalMs: Date.now() - startedAt, model: config.OPENROUTER_TRANSCRIPTION_MODEL, costUsd: usage?.cost, audioSeconds: usage?.seconds })
+        .catch(metricError => console.error('Could not record metric:', metricError.message));
       return c.json({
         text: text.trim().slice(0, 8000),
         model: config.OPENROUTER_TRANSCRIPTION_MODEL,
@@ -205,6 +207,8 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     } catch (error) {
       const timedOut = error instanceof Error && error.name === 'TimeoutError';
       console.error('transcription failed', { ms: Date.now() - startedAt, timedOut });
+      void db.recordMetric({ kind: 'transcribe', outcome: timedOut ? 'timeout' : 'error', totalMs: Date.now() - startedAt, model: config.OPENROUTER_TRANSCRIPTION_MODEL })
+        .catch(metricError => console.error('Could not record metric:', metricError.message));
       return c.json({ error: timedOut ? 'Transcription took too long. Try a shorter clip.' : 'The recording could not be transcribed. Try again.' }, 502);
     } finally { active--; }
   });
@@ -239,9 +243,17 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     // A replay costs no model call, so it spends neither the daily budget nor a concurrency slot.
     if (cached) return streamSSE(c, async stream => {
       const startedAt = Date.now();
-      for (const event of cached) await stream.writeSSE({ data: JSON.stringify({ version: 1, ...event }) });
-      await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'usage', usage: { ms: Date.now() - startedAt, model: config.OPENROUTER_MODEL, cached: true } }) });
+      let firstTokenMs: number | undefined;
+      for (const event of cached) {
+        if (firstTokenMs === undefined && event.type === 'delta') firstTokenMs = Date.now() - startedAt;
+        await stream.writeSSE({ data: JSON.stringify({ version: 1, ...event }) });
+      }
+      const totalMs = Date.now() - startedAt;
+      await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'usage', usage: { ms: totalMs, model: config.OPENROUTER_MODEL, cached: true } }) });
       await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'done', finishReason: 'stop' }) });
+      const tools = [...new Set(cached.filter(event => event.type === 'tool' && event.status === 'done').map(event => String(event.name)))];
+      void db.recordMetric({ kind: 'chat', cached: true, outcome: 'complete', totalMs, firstTokenMs, model: config.OPENROUTER_MODEL, costUsd: 0, tools })
+        .catch(error => console.error('Could not record metric:', error.message));
     });
 
     if (active >= config.MAX_CONCURRENT_REQUESTS) { c.header('Retry-After', '5'); return c.json({ error: 'Assistant is busy. Please try again shortly.' }, 429); }
@@ -295,6 +307,12 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       let answer = '';
       const startedAt = Date.now();
       const usage: { promptTokens?: number; completionTokens?: number; costUsd?: number } = {};
+      // What gets recorded about this answer once it ends, however it ends. No text, no session.
+      let firstTokenMs: number | undefined;
+      let steps = 0;
+      let toolMs = 0;
+      const toolsRun: string[] = [];
+      let outcome: 'complete' | 'truncated' | 'error' | 'timeout' | 'aborted' = 'error';
       try {
         let finish: string | null = null;
         // Reserve one artifact-only step so research cannot consume the document's creation budget.
@@ -310,6 +328,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
             stream_options: { include_usage: true },
             ...(canUseTools ? { tools: stepTools, tool_choice: 'auto' as const } : {}),
           }, { signal: controller.signal });
+          steps++;
 
           const calls: { id: string; name: string; arguments: string }[] = [];
           let stepText = '';
@@ -326,6 +345,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
             }
             const choice = chunk.choices[0];
             if (choice?.delta?.content) {
+              firstTokenMs ??= Date.now() - startedAt;
               stepText += choice.delta.content;
               answer += choice.delta.content;
               await send({ type: 'delta', text: choice.delta.content });
@@ -363,6 +383,8 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
               outcome = { summary: 'tool failed', result: 'The tool could not run. Say so instead of guessing.', sources: [], failed: true as const };
             }
             const ms = Date.now() - started;
+            toolMs += ms;
+            toolsRun.push(call.name);
             controller.signal.throwIfAborted();
             if (outcome.failed) recorded = undefined;
             await send({ type: 'tool', id: call.id, name: call.name, summary: outcome.summary, status: outcome.failed ? 'error' : 'done', ms });
@@ -432,9 +454,17 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
         }
         await send({ type: 'usage', usage: { ms: Date.now() - startedAt, model: config.OPENROUTER_MODEL, ...usage } });
         await send({ type: 'done', finishReason: finish });
+        outcome = finish === 'length' ? 'truncated' : 'complete';
       } catch {
+        outcome = stream.aborted ? 'aborted' : controller.signal.aborted ? 'timeout' : 'error';
         if (!stream.aborted) await send({ type: 'error', message: controller.signal.aborted ? 'Response timed out. Please retry.' : 'The model could not finish this answer. Please retry.' });
-      } finally { clearTimeout(idle); clearTimeout(ceiling); controller.abort(); active--; }
+      } finally {
+        clearTimeout(idle); clearTimeout(ceiling); controller.abort(); active--;
+        void db.recordMetric({
+          kind: 'chat', outcome, totalMs: Date.now() - startedAt, firstTokenMs, model: config.OPENROUTER_MODEL, ...usage,
+          steps, tools: toolsRun, toolMs, sources: sources.length,
+        }).catch(error => console.error('Could not record metric:', error.message));
+      }
     });
   });
 

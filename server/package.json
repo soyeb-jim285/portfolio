@@ -11,10 +11,12 @@
     "check": "tsc --noEmit",
     "test": "node --env-file-if-exists=.env --test --import tsx src/*.test.ts",
     "index": "node --env-file=.env --import tsx src/index-repos.ts",
-    "eval:retrieval": "node --env-file=.env --import tsx src/eval-retrieval.ts",
+    "eval:retrieval": "node --env-file-if-exists=.env --import tsx src/eval-retrieval.ts",
     "export:knowledge": "node --import tsx src/export-knowledge.ts",
     "eval:answers": "node --env-file=.env --import tsx src/eval-answers.ts",
-    "google:auth": "node --env-file=.env --import tsx src/google-auth.ts"
+    "google:auth": "node --env-file=.env --import tsx src/google-auth.ts",
+    "stats": "node --env-file-if-exists=.env --import tsx src/stats.ts",
+    "eval:generate": "node --env-file-if-exists=.env --import tsx src/eval-generate.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

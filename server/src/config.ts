@@ -26,6 +26,10 @@ export const configSchema = z.object({
   REPO_CACHE_DIR: z.string().min(1).default('.cache/repos'),
   // Hours between automatic index passes inside the API; 0 turns them off. Unchanged repositories cost one ls-remote each.
   INDEX_EVERY_HOURS: z.coerce.number().min(0).max(168).default(24),
+  // Small model that writes each file's one-sentence description at index time; empty turns summaries off.
+  SUMMARY_MODEL: z.string().default('openai/gpt-4.1-nano'),
+  // Small model that reorders search results when the search variant asks for it; empty turns reranking off.
+  RERANK_MODEL: z.string().default('openai/gpt-4.1-nano'),
   MAX_TOOL_STEPS: z.coerce.number().int().min(0).max(6).default(3),
   RESEND_API_KEY: z.string().min(1).optional(),
   CONTACT_FROM: z.string().min(1).optional(),
@@ -100,6 +104,8 @@ export const configSchema = z.object({
   BOOKING_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(60),
   BOOKINGS_PER_DAY: z.coerce.number().int().min(1).default(5),
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(7),
+  // Days to keep per-answer timing, token and cost rows (no content). Swept hourly.
+  METRICS_RETENTION_DAYS: z.coerce.number().int().min(1).max(730).default(90),
   MAX_MESSAGES_PER_SESSION: z.coerce.number().int().min(2).max(200).default(40),
   // Finished answers are reused for this long when the full model context matches; 0 disables caching.
   ANSWER_CACHE_TTL_HOURS: z.coerce.number().min(0).max(720).default(24),

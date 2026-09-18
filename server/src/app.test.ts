@@ -19,7 +19,7 @@ const cachedConfig = { ...config, ANSWER_CACHE_TTL_HOURS: 24 };
 const db: Db = await createDb(url, config.SESSION_TTL_DAYS);
 const pool = new Pool({ connectionString: url });
 after(async () => { await db.close(); await pool.end(); });
-beforeEach(async () => { sentMail.length = 0; stored.clear(); booked.length = 0; await pool.query('TRUNCATE sessions, usage_daily, answer_cache, rate_limits CASCADE'); });
+beforeEach(async () => { sentMail.length = 0; stored.clear(); booked.length = 0; await pool.query('TRUNCATE sessions, usage_daily, answer_cache, rate_limits, answer_metrics CASCADE'); });
 
 const hit = (overrides: Partial<SourceHit> = {}): SourceHit => ({
   repo: 'hyprfm', path: 'src/FileOps.cpp', language: 'cpp', symbols: ['copy'], startLine: 10, endLine: 40,
@@ -1253,6 +1253,52 @@ test('identical full context replays across sessions without calling the model o
   assert.equal((await app.fetch(ask(otherToken, 'q4', config.SITE_ORIGIN, turns('different private detail')))).status, 429, 'an identical suffix must not expose another visitor’s earlier context');
   assert.equal((await app.fetch(ask(token, 'q4', config.SITE_ORIGIN, turns('q1').slice(0, 5)))).status, 429);
   assert.equal((await pool.query('SELECT hits FROM answer_cache')).rows[0].hits, 1);
+});
+
+// Metrics are written after the stream closes, without holding the answer up: poll briefly.
+const metricRows = async (expected: number) => {
+  for (let tries = 0; tries < 50; tries++) {
+    const { rows } = await pool.query('SELECT * FROM answer_metrics ORDER BY id');
+    if (rows.length >= expected) return rows;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  return (await pool.query('SELECT * FROM answer_metrics ORDER BY id')).rows;
+};
+
+test('every answer records its timing, usage and outcome, and never its text', async () => {
+  const usageFrame = `data: ${JSON.stringify({ choices: [], usage: { prompt_tokens: 120, completion_tokens: 30, cost: 0.0004 } })}\n\n`;
+  const client = mockClient(async () => new Response(sse('HyprFM uses Qt.').replace('data: [DONE]', `${usageFrame.trim()}\n\ndata: [DONE]`)));
+  const app = createApp(cachedConfig, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const token = await newSession(app);
+  await (await app.fetch(ask(token, 'What is HyprFM built with?'))).text();
+  await (await app.fetch(ask(token, 'What is HyprFM built with?'))).text();
+
+  const [live, replay] = await metricRows(2);
+  assert.equal(live.kind, 'chat');
+  assert.equal(live.cached, false);
+  assert.equal(live.outcome, 'complete');
+  assert.equal(live.model, 'test-model');
+  assert.equal(live.prompt_tokens, 120);
+  assert.equal(live.completion_tokens, 30);
+  assert.equal(Number(live.cost_usd), 0.0004);
+  assert.equal(live.steps, 1);
+  assert.ok(live.first_token_ms !== null && live.first_token_ms <= live.total_ms);
+  assert.equal(replay.cached, true, 'the second, identical question is a cache replay');
+  assert.equal(Number(replay.cost_usd), 0);
+
+  // Nothing identifying: no session, no address, no question, no answer.
+  const columns = (await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'answer_metrics'")).rows.map(row => row.column_name);
+  for (const forbidden of ['session_id', 'ip', 'message', 'question', 'answer', 'content']) assert.ok(!columns.includes(forbidden), forbidden);
+  assert.ok(!JSON.stringify([live, replay]).includes('HyprFM'), 'no text of the exchange reaches the table');
+});
+
+test('a failed answer is recorded with its outcome', async () => {
+  const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), mockClient(async () => new Response('upstream down', { status: 500 })));
+  const token = await newSession(app);
+  await (await app.fetch(ask(token))).text();
+  const [row] = await metricRows(1);
+  assert.equal(row.outcome, 'error');
+  assert.equal(row.first_token_ms, null);
 });
 
 test('the cache misses on a new index or a disabled cache', async () => {
