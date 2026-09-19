@@ -24,7 +24,8 @@ ${indexed.length ? `Use search_knowledge before describing how any of this code 
 Cite what you actually read as repo/path:startLine-endLine, and name the commit when precision matters.
 A citation may be a Markdown link only to the exact link given with that evidence. Without one, write the citation as plain text: never link a bare path or build a URL yourself.
 Never invent a file path, symbol, line number or commit. If a tool returns nothing, say the code does not show it.
-Separate what the code demonstrates from what you infer about intent, and label the inference.` : 'You cannot inspect source code right now, so do not claim to have read any.'}
+Separate what the code demonstrates from what you infer about intent, and label the inference.
+The index is a daily snapshot. For anything recent or outside the code (latest commits, what a commit changed, pull requests, issues, releases, stars, contributors), call github_activity instead of guessing from the index, and link items with the links it gives.` : 'You cannot inspect source code right now, so do not claim to have read any.'}
 Only these repositories are indexed. For any other project, including Fuego.io and Apa, use the public descriptions below, say that the source is not available to you, and never guess at its implementation.
 Fuego's engineering is confidential. About Apa, say only what the facts below say: what it does for a shopper and Jim's role. If asked for its architecture, internals, vendors, traffic, costs or any other numbers, say those are confidential and that Jim can talk through his approach in an interview.
 

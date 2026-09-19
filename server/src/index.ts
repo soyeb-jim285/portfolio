@@ -62,8 +62,8 @@ await sweepAll().catch(error => console.error('Startup sweep failed:', error.mes
 // ponytail: in-process like the sweep; move it to a cron job if the API ever runs as several replicas
 // (the advisory lock already keeps two passes from overlapping).
 let indexTimer: NodeJS.Timeout | undefined;
+const github = createGitHub(config.GITHUB_TOKEN);
 if (config.INDEX_EVERY_HOURS > 0) {
-  const github = createGitHub(config.GITHUB_TOKEN);
   const embedder = createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS);
   const summarizer = config.SUMMARY_MODEL ? { client: openrouter, model: config.SUMMARY_MODEL } : undefined;
   // A separate app instance whose metrics say 'warmup', so pre-answering never counts as a visitor.
@@ -84,7 +84,7 @@ app.use('*', async (c, next) => {
   c.set('clientIP', clientAddress(getConnInfo(c).remote.address || 'unknown', c.req.header('x-real-ip'), config.TRUSTED_PROXY_IPS));
   await next();
 });
-app.route('/', createApp(config, db, retrieval, mailer, storage, scheduler));
+app.route('/', createApp(config, db, retrieval, mailer, storage, scheduler, undefined, { github: { owner: config.GITHUB_OWNER, get: github.get } }));
 const server = serve({ fetch: app.fetch, hostname: config.HOST, port: config.PORT });
 if (server instanceof Server) {
   server.requestTimeout = 30000;

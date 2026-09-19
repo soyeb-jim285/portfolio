@@ -14,7 +14,7 @@ import type { Retrieval, SourceHit } from './retrieval';
 import { AmbiguousDeliveryError, type Mailer } from './mailer';
 import type { Storage } from './storage';
 import { AmbiguousBookingError, type EventType, type Scheduler, type Slot } from './scheduler';
-import { buildToolDefinitions, runTool, type ToolOutcome } from './tools';
+import { buildToolDefinitions, runTool, type ToolContext, type ToolOutcome } from './tools';
 
 const MAX_CONTEXT_CHARS = 24000;
 // However lively the stream, one answer never runs longer than this.
@@ -111,7 +111,7 @@ type Vars = { clientIP: string; sessionId: string };
 // metricsOrigin labels every metric this app instance records: the public app says 'visitor', while the
 // eval and the cache warm-up build their own instances, so no request header can relabel traffic.
 export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: Mailer, storage: Storage, scheduler: Scheduler, client = new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 0 }),
-  options: { metricsOrigin?: 'visitor' | 'eval' | 'warmup' } = {}) {
+  options: { metricsOrigin?: 'visitor' | 'eval' | 'warmup'; github?: ToolContext['github'] } = {}) {
   const origin = options.metricsOrigin ?? 'visitor';
   const app = new OpenAPIHono<{ Variables: Vars }>({ defaultHook: (result, c) => {
     if (!result.success) return c.json({ error: 'Invalid request. Send one non-empty message under 8000 characters with a valid session.' }, 400);
@@ -309,10 +309,10 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       ];
       const visitorTimeZone = timeZoneOf(c.req.header('x-time-zone'));
       const repoNames = indexed.map(entry => entry.repo);
-      const toolDefinitions = buildToolDefinitions(repoNames);
+      const toolDefinitions = buildToolDefinitions(repoNames, Boolean(options.github));
       const turnAvailability = new Map<string, Promise<Slot[]>>();
       const toolContext = {
-        retrieval, repoNames, contactEnabled: mailer.configured, artifactsEnabled: storage.configured, maxArtifactBytes: config.ARTIFACT_MAX_BYTES,
+        retrieval, repoNames, github: options.github, contactEnabled: mailer.configured, artifactsEnabled: storage.configured, maxArtifactBytes: config.ARTIFACT_MAX_BYTES,
         scheduling: scheduler.configured
           ? { timeZone: visitorTimeZone, eventTypes: scheduler.eventTypes, availability: (eventType: EventType) => {
             let pending = turnAvailability.get(eventType.key);
@@ -404,7 +404,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
           conversation.push({ role: 'assistant', content: stepText || null, tool_calls: requested.map(call => ({ id: call.id, type: 'function', function: { name: call.name, arguments: call.arguments } })) });
           // Read-only lookups in one step run at once; their events and results still go out in call
           // order below. Anything with an effect (drafts, bookings, documents) stays sequential.
-          const READ_ONLY = ['search_knowledge', 'read_source', 'list_files', 'portfolio_details'];
+          const READ_ONLY = ['search_knowledge', 'read_source', 'list_files', 'portfolio_details', 'github_activity'];
           const early = new Map<string, Promise<ToolOutcome>>();
           for (const call of requested) {
             const key = `${call.name}:${call.arguments}`;
@@ -431,7 +431,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
             toolMs += ms;
             toolsRun.push(call.name);
             controller.signal.throwIfAborted();
-            if (outcome.failed) recorded = undefined;
+            if (outcome.failed || outcome.live) recorded = undefined;
             await send({ type: 'tool', id: call.id, name: call.name, summary: outcome.summary, status: outcome.failed ? 'error' : 'done', ms });
             if (outcome.image) await send({ type: 'image', image: outcome.image });
             if (outcome.slots) {

@@ -22,6 +22,8 @@ export function createGitHub(token: string | undefined, fetchImpl: typeof fetch 
 
   return {
     authenticated: Boolean(token),
+    // GET only. Callers build the path from validated arguments; see github_activity in tools.ts.
+    get,
 
     async repos(owner: string): Promise<RemoteRepo[]> {
       const pages: RemoteRepo[] = [];
