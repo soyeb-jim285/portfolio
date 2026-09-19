@@ -11,6 +11,8 @@ let mermaidReady: Promise<typeof import('mermaid').default> | undefined;
 export const loadMermaid = () => (mermaidReady ??= import('mermaid').then(module => {
   module.default.initialize({
     startOnLoad: false, securityLevel: 'strict', htmlLabels: false, flowchart: { htmlLabels: false },
+    // Without this a parse failure (every half-streamed fence) leaves a "Syntax error" SVG appended to <body>.
+    suppressErrorRendering: true,
     theme: 'base',
     themeVariables: {
       darkMode: true, background: '#132646', primaryColor: '#132646', primaryTextColor: '#e7edf7',
