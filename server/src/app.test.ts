@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test, { after, beforeEach } from 'node:test';
 import OpenAI from 'openai';
 import { CLIENT_HEADERS, createApp } from './app';
+import { warmAnswers } from './warm';
 import { configSchema } from './config';
 import { createDb, type Db } from './db';
 import type { Retrieval, SourceHit } from './retrieval';
@@ -313,7 +314,7 @@ test('runs a real tool call, reports it, cites the source and stores both', asyn
   assert.match(toolMessage.content, /hyprfm\/src\/FileOps\.cpp:10-40/);
   // The model gets the real GitHub link with the evidence, so it never has to build one from a path.
   assert.match(toolMessage.content, /link: https:\/\/github\.com\/soyeb-jim285\/hyprfm\/blob\/a{40}\/src\/FileOps\.cpp#L10-L40/);
-  assert.equal(sent[0].tools.map((tool: any) => tool.function.name).join(','), 'search_knowledge,read_source,show_section,show_image,prepare_contact,create_artifact,get_availability,propose_booking,list_files');
+  assert.equal(sent[0].tools.map((tool: any) => tool.function.name).join(','), 'search_knowledge,read_source,show_section,show_image,prepare_contact,create_artifact,get_availability,propose_booking,list_files,portfolio_details');
   assert.match(sent[0].messages[0].content, /- hyprfm: file manager \[C\+\+, 307 stars/);
 
 });
@@ -1290,6 +1291,27 @@ test('every answer records its timing, usage and outcome, and never its text', a
   const columns = (await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'answer_metrics'")).rows.map(row => row.column_name);
   for (const forbidden of ['session_id', 'ip', 'message', 'question', 'answer', 'content']) assert.ok(!columns.includes(forbidden), forbidden);
   assert.ok(!JSON.stringify([live, replay]).includes('HyprFM'), 'no text of the exchange reaches the table');
+});
+
+test('a warmed fixed question replays for a visitor in any time zone, and warm-ups never count as visitors', async () => {
+  let modelCalls = 0;
+  const client = mockClient(async () => { modelCalls++; return new Response(sse('HyprFM copies on a worker thread.')); });
+  const warmApp = createApp(cachedConfig, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client, { metricsOrigin: 'warmup' });
+  const question = 'How does HyprFM copy files without freezing the UI? Show me the code.';
+  const tally = await warmAnswers(warmApp, db, config.SITE_ORIGIN, [question], () => {});
+  assert.deepEqual(tally, { replayed: 0, answered: 1, failed: 0 });
+
+  const app = createApp(cachedConfig, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
+  const token = await newSession(app);
+  const visitor = await (await app.fetch(new Request('http://localhost/v1/chat', {
+    method: 'POST', body: JSON.stringify({ message: question }),
+    headers: { 'Content-Type': 'application/json', Origin: config.SITE_ORIGIN, Authorization: `Bearer ${token}`, 'X-Time-Zone': 'Europe/Berlin' },
+  }))).text();
+  assert.match(visitor, /"cached":true/, 'the Berlin visitor gets the answer warmed without a time zone');
+  assert.equal(modelCalls, 1, 'only the warm-up called the model');
+
+  const rows = await metricRows(2);
+  assert.deepEqual(rows.map(row => [row.origin, row.cached]), [['warmup', false], ['visitor', true]]);
 });
 
 test('a failed answer is recorded with its outcome', async () => {

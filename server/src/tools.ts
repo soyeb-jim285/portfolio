@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { findImage, findTarget, imageIds, siteImages, siteTargets, targetIds } from '../../src/data/site-map';
 import type { Retrieval, SourceHit } from './retrieval';
+import knowledge from './knowledge.json' with { type: 'json' };
 import { MAX_READ_LINES } from './retrieval';
 
 // Repositories are discovered at index time, so the allowlist is whatever is live right now.
@@ -19,6 +20,9 @@ const readArgs = (repos: string[]) => z.object({
 const listArgs = (repos: string[]) => z.object({ repo: repoArg(repos) });
 const showArgs = z.object({ target: z.enum(targetIds as [string, ...string[]]) });
 const imageArgs = z.object({ image: z.enum(imageIds as [string, ...string[]]) });
+const DETAILS = knowledge.details as Record<string, unknown>;
+const detailSlugs = Object.keys(DETAILS);
+const detailArgs = z.object({ slug: z.enum(detailSlugs as [string, ...string[]]) });
 const MAX_PICKER_SLOTS = 120;
 const availabilityArgs = z.object({ duration: z.string().trim().max(16).optional() });
 const proposalArgs = z.object({
@@ -164,6 +168,14 @@ export const buildToolDefinitions = (repoNames: string[]) => [
       parameters: { type: 'object', properties: { repo: { type: 'string', enum: repoNames } }, required: ['repo'], additionalProperties: false },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'portfolio_details',
+      description: "The full write-up of one of Jim's projects or papers: how a project started, its features in detail, what users said about it, or a paper's abstract. The prompt only carries summaries.",
+      parameters: { type: 'object', properties: { slug: { type: 'string', enum: detailSlugs } }, required: ['slug'], additionalProperties: false },
+    },
+  },
 ];
 
 export type UiAction = { target: string; route: string; anchor: string; label: string; action: 'reveal' | 'contact' };
@@ -210,6 +222,13 @@ export async function runTool(context: ToolContext, name: string, rawArguments: 
   let parsed: unknown;
   try { parsed = JSON.parse(rawArguments || '{}'); }
   catch { return fail('invalid arguments', 'The tool arguments were not valid JSON.'); }
+
+  if (name === 'portfolio_details') {
+    const args = detailArgs.safeParse(parsed);
+    if (!args.success) return fail('invalid arguments', `Unknown slug. Use one of: ${detailSlugs.join(', ')}`);
+    // The site's own published copy, not indexed code: nothing to cite as a source file.
+    return { summary: `details ${args.data.slug}`, result: `Portfolio write-up for ${args.data.slug}:\n${JSON.stringify(DETAILS[args.data.slug])}`, sources: [] };
+  }
 
   if (name === 'search_knowledge') {
     const args = searchArgs(repos).safeParse(parsed);

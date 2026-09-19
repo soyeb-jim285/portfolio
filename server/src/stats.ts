@@ -1,17 +1,21 @@
 // Production numbers from answer_metrics: how fast, how costly, how often the cache and the tools
-// answered. Read-only. Usage: npm run stats [-- --days 30]
+// answered. Read-only. Usage: npm run stats [-- --days 30] [--origin visitor|eval|warmup|all]
 import { Pool } from 'pg';
 import { configSchema } from './config';
 
 const config = configSchema.parse(process.env);
 const days = Number(process.argv[process.argv.indexOf('--days') + 1]) || 30;
 const pool = new Pool({ connectionString: config.DATABASE_URL, connectionTimeoutMillis: 20000 });
-const since = `created_at > now() - make_interval(days => ${Math.max(1, Math.min(730, Math.round(days)))})`;
+const wanted = (args: string[]) => args.includes('--origin') ? args[args.indexOf('--origin') + 1] : 'visitor';
+const origin = ['visitor', 'eval', 'warmup', 'all'].includes(wanted(process.argv)) ? wanted(process.argv) : 'visitor';
+// Visitors only by default: eval runs and cache warm-ups would otherwise pass for real traffic.
+const since = `created_at > now() - make_interval(days => ${Math.max(1, Math.min(730, Math.round(days)))})${origin === 'all' ? '' : ` AND origin = '${origin}'`}`;
 const show = async (title: string, sql: string) => { console.log(`\n${title}`); console.table((await pool.query(sql)).rows); };
 
 try {
   await pool.query('BEGIN READ ONLY');
-  console.log(`Answer metrics, last ${days} days`);
+  console.log(`Answer metrics, last ${days} days, origin: ${origin}`);
+  await show('Rows by origin (all traffic)', `SELECT origin, count(*)::int AS answers FROM answer_metrics WHERE created_at > now() - make_interval(days => ${Math.max(1, Math.min(730, Math.round(days)))}) GROUP BY origin ORDER BY origin`);
   await show('Answers', `
     SELECT kind, count(*)::int AS answers,
            round(100.0 * count(*) FILTER (WHERE cached) / count(*), 1) AS cache_hit_pct,
@@ -30,6 +34,7 @@ try {
   await show('Usage and cost, model answers', `
     SELECT count(*)::int AS n, round(avg(prompt_tokens))::int AS avg_prompt_tokens, round(avg(completion_tokens))::int AS avg_completion_tokens,
            round(avg(steps), 2) AS avg_model_steps, round(sum(cost_usd), 4) AS total_cost_usd, round(avg(cost_usd), 5) AS cost_per_answer_usd,
+           round(100.0 * sum(cached_prompt_tokens) / nullif(sum(prompt_tokens), 0), 1) AS prompt_cached_pct, round(avg(reasoning_tokens))::int AS avg_reasoning_tokens,
            round(100.0 * count(*) FILTER (WHERE cardinality(tools) > 0) / nullif(count(*), 0), 1) AS used_tools_pct,
            percentile_disc(0.5) WITHIN GROUP (ORDER BY tool_ms) AS tool_ms_p50
     FROM answer_metrics WHERE ${since} AND kind = 'chat' AND NOT cached`);

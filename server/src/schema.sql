@@ -224,3 +224,12 @@ ALTER TABLE source_files ADD COLUMN IF NOT EXISTS summary_search tsvector GENERA
 ) STORED;
 CREATE INDEX IF NOT EXISTS source_files_summary_search_idx ON source_files USING gin (summary_search);
 CREATE INDEX IF NOT EXISTS source_files_revision_idx ON source_files (revision_id);
+
+-- Phase 11: where an answer's time goes. Per model step: time to its first streamed chunk and its
+-- duration; per answer: prompt tokens the provider served from its cache, and hidden reasoning tokens.
+ALTER TABLE answer_metrics ADD COLUMN IF NOT EXISTS cached_prompt_tokens integer;
+ALTER TABLE answer_metrics ADD COLUMN IF NOT EXISTS reasoning_tokens integer;
+ALTER TABLE answer_metrics ADD COLUMN IF NOT EXISTS step_first_ms integer[] NOT NULL DEFAULT '{}';
+ALTER TABLE answer_metrics ADD COLUMN IF NOT EXISTS step_ms integer[] NOT NULL DEFAULT '{}';
+-- Eval runs and cache warm-ups are labelled so they never pass for visitors in the stats.
+ALTER TABLE answer_metrics ADD COLUMN IF NOT EXISTS origin text NOT NULL DEFAULT 'visitor';

@@ -6,6 +6,10 @@ import knowledge from './knowledge.json' with { type: 'json' };
 import { sourceUrl } from './repos';
 
 export const MAX_SNIPPET_CHARS = 1500;
+// The two best hits carry their whole window: a clipped snippet sent the model back for a
+// read_source round trip just to see the line it was about to cite.
+export const MAX_TOP_SNIPPET_CHARS = 4000;
+const FULL_WINDOW_HITS = 2;
 export const MAX_READ_LINES = 200;
 export const MAX_READ_CHARS = 8000;
 const CANDIDATES = 20;
@@ -186,11 +190,11 @@ export function createRetrieval(pool: Pool, embedder: Embedder, options: { reran
         }
       }
       ordered = ordered.slice(0, limit);
-      return ordered.map(row => ({
+      return ordered.map((row, index) => ({
         repo: row.repo, path: row.path, language: row.language, symbols: row.symbols,
         startLine: row.start_line, endLine: row.end_line, commit: row.commit_sha,
         url: row.url ? sourceUrl({ url: row.url }, row.commit_sha, row.path, row.start_line, row.end_line) : '',
-        snippet: clip(row.content, MAX_SNIPPET_CHARS),
+        snippet: clip(row.content, index < FULL_WINDOW_HITS ? MAX_TOP_SNIPPET_CHARS : MAX_SNIPPET_CHARS),
       }));
     },
 

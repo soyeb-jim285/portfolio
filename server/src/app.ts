@@ -103,7 +103,11 @@ const guardFailures = {
 
 type Vars = { clientIP: string; sessionId: string };
 
-export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: Mailer, storage: Storage, scheduler: Scheduler, client = new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 0 })) {
+// metricsOrigin labels every metric this app instance records: the public app says 'visitor', while the
+// eval and the cache warm-up build their own instances, so no request header can relabel traffic.
+export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: Mailer, storage: Storage, scheduler: Scheduler, client = new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 0 }),
+  options: { metricsOrigin?: 'visitor' | 'eval' | 'warmup' } = {}) {
+  const origin = options.metricsOrigin ?? 'visitor';
   const app = new OpenAPIHono<{ Variables: Vars }>({ defaultHook: (result, c) => {
     if (!result.success) return c.json({ error: 'Invalid request. Send one non-empty message under 8000 characters with a valid session.' }, 400);
   } });
@@ -234,8 +238,10 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     c.header('X-Accel-Buffering', 'no');
 
     // Share identical full contexts, never just a suffix: answers may quote earlier private turns.
+    // The visitor's time zone is not part of the key: it only shapes calendar answers, and those carry
+    // session-bound events that are never cached. Leaving it in split every answer by time zone.
     const cacheKey = !config.ANSWER_CACHE_TTL_HOURS ? undefined : createHash('sha256').update(JSON.stringify({
-      model: config.OPENROUTER_MODEL, system: systemPrompt, timeZone: timeZoneOf(c.req.header('x-time-zone')),
+      model: config.OPENROUTER_MODEL, system: systemPrompt,
       commits: indexed.map(entry => `${entry.repo}@${entry.commit}`),
       turns: [...history, { role: 'user', content: message }].map(({ role, content }) => [role, content]),
     })).digest();
@@ -252,7 +258,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'usage', usage: { ms: totalMs, model: config.OPENROUTER_MODEL, cached: true } }) });
       await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'done', finishReason: 'stop' }) });
       const tools = [...new Set(cached.filter(event => event.type === 'tool' && event.status === 'done').map(event => String(event.name)))];
-      void db.recordMetric({ kind: 'chat', cached: true, outcome: 'complete', totalMs, firstTokenMs, model: config.OPENROUTER_MODEL, costUsd: 0, tools })
+      void db.recordMetric({ kind: 'chat', cached: true, outcome: 'complete', totalMs, firstTokenMs, model: config.OPENROUTER_MODEL, costUsd: 0, tools, origin })
         .catch(error => console.error('Could not record metric:', error.message));
     });
 
@@ -306,7 +312,9 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
       const readResults = new Map<string, ToolOutcome>();
       let answer = '';
       const startedAt = Date.now();
-      const usage: { promptTokens?: number; completionTokens?: number; costUsd?: number } = {};
+      const usage: { promptTokens?: number; completionTokens?: number; costUsd?: number; cachedPromptTokens?: number; reasoningTokens?: number } = {};
+      const stepFirstMs: number[] = [];
+      const stepMs: number[] = [];
       // What gets recorded about this answer once it ends, however it ends. No text, no session.
       let firstTokenMs: number | undefined;
       let steps = 0;
@@ -323,18 +331,24 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
           const canUseTools = stepTools.length > 0;
           if (step === config.MAX_TOOL_STEPS && canUseTools) conversation.push({ role: 'system', content: 'Research is complete for this turn. Only create_artifact remains available. If the visitor requested a downloadable document and none was successfully created, create it now from the evidence already collected, noting any gaps. Do not request more research or repeat a successful artifact. Otherwise give your final answer.' });
           if (!canUseTools) conversation.push({ role: 'system', content: 'The tool budget is exhausted. No more tools can run in this turn. Answer using only results already received. Do not simulate tool calls in text or promise more work. If a requested document was not successfully created, say it is unavailable; otherwise point to its Download Markdown button.' });
+          // Timed from the request, not from the first byte: connecting and queueing are part of the step.
+          const stepStarted = Date.now();
           const response = await client.chat.completions.create({
             model: config.OPENROUTER_MODEL, messages: conversation, stream: true, max_tokens: config.MAX_OUTPUT_TOKENS,
             stream_options: { include_usage: true },
             ...(canUseTools ? { tools: stepTools, tool_choice: 'auto' as const } : {}),
-          }, { signal: controller.signal });
+            // OpenRouter's unified reasoning control; unset leaves the provider's default.
+            ...(config.CHAT_REASONING_EFFORT ? { reasoning: { effort: config.CHAT_REASONING_EFFORT } } : {}),
+          } as OpenAI.Chat.ChatCompletionCreateParamsStreaming, { signal: controller.signal });
           steps++;
+          let stepFirst: number | undefined;
 
           const calls: { id: string; name: string; arguments: string }[] = [];
           let stepText = '';
           finish = null;
           for await (const chunk of response) {
             alive();
+            stepFirst ??= Date.now() - stepStarted;
             if ('error' in chunk) throw new Error('Provider stream error');
             // Only what the provider actually reports: no estimates, no invented numbers.
             if (chunk.usage) {
@@ -342,6 +356,10 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
               usage.completionTokens = (usage.completionTokens ?? 0) + (chunk.usage.completion_tokens ?? 0);
               const cost = (chunk.usage as { cost?: number }).cost;
               if (typeof cost === 'number') usage.costUsd = (usage.costUsd ?? 0) + cost;
+              const cachedTokens = chunk.usage.prompt_tokens_details?.cached_tokens;
+              if (typeof cachedTokens === 'number') usage.cachedPromptTokens = (usage.cachedPromptTokens ?? 0) + cachedTokens;
+              const reasoningTokens = chunk.usage.completion_tokens_details?.reasoning_tokens;
+              if (typeof reasoningTokens === 'number') usage.reasoningTokens = (usage.reasoningTokens ?? 0) + reasoningTokens;
             }
             const choice = chunk.choices[0];
             if (choice?.delta?.content) {
@@ -362,20 +380,31 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
             if (choice?.finish_reason) finish = choice.finish_reason;
           }
 
+          stepFirstMs.push(stepFirst ?? Date.now() - stepStarted);
+          stepMs.push(Date.now() - stepStarted);
           const requested = calls.filter(call => call?.name);
           if (requested.some(call => !stepTools.some(tool => tool.function.name === call.name))) throw new Error('Tool unavailable in this step');
           if (!requested.length) break;
           conversation.push({ role: 'assistant', content: stepText || null, tool_calls: requested.map(call => ({ id: call.id, type: 'function', function: { name: call.name, arguments: call.arguments } })) });
+          // Read-only lookups in one step run at once; their events and results still go out in call
+          // order below. Anything with an effect (drafts, bookings, documents) stays sequential.
+          const READ_ONLY = ['search_knowledge', 'read_source', 'list_files', 'portfolio_details'];
+          const early = new Map<string, Promise<ToolOutcome>>();
+          for (const call of requested) {
+            const key = `${call.name}:${call.arguments}`;
+            if (READ_ONLY.includes(call.name) && !readResults.has(key) && !early.has(key)) early.set(key, runTool(toolContext, call.name, call.arguments));
+          }
+          for (const pending of early.values()) pending.catch(() => {});
           for (const call of requested) {
             controller.signal.throwIfAborted();
             const started = Date.now();
             await send({ type: 'tool', id: call.id, name: call.name, summary: 'running', status: 'running' });
             let outcome;
             try {
-              const readOnly = ['search_knowledge', 'read_source', 'list_files'].includes(call.name);
+              const readOnly = READ_ONLY.includes(call.name);
               const key = `${call.name}:${call.arguments}`;
               outcome = readOnly ? readResults.get(key) : undefined;
-              outcome ??= await runTool(toolContext, call.name, call.arguments);
+              outcome ??= await (early.get(key) ?? runTool(toolContext, call.name, call.arguments));
               if (readOnly && !outcome.failed) readResults.set(key, outcome);
             }
             catch (error) {
@@ -462,7 +491,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
         clearTimeout(idle); clearTimeout(ceiling); controller.abort(); active--;
         void db.recordMetric({
           kind: 'chat', outcome, totalMs: Date.now() - startedAt, firstTokenMs, model: config.OPENROUTER_MODEL, ...usage,
-          steps, tools: toolsRun, toolMs, sources: sources.length,
+          steps, tools: toolsRun, toolMs, sources: sources.length, stepFirstMs, stepMs, origin,
         }).catch(error => console.error('Could not record metric:', error.message));
       }
     });

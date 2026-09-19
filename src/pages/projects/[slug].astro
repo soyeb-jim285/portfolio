@@ -3,6 +3,7 @@ import Layout from '../../layouts/SchematicLayout.astro';
 import Callouts from '../../components/schematic/Callouts.astro';
 import GitHubStats from '../../components/GitHubStats.astro';
 import { projects } from '../../data/content';
+import { projectQuestion } from '../../data/assistant-questions';
 export function getStaticPaths() {
   return projects.map((p, i) => ({ params: { slug: p.slug }, props: { p, i } }));
 }
@@ -20,7 +21,7 @@ const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid vie
     <h1 class="title">{p.name}</h1>
     <p class="sub">{p.kicker}. {p.summary}</p>
     <p class="btns">
-      <button type="button" class="btn" data-assistant-ask={`Explain how ${p.name} works, citing the code.`}>Ask about {p.name}</button>
+      <button type="button" class="btn" data-assistant-ask={projectQuestion(p.name)}>Ask about {p.name}</button>
     </p>
   </section>
 

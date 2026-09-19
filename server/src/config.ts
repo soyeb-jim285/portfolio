@@ -30,6 +30,10 @@ export const configSchema = z.object({
   SUMMARY_MODEL: z.string().default('openai/gpt-4.1-nano'),
   // Small model that reorders search results when the search variant asks for it; empty turns reranking off.
   RERANK_MODEL: z.string().default('openai/gpt-4.1-nano'),
+  // Reasoning effort for the chat model on every step; empty leaves the provider's default.
+  CHAT_REASONING_EFFORT: z.enum(['', 'minimal', 'low', 'medium', 'high']).default('minimal'),
+  // Answer the site's fixed questions after each index pass so they replay from the cache.
+  WARM_ANSWERS: z.enum(['true', 'false']).default('true').transform(value => value === 'true'),
   MAX_TOOL_STEPS: z.coerce.number().int().min(0).max(6).default(3),
   RESEND_API_KEY: z.string().min(1).optional(),
   CONTACT_FROM: z.string().min(1).optional(),

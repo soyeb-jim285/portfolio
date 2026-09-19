@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-18T20:05:25.707Z",
+  "generatedAt": "2026-09-19T00:16:17.501Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -30,12 +30,6 @@
       "slug": "hyprfm",
       "name": "HyprFM",
       "summary": "Qt6/QML file manager with Miller columns, split panes, async transfers and live-reloading TOML themes. Packaged for AUR, Flatpak, AppImage and Nix.",
-      "body": [
-        "HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.",
-        "Grid, detail and Miller-column views; image and video thumbnails with a Space-key quick preview; split panes for two-directory workflows; a bookmarks sidebar that mounts devices through udisks2; regex bulk rename with undo and redo; drag and drop across panes and to other apps.",
-        "Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it.",
-        "People from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets."
-      ],
       "stack": [
         "C++",
         "Qt 6",
@@ -63,48 +57,6 @@
           "href": "https://trendshift.io/repositories/182310"
         }
       ],
-      "reception": {
-        "quotes": [
-          {
-            "text": "Just installed it and have to say wow. nemo and yazi combined is my first impression.",
-            "author": "Majoga87",
-            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/pakr8ba/",
-            "date": "September 2026"
-          },
-          {
-            "text": "This is EXACTLY what I was looking for and was thinking of building it myself!",
-            "author": "Fergtato",
-            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p5l2nve/",
-            "date": "August 2026"
-          },
-          {
-            "text": "Na this is excellent dude. Will be using it on all my machines I think",
-            "author": "major_jazza",
-            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p6s7n28/",
-            "date": "August 2026"
-          }
-        ],
-        "threads": [
-          {
-            "label": "r/hyprland",
-            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/",
-            "stats": "675 upvotes, 57 comments"
-          },
-          {
-            "label": "r/unixporn",
-            "href": "https://www.reddit.com/r/unixporn/comments/1vwmo5y/hyprland_hyprfm_quickshell_qt6_file_manager/",
-            "stats": "70 upvotes"
-          }
-        ],
-        "mentions": [
-          {
-            "who": "@0xBOYD",
-            "href": "https://x.com/0xBOYD/status/2093676066791387237",
-            "what": "as a Finder-style column view for Linux",
-            "stats": "5K views, August 2026"
-          }
-        ]
-      },
       "stars": 313,
       "forks": 17,
       "facts": [
@@ -132,11 +84,6 @@
       "slug": "neural-network-x-ray",
       "name": "Neural Network X-Ray",
       "summary": "Interactive CNN visualiser running entirely in the browser through ONNX Runtime on WebAssembly. Latin and Bengali scripts, 146 classes, about 980K training images.",
-      "body": [
-        "You draw a letter or digit on a canvas and every layer of the network lights up as it processes the stroke: convolution, ReLU, pooling, the dense layers and the final softmax. Inference runs in the browser with ONNX Runtime Web, so nothing is uploaded.",
-        "The model was trained on EMNIST ByMerge merged with BanglaLekha-Isolated: 146 classes covering A to Z, a to z, 0 to 9 and Bengali ka to ha plus compound characters, from roughly 980,000 images over 75 epochs. Weights and the merged dataset are published on Hugging Face.",
-        "Built with Next.js 16, React 19 and TypeScript."
-      ],
       "stack": [
         "Next.js 16",
         "React 19",
@@ -182,9 +129,6 @@
       "slug": "hyprpdf",
       "name": "hyprpdf",
       "summary": "Qt6/QML document viewer with tabs, page thumbnails, outline navigation, search, split views and annotation tools.",
-      "body": [
-        "Built to sit next to HyprFM on the same desktop, with Poppler rendering, QML chrome and keyboard-driven navigation across PDF and office documents."
-      ],
       "stack": [
         "C++",
         "Qt 6",
@@ -216,9 +160,6 @@
       "slug": "quill",
       "name": "quill",
       "summary": "Buttons, toggles, dropdowns, cards and more for Qt Quick, plus quill-icons (60 stroke-based PathSvg icons derived from Lucide) and quill-polkit.",
-      "body": [
-        "Extracted from HyprFM so the same components could be reused across hyprpdf, the Quickshell desktop shell and the polkit agent."
-      ],
       "stack": [
         "QML",
         "Qt Quick"
@@ -238,9 +179,6 @@
       "slug": "distrostrap",
       "name": "distrostrap",
       "summary": "Bootstrap a distribution onto a target partition without a live USB, from whatever system is already running.",
-      "body": [
-        "Python. Handles partition prep, base bootstrap, chroot configuration and bootloader entries."
-      ],
       "stack": [
         "Python",
         "Linux"
@@ -256,9 +194,6 @@
       "slug": "gre-vocab-trainer",
       "name": "GRE Vocab Trainer",
       "summary": "You type the definition and a sentence, an AI grades both, and FSRS-6 schedules the next review. Built during the run to a 170 quant.",
-      "body": [
-        "Swift. Grading is done by an LLM against the reference definition; scheduling follows the FSRS-6 spaced-repetition algorithm."
-      ],
       "stack": [
         "Swift",
         "iOS",
@@ -275,9 +210,6 @@
       "slug": "pc-e2co",
       "name": "PC-E2CO",
       "summary": "A physics-informed Embed-to-Control model for CO2 storage reservoirs, with per-well MLP observation heads (version 19).",
-      "body": [
-        "Latent dynamics learned under physical constraints so the surrogate stays plausible outside the training distribution. PyTorch, Jupyter."
-      ],
       "stack": [
         "Python",
         "PyTorch"
@@ -321,7 +253,6 @@
       "short": "Physics-informed leak detection in multiphase pipelines",
       "venue": "Process Safety and Environmental Protection, Elsevier",
       "status": "published, accepted September 2026",
-      "abstract": "Offshore multiphase pipelines leak, and detecting a leak, sizing it and locating it are usually three separate problems, solved either by transient models too expensive to run in the loop or by data-driven detectors with no physical consistency. PCE-PINN does all three at once, from inlet and outlet pressure and flow rate alone. A physics sub-network penalises violations of nondimensional mass, momentum and mechanical-energy balance through adaptive curriculum training and adaptive collocation.",
       "finding": "Detection is saturated at F1 = 1.00. The regression heads are what matter: location R2 improves 16.5 percent over the best of five classical baselines on identical features, so the gain comes from the physics-informed architecture rather than from the features. SHAP attribution lands on conservation-consistent variables.",
       "results": [
         {
@@ -339,13 +270,6 @@
           "value": "0.941",
           "note": "16.5% over the best baseline"
         }
-      ],
-      "keywords": [
-        "physics-informed neural network",
-        "multiphase flow",
-        "leak localisation",
-        "multi-task learning",
-        "explainable AI"
       ]
     },
     {
@@ -354,7 +278,6 @@
       "short": "Physics-informed surrogate for CO2 storage simulation",
       "venue": "Fuel Processing Technology, Elsevier",
       "status": "under review, submitted July 2026",
-      "abstract": "A single forward solve of a high-resolution two-phase CO2 reservoir simulation takes hours, and history matching needs thousands of them. Embed-to-Control surrogates compress the state into a latent vector and advance it under well controls, but they share one linear observation model across every well, which regresses water and gas rates with very different non-linearities into one mediocre fit. PINN-E2CO replaces that block with an independent MLP head per producer over the shared latent, warm-started from a physics-free baseline at a tenth of the head learning rate, and trains under a hybrid loss whose three physics residuals are discretised on the finite-volume transmissibility operator the simulator itself uses.",
       "finding": "Per-well heads are the fix, and the physics residuals are what make them stick: saturation RMSE down 38 percent and pressure RMSE down 35 percent against the non-physics baseline, with filtered per-well R2 moving from 0.82 to 0.91 after 16 minutes of fine-tuning on a single T4. An ablation of 33 variants, including FNO decoders, neural-ODE dynamics and DeepONet heads, confirms the shared linear observe block was the bottleneck.",
       "results": [
         {
@@ -377,13 +300,6 @@
           "value": "16 min",
           "note": "single T4 GPU"
         }
-      ],
-      "keywords": [
-        "CO2 sequestration",
-        "physics-informed neural network",
-        "embed-to-control",
-        "reservoir surrogate",
-        "explainable AI"
       ]
     },
     {
@@ -392,7 +308,6 @@
       "short": "Detecting pain without localising it",
       "venue": "ACII 2026 Grand Challenge track",
       "status": "under double-blind review",
-      "abstract": "The AI4Pain 2026 challenge asks a model to label physiological segments from 65 subjects as No-Pain, Pain-Arm or Pain-Hand from BVP, EDA, respiration and SpO2. We present a two-stage hierarchical classifier: stage one separates pain from no-pain, stage two separates arm from hand. Both are L2-regularised logistic regressions on subject-normalised, effect-size-ranked features with isotonic calibration, decoded under the known balanced prior. Every design decision was made under 5x5 repeated subject-fold cross-validation with paired significance testing, not on the leaderboard.",
       "finding": "Stage-one detection is strong. Stage-two arm-versus-hand localisation sits near chance and stays there through baseline-relative normalisation, respiratory dynamics, modality late-fusion, a sweep of non-linear models and an oracle variant fed ground-truth labels. At the segment level these peripheral signals carry pain intensity, not somatotopic location.",
       "results": [
         {
@@ -420,13 +335,6 @@
           "value": "0.575 ± 0.024",
           "note": "5x5 subject-fold"
         }
-      ],
-      "keywords": [
-        "pain assessment",
-        "electrodermal activity",
-        "photoplethysmography",
-        "hierarchical classification",
-        "affective computing"
       ]
     },
     {
@@ -435,7 +343,6 @@
       "short": "Movement intent from EEG, EMG and IMU",
       "venue": "ABC2026 MUMIDC challenge",
       "status": "challenge submission",
-      "abstract": "A CNN2D-TCN with late fusion of statistical EEG features classifying seven motor tasks across sixteen subjects under mixed leave-one-subject-out evaluation.",
       "finding": "The release task (T6) is the stubborn one at 68 to 78 percent F1 in every configuration tried; everything else is well above 85.",
       "results": [
         {
@@ -453,13 +360,6 @@
           "value": "0.980",
           "note": ""
         }
-      ],
-      "keywords": [
-        "EEG",
-        "EMG",
-        "IMU",
-        "temporal convolution",
-        "motor intent"
       ]
     }
   ],
@@ -526,5 +426,129 @@
       "Nix",
       "AppImage"
     ]
+  },
+  "details": {
+    "hyprfm": {
+      "body": [
+        "HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.",
+        "Grid, detail and Miller-column views; image and video thumbnails with a Space-key quick preview; split panes for two-directory workflows; a bookmarks sidebar that mounts devices through udisks2; regex bulk rename with undo and redo; drag and drop across panes and to other apps.",
+        "Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it.",
+        "People from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets."
+      ],
+      "reception": {
+        "quotes": [
+          {
+            "text": "Just installed it and have to say wow. nemo and yazi combined is my first impression.",
+            "author": "Majoga87",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/pakr8ba/",
+            "date": "September 2026"
+          },
+          {
+            "text": "This is EXACTLY what I was looking for and was thinking of building it myself!",
+            "author": "Fergtato",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p5l2nve/",
+            "date": "August 2026"
+          },
+          {
+            "text": "Na this is excellent dude. Will be using it on all my machines I think",
+            "author": "major_jazza",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/comment/p6s7n28/",
+            "date": "August 2026"
+          }
+        ],
+        "threads": [
+          {
+            "label": "r/hyprland",
+            "href": "https://www.reddit.com/r/hyprland/comments/1vwnsze/",
+            "stats": "675 upvotes, 57 comments"
+          },
+          {
+            "label": "r/unixporn",
+            "href": "https://www.reddit.com/r/unixporn/comments/1vwmo5y/hyprland_hyprfm_quickshell_qt6_file_manager/",
+            "stats": "70 upvotes"
+          }
+        ],
+        "mentions": [
+          {
+            "who": "@0xBOYD",
+            "href": "https://x.com/0xBOYD/status/2093676066791387237",
+            "what": "as a Finder-style column view for Linux",
+            "stats": "5K views, August 2026"
+          }
+        ]
+      }
+    },
+    "neural-network-x-ray": {
+      "body": [
+        "You draw a letter or digit on a canvas and every layer of the network lights up as it processes the stroke: convolution, ReLU, pooling, the dense layers and the final softmax. Inference runs in the browser with ONNX Runtime Web, so nothing is uploaded.",
+        "The model was trained on EMNIST ByMerge merged with BanglaLekha-Isolated: 146 classes covering A to Z, a to z, 0 to 9 and Bengali ka to ha plus compound characters, from roughly 980,000 images over 75 epochs. Weights and the merged dataset are published on Hugging Face.",
+        "Built with Next.js 16, React 19 and TypeScript."
+      ]
+    },
+    "hyprpdf": {
+      "body": [
+        "Built to sit next to HyprFM on the same desktop, with Poppler rendering, QML chrome and keyboard-driven navigation across PDF and office documents."
+      ]
+    },
+    "quill": {
+      "body": [
+        "Extracted from HyprFM so the same components could be reused across hyprpdf, the Quickshell desktop shell and the polkit agent."
+      ]
+    },
+    "distrostrap": {
+      "body": [
+        "Python. Handles partition prep, base bootstrap, chroot configuration and bootloader entries."
+      ]
+    },
+    "gre-vocab-trainer": {
+      "body": [
+        "Swift. Grading is done by an LLM against the reference definition; scheduling follows the FSRS-6 spaced-repetition algorithm."
+      ]
+    },
+    "pc-e2co": {
+      "body": [
+        "Latent dynamics learned under physical constraints so the surrogate stays plausible outside the training distribution. PyTorch, Jupyter."
+      ]
+    },
+    "pce-pinn-pipelines": {
+      "abstract": "Offshore multiphase pipelines leak, and detecting a leak, sizing it and locating it are usually three separate problems, solved either by transient models too expensive to run in the loop or by data-driven detectors with no physical consistency. PCE-PINN does all three at once, from inlet and outlet pressure and flow rate alone. A physics sub-network penalises violations of nondimensional mass, momentum and mechanical-energy balance through adaptive curriculum training and adaptive collocation.",
+      "keywords": [
+        "physics-informed neural network",
+        "multiphase flow",
+        "leak localisation",
+        "multi-task learning",
+        "explainable AI"
+      ]
+    },
+    "pinn-e2co-co2": {
+      "abstract": "A single forward solve of a high-resolution two-phase CO2 reservoir simulation takes hours, and history matching needs thousands of them. Embed-to-Control surrogates compress the state into a latent vector and advance it under well controls, but they share one linear observation model across every well, which regresses water and gas rates with very different non-linearities into one mediocre fit. PINN-E2CO replaces that block with an independent MLP head per producer over the shared latent, warm-started from a physics-free baseline at a tenth of the head learning rate, and trains under a hybrid loss whose three physics residuals are discretised on the finite-volume transmissibility operator the simulator itself uses.",
+      "keywords": [
+        "CO2 sequestration",
+        "physics-informed neural network",
+        "embed-to-control",
+        "reservoir surrogate",
+        "explainable AI"
+      ]
+    },
+    "ai4pain-2026": {
+      "abstract": "The AI4Pain 2026 challenge asks a model to label physiological segments from 65 subjects as No-Pain, Pain-Arm or Pain-Hand from BVP, EDA, respiration and SpO2. We present a two-stage hierarchical classifier: stage one separates pain from no-pain, stage two separates arm from hand. Both are L2-regularised logistic regressions on subject-normalised, effect-size-ranked features with isotonic calibration, decoded under the known balanced prior. Every design decision was made under 5x5 repeated subject-fold cross-validation with paired significance testing, not on the leaderboard.",
+      "keywords": [
+        "pain assessment",
+        "electrodermal activity",
+        "photoplethysmography",
+        "hierarchical classification",
+        "affective computing"
+      ]
+    },
+    "mumidc-abc2026": {
+      "abstract": "A CNN2D-TCN with late fusion of statistical EEG features classifying seven motor tasks across sixteen subjects under mixed leave-one-subject-out evaluation.",
+      "keywords": [
+        "EEG",
+        "EMG",
+        "IMU",
+        "temporal convolution",
+        "motor intent"
+      ]
+    }
   }
 }

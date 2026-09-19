@@ -10,6 +10,7 @@ import { clearConversation, loadConversation, saveConversation } from '../../lib
 import { workingLabel } from '../../lib/chat-progress';
 import { acknowledgeAction, runAction, type ActionStatus } from '../../lib/site-actions';
 import { turnstileToken } from '../../lib/turnstile';
+import { starters } from '../../data/assistant-questions';
 
 type Entry = {
   id: string; role: 'user' | 'assistant'; content: string;
@@ -52,11 +53,6 @@ const SESSION_KEY = 'assistant-session';
 // localStorage keeps the token per browser. It throws in some privacy modes, so every access is guarded.
 const readToken = () => { try { return localStorage.getItem(SESSION_KEY) ?? undefined; } catch { return undefined; } };
 const writeToken = (token?: string) => { try { token ? localStorage.setItem(SESSION_KEY, token) : localStorage.removeItem(SESSION_KEY); } catch {} };
-const starters = [
-  { tag: '01 / Read the source', question: 'How does HyprFM copy files without freezing the UI? Show me the code.' },
-  { tag: '02 / AI engineering', question: 'Tell me about Jim’s AI engineering work.' },
-  { tag: '03 / Match a role', question: 'I will paste a job description. Which requirements does Jim actually have evidence for?' },
-];
 // Good enough to catch a typo before a round trip; the server validates properly.
 const validEmail = (value: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim());
 // Mirrors the server's defaults (MAX_MESSAGES_PER_SESSION, MAX_CONTEXT_CHARS); it trims again either way.

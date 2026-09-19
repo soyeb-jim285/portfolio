@@ -15,6 +15,9 @@ import { createGitHub } from './github';
 import { runIndex } from './index-run';
 import OpenAI from 'openai';
 import { createReranker } from './rerank';
+import { warmAnswers } from './warm';
+import { fixedQuestions } from '../../src/data/assistant-questions';
+import { projects } from '../../src/data/content';
 import { clientAddress } from './client-address';
 
 const config = configSchema.parse(process.env);
@@ -63,7 +66,12 @@ if (config.INDEX_EVERY_HOURS > 0) {
   const github = createGitHub(config.GITHUB_TOKEN);
   const embedder = createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS);
   const summarizer = config.SUMMARY_MODEL ? { client: openrouter, model: config.SUMMARY_MODEL } : undefined;
+  // A separate app instance whose metrics say 'warmup', so pre-answering never counts as a visitor.
+  const warmApp = createApp(config, db, retrieval, mailer, storage, scheduler, undefined, { metricsOrigin: 'warmup' });
   const pass = () => void runIndex(db.pool, config, github, embedder, { summarizer, log: message => console.log(`[index] ${message}`) })
+    .then(() => config.WARM_ANSWERS && config.ANSWER_CACHE_TTL_HOURS
+      ? warmAnswers(warmApp, db, config.SITE_ORIGIN, fixedQuestions(projects.map(project => project.name)), message => console.log(`[index] ${message}`))
+      : undefined)
     .catch(error => console.error('[index] pass failed:', error instanceof Error ? error.message : error));
   const first = setTimeout(pass, 5 * 60_000);
   first.unref();
