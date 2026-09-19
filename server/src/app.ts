@@ -19,6 +19,11 @@ import { buildToolDefinitions, runTool, type ToolOutcome } from './tools';
 const MAX_CONTEXT_CHARS = 24000;
 // However lively the stream, one answer never runs longer than this.
 const MAX_ANSWER_MS = 300000;
+// Cache replays are paced like a fast stream (see the replay branch of /v1/chat).
+const REPLAY_MIN_MS = 350;
+const REPLAY_MAX_MS = 1200;
+const REPLAY_MS_PER_CHAR = 0.8;
+const REPLAY_TOOL_PAUSE_MS = 120;
 // These events carry ids owned by the session that asked, or depend on the clock: never replayed to another.
 const SESSION_BOUND_EVENTS = new Set(['draft', 'proposal', 'artifact', 'action', 'slots']);
 export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone', 'X-Turnstile-Token'];
@@ -250,9 +255,20 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     if (cached) return streamSSE(c, async stream => {
       const startedAt = Date.now();
       let firstTokenMs: number | undefined;
+      // A replay is instant, and an answer that lands whole reads as a page load, not a reply. So it
+      // is paced like a fast stream: the text types out over REPLAY_MS scaled to its length, and each
+      // tool step pauses briefly. The usage event still says cached, so nothing pretends to be live.
+      const deltas = cached.filter(event => event.type === 'delta');
+      const characters = deltas.reduce((sum, event) => sum + String(event.text ?? '').length, 0);
+      const replayMs = Math.min(REPLAY_MAX_MS, Math.max(REPLAY_MIN_MS, characters * REPLAY_MS_PER_CHAR));
+      const perDelta = deltas.length ? replayMs / deltas.length : 0;
+      const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       for (const event of cached) {
+        if (stream.aborted) return;
         if (firstTokenMs === undefined && event.type === 'delta') firstTokenMs = Date.now() - startedAt;
         await stream.writeSSE({ data: JSON.stringify({ version: 1, ...event }) });
+        if (event.type === 'delta') await pause(perDelta);
+        else if (event.type === 'tool' && event.status !== 'running') await pause(REPLAY_TOOL_PAUSE_MS);
       }
       const totalMs = Date.now() - startedAt;
       await stream.writeSSE({ data: JSON.stringify({ version: 1, type: 'usage', usage: { ms: totalMs, model: config.OPENROUTER_MODEL, cached: true } }) });

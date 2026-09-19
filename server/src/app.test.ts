@@ -1244,7 +1244,9 @@ test('identical full context replays across sessions without calling the model o
 
   // Identical full context is safe to share across visitors.
   const otherToken = await newSession(app);
+  const replayStarted = Date.now();
   const replay = events(await (await app.fetch(ask(otherToken, 'q4', config.SITE_ORIGIN, turns('q1')))).text());
+  assert.ok(Date.now() - replayStarted >= 300, 'a replay is paced like a fast stream, not dumped at once');
   assert.equal(calls, 1, 'a cache hit must not call the model');
   assert.deepEqual(replay.filter(event => event.type === 'delta'), fresh.filter(event => event.type === 'delta'));
   assert.equal(replay.find(event => event.type === 'usage').usage.cached, true);
