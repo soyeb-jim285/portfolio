@@ -10,7 +10,7 @@ export const configSchema = z.object({
   TRUSTED_PROXY_IPS: z.string().default('').transform(value => value.split(',').map(ip => ip.trim()).filter(Boolean))
     .refine(ips => ips.every(ip => isIP(ip)), 'Use comma-separated proxy IP addresses, not CIDRs'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
-  MAX_OUTPUT_TOKENS: z.coerce.number().int().min(1).max(10000).default(10000),
+  MAX_OUTPUT_TOKENS: z.coerce.number().int().min(1).max(32000).default(16000),
   // The longest the provider may stay silent mid-answer; a stream that keeps arriving is not cut off.
   REQUEST_TIMEOUT_MS: z.coerce.number().int().min(100).max(120000).default(60000),
   MAX_CONCURRENT_REQUESTS: z.coerce.number().int().min(1).max(20).default(3),
