@@ -9,7 +9,7 @@ import { artifactLink, confirmBooking, createSession, SessionExpired, proposeSlo
 import { clearConversation, loadConversation, saveConversation } from '../../lib/chat-history';
 import { workingLabel } from '../../lib/chat-progress';
 import { acknowledgeAction, runAction, type ActionStatus } from '../../lib/site-actions';
-import { turnstileToken } from '../../lib/turnstile';
+import { preloadTurnstile, turnstileToken } from '../../lib/turnstile';
 import { starters } from '../../data/assistant-questions';
 
 type Entry = {
@@ -247,10 +247,25 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
     return asked?.role === 'user' ? { question: asked.content, ids: [asked.id, id] } : null;
   };
 
-  async function session() {
-    if (!token.current) { token.current = await createSession(endpoint, await turnstileToken(challengeSlot.current, 'session')); writeToken(token.current); }
-    return token.current;
+  // One session start at a time: the panel begins one when it opens, and a question asked before it
+  // finishes waits for that same start instead of running a second bot check.
+  const startingSession = useRef<Promise<string> | null>(null);
+  function session() {
+    if (token.current) return Promise.resolve(token.current);
+    startingSession.current ??= (async () => {
+      const started = await createSession(endpoint, await turnstileToken(challengeSlot.current, 'session'));
+      token.current = started;
+      writeToken(started);
+      return started;
+    })().finally(() => { startingSession.current = null; });
+    return startingSession.current;
   }
+  // The bot check and session creation take a few seconds on a first visit. Starting them when the
+  // panel opens hides that behind the moment the visitor spends reading the starters. A failure here
+  // stays silent: the first question starts over and reports it.
+  useEffect(() => {
+    if (open && endpoint && !token.current) void session().catch(() => {});
+  }, [open]);
 
   async function ask(value: string, replacing?: string[], audio?: Entry['audio']) {
     const prompt = value.trim();
@@ -504,7 +519,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         scroll lock and aria-hidden on the page, leaving it dark and untouchable on mobile. */}
     <Sheet open={open} onOpenChange={setOpen} modal={mobile && open}>
       <SheetTrigger asChild>
-        <Button className="assistant-launch" variant="default" hidden={open} disabled={!portal}>
+        <Button className="assistant-launch" variant="default" hidden={open} disabled={!portal} onPointerEnter={preloadTurnstile} onFocus={preloadTurnstile}>
           <MessageSquare size={16} aria-hidden="true" /> Ask about my work
         </Button>
       </SheetTrigger>

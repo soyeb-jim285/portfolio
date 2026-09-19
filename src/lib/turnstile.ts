@@ -28,6 +28,12 @@ function load() {
   return loading;
 }
 
+// Fetches the script without rendering anything, so a later check skips the download. Called when
+// the visitor reaches for the assistant (hover or focus on its button), never on a page view.
+export function preloadTurnstile() {
+  if (SITE_KEY) void load().catch(() => {});
+}
+
 // A fresh widget per call, rendered into a slot the caller owns: the assistant drawer and the
 // contact dialog are both modal, so a widget attached to <body> would sit behind them, unclickable.
 // Resolves undefined when no site key is configured, and the server then skips the check too.
