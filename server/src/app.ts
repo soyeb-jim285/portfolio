@@ -25,6 +25,18 @@ const REPLAY_MAX_MS = 1200;
 const REPLAY_MS_PER_CHAR = 0.8;
 const REPLAY_TOOL_PAUSE_MS = 120;
 // These events carry ids owned by the session that asked, or depend on the clock: never replayed to another.
+// What a running tool is looking at, for the progress line: a few short strings from the model's own
+// arguments, never free text beyond a clipped search query. Rendered as plain text by the client.
+function toolDetail(raw: string) {
+  let args: Record<string, unknown>;
+  try { args = JSON.parse(raw || '{}'); } catch { return undefined; }
+  const detail: Record<string, string> = {};
+  for (const key of ['repo', 'path', 'kind', 'query', 'sha', 'number', 'slug']) {
+    const value = args[key];
+    if (typeof value === 'string' || typeof value === 'number') detail[key] = String(value).slice(0, key === 'path' ? 200 : 60);
+  }
+  return Object.keys(detail).length ? detail : undefined;
+}
 const SESSION_BOUND_EVENTS = new Set(['draft', 'proposal', 'artifact', 'action', 'slots']);
 export const CLIENT_HEADERS = ['Content-Type', 'Authorization', 'X-Time-Zone', 'X-Turnstile-Token'];
 // A voice note travels as a base64 data URL, is transcribed once and never stored: the browser
@@ -414,7 +426,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
           for (const call of requested) {
             controller.signal.throwIfAborted();
             const started = Date.now();
-            await send({ type: 'tool', id: call.id, name: call.name, summary: 'running', status: 'running' });
+            await send({ type: 'tool', id: call.id, name: call.name, summary: 'running', status: 'running', detail: toolDetail(call.arguments) });
             let outcome;
             try {
               const readOnly = READ_ONLY.includes(call.name);

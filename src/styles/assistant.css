@@ -226,7 +226,8 @@
 /* Room under the newest turn so it can sit at the top of the viewport while the answer streams. */
 .chat-tailspace { flex-shrink: 0; }
 .chat-loading { display: flex; align-items: center; gap: 9px; padding: 10px 0; color: var(--muted); font-size: 12px; }
-.chat-loading span { flex-shrink: 0; width: 5px; height: 5px; background: var(--accent); }
+.chat-loading-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-loading span:not(.chat-loading-label) { flex-shrink: 0; width: 5px; height: 5px; background: var(--accent); }
 .assistant-jump { align-self: center; background: var(--bg-2); }
 
 
@@ -341,8 +342,10 @@
   .chat-slot-list .chat-button[aria-pressed=true] { transition: background .12s ease, color .12s ease; }
   .assistant-panel[data-phase=leaving] { animation: assistant-exit .15s ease-in; }
   .assistant-panel[data-mobile][data-phase=leaving] { animation-name: assistant-drop-out; }
-  .chat-loading span { animation: assistant-wait 1.2s ease-in-out infinite; }
+  .chat-loading span:not(.chat-loading-label) { animation: assistant-wait 1.2s ease-in-out infinite; }
+  .chat-loading-label { animation: assistant-step .3s cubic-bezier(.16,1,.3,1); }
 }
+@keyframes assistant-step { from { opacity: 0; transform: translateY(5px); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes assistant-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes assistant-enter { from { transform: translateX(100%); } to { transform: translateX(0); } }
 @keyframes assistant-exit { from { visibility: visible; } to { transform: translateX(100%); visibility: visible; } }

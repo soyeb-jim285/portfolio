@@ -575,7 +575,8 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                     {entry.content}
                   </MessageResponse> : entry.state !== 'streaming' ? <p>No answer received.</p> : null}
                 {entry.role === 'assistant' && entry.state === 'streaming' && <p className="chat-loading" role="status" aria-live="polite">
-                  <span aria-hidden="true" />{workingLabel(entry.tools, Boolean(entry.content))}
+                  {/* Keyed by its text, so each new step slides in instead of the words swapping in place. */}
+                  <span aria-hidden="true" /><span className="chat-loading-label" key={workingLabel(entry.tools, Boolean(entry.content))}>{workingLabel(entry.tools, Boolean(entry.content))}</span>
                 </p>}
               </MessageContent>
               {/* Steps and sources sit under the answer. The trace is open while the model works and folds away as
