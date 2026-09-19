@@ -5,7 +5,9 @@ import knowledge from './knowledge.json' with { type: 'json' };
 import { MAX_READ_LINES } from './retrieval';
 
 // Repositories are discovered at index time, so the allowlist is whatever is live right now.
-const repoArg = (repos: string[]) => z.string().trim().refine(value => repos.includes(value.toLowerCase()), 'Unknown repository');
+// Case-insensitive, resolved to the indexed spelling: the model writes "leaknet" for "LeakNet".
+const canonicalRepo = (repos: string[], value: unknown) => repos.find(repo => repo.toLowerCase() === String(value ?? '').trim().toLowerCase());
+const repoArg = (repos: string[]) => z.string().trim().refine(value => Boolean(canonicalRepo(repos, value)), 'Unknown repository').transform(value => canonicalRepo(repos, value)!);
 const searchArgs = (repos: string[]) => z.object({
   query: z.string().trim().min(2).max(400),
   repo: repoArg(repos).optional(),
@@ -25,14 +27,62 @@ const detailSlugs = Object.keys(DETAILS);
 const detailArgs = z.object({ slug: z.enum(detailSlugs as [string, ...string[]]) });
 const MAX_PICKER_SLOTS = 120;
 const GITHUB_KINDS = ['overview', 'commits', 'commit', 'pulls', 'issues', 'thread', 'releases', 'contributors'] as const;
-const githubArgs = (repos: string[]) => z.object({
-  repo: repoArg(repos),
-  kind: z.enum(GITHUB_KINDS),
-  sha: z.string().trim().regex(/^[0-9a-f]{7,40}$/i, 'A commit sha is 7 to 40 hex characters').optional(),
-  number: z.coerce.number().int().min(1).optional(),
-  state: z.enum(['open', 'closed', 'all']).optional(),
-  limit: z.coerce.number().int().min(1).max(20).optional(),
+// The model sees this schema in strict mode, so every field is required and the unused ones are
+// null. The same schema validates the call; the rules that span fields are refinements.
+const githubArgs = (repos: string[]) => z.strictObject({
+  repo: z.enum(repos as [string, ...string[]]),
+  kind: z.enum(GITHUB_KINDS).describe('overview: stars, forks, watchers, open issues, licence, last push. commits: latest commits. commit: one commit with its message and the code it changed. pulls, issues: lists. thread: one issue or pull request with its description and comments. releases. contributors.'),
+  sha: z.string().regex(/^[0-9a-fA-F]{7,40}$/).nullable().describe('For kind commit: the sha, at least 7 characters, from a commits listing. Otherwise null.'),
+  number: z.number().int().min(1).nullable().describe('For kind thread: the issue or pull request number. Otherwise null.'),
+  state: z.enum(['open', 'closed', 'all']).nullable().describe('For pulls and issues; null means open.'),
+  limit: z.number().int().min(1).max(20).nullable().describe('How many items; null means 10.'),
+}).superRefine((args, context) => {
+  if (args.kind === 'commit' && !args.sha) context.addIssue({ code: 'custom', path: ['sha'], message: 'kind commit needs a sha: call kind commits first' });
+  if (args.kind === 'thread' && !args.number) context.addIssue({ code: 'custom', path: ['number'], message: 'kind thread needs a number: call kind issues or pulls first' });
 });
+type GitHubArgs = z.infer<ReturnType<typeof githubArgs>>;
+const GITHUB_FIELDS = ['sha', 'number', 'state', 'limit'] as const;
+// Providers that ignore strict mode send "" or leave fields out; both mean "not given".
+const normalizeGitHubArgs = (repos: string[], raw: unknown) => {
+  const value = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const args: Record<string, unknown> = { ...value, repo: canonicalRepo(repos, value.repo) ?? value.repo };
+  for (const field of GITHUB_FIELDS) if (args[field] === undefined || args[field] === '') args[field] = null;
+  if (typeof args.number === 'string' && /^\d+$/.test(args.number)) args.number = Number(args.number);
+  if (typeof args.limit === 'string' && /^\d+$/.test(args.limit)) args.limit = Number(args.limit);
+  if (typeof args.sha === 'string') args.sha = args.sha.trim();
+  return args;
+};
+const githubParameters = (repos: string[]) => {
+  const { $schema: _schema, ...schema } = z.toJSONSchema(githubArgs(repos), { io: 'input' }) as Record<string, unknown>;
+  return schema;
+};
+
+// What GitHub returns is parsed, not trusted: only these fields are read, and a changed shape fails
+// the call loudly instead of putting "undefined" in front of the model.
+const ghUser = z.object({ login: z.string() }).nullable();
+const ghCommit = z.object({
+  sha: z.string(), html_url: z.string(), author: ghUser,
+  commit: z.object({ message: z.string(), author: z.object({ name: z.string(), date: z.string() }).nullable() }),
+});
+const ghCommitDetail = ghCommit.extend({
+  stats: z.object({ additions: z.number(), deletions: z.number() }).optional(),
+  files: z.array(z.object({ filename: z.string(), status: z.string(), additions: z.number(), deletions: z.number(), patch: z.string().optional() })).default([]),
+});
+const ghRepo = z.object({
+  full_name: z.string(), description: z.string().nullable(), html_url: z.string(),
+  stargazers_count: z.number(), forks_count: z.number(), subscribers_count: z.number(), open_issues_count: z.number(),
+  language: z.string().nullable(), license: z.object({ spdx_id: z.string().nullable() }).nullable(), default_branch: z.string(),
+  created_at: z.string(), pushed_at: z.string().nullable(), topics: z.array(z.string()).default([]), homepage: z.string().nullable(),
+});
+const ghPull = z.object({ number: z.number(), title: z.string(), state: z.string(), html_url: z.string(), user: ghUser, created_at: z.string(), merged_at: z.string().nullable() });
+const ghIssue = z.object({
+  number: z.number(), title: z.string(), state: z.string(), html_url: z.string(), user: ghUser, created_at: z.string(), comments: z.number(), body: z.string().nullable(),
+  labels: z.array(z.union([z.string(), z.object({ name: z.string() })])).default([]),
+  pull_request: z.object({ merged_at: z.string().nullable().optional() }).optional(),
+});
+const ghComment = z.object({ user: ghUser, created_at: z.string(), body: z.string().nullable() });
+const ghRelease = z.object({ tag_name: z.string(), name: z.string().nullable(), published_at: z.string().nullable(), prerelease: z.boolean(), html_url: z.string(), body: z.string().nullable() });
+const ghContributor = z.object({ login: z.string(), contributions: z.number() });
 // A diff can be huge; the model gets enough of each file to say what changed, not the whole patch.
 const MAX_PATCH_PER_FILE = 1500;
 const MAX_PATCH_TOTAL = 9000;
@@ -58,24 +108,13 @@ const draftArgs = z.object({
 });
 
 export const buildToolDefinitions = (repoNames: string[], liveGitHub = false) => [
-  ...(liveGitHub ? [{
+  ...(liveGitHub && repoNames.length ? [{
     type: 'function' as const,
     function: {
       name: 'github_activity',
-      description: 'Live, read-only data from GitHub for one of the listed repositories: overview (stars, forks, watchers, open issues, licence, last push), commits (latest first), commit (one commit with its message and the code it changed; needs sha), pulls, issues, thread (one issue or pull request with its description and comments; needs number), releases, contributors. The code index is a daily snapshot; use this for anything recent or anything the index does not hold.',
-      parameters: {
-        type: 'object',
-        properties: {
-          repo: { type: 'string', enum: repoNames },
-          kind: { type: 'string', enum: [...GITHUB_KINDS] },
-          sha: { type: 'string', description: 'Commit sha, full or at least 7 characters, for kind commit.' },
-          number: { type: 'integer', minimum: 1, description: 'Issue or pull request number, for kind thread.' },
-          state: { type: 'string', enum: ['open', 'closed', 'all'], description: 'For pulls and issues. Default open.' },
-          limit: { type: 'integer', minimum: 1, maximum: 20, description: 'How many items, default 10.' },
-        },
-        required: ['repo', 'kind'],
-        additionalProperties: false,
-      },
+      description: 'Live, read-only GitHub data for one of the listed repositories. The code index is a daily snapshot: use this for anything recent or anything the index does not hold, such as commits, what a commit changed, pull requests, issues, releases, stars and contributors.',
+      strict: true,
+      parameters: githubParameters(repoNames),
     },
   }] : []),
   {
@@ -268,10 +307,15 @@ export async function runTool(context: ToolContext, name: string, rawArguments: 
 
   if (name === 'github_activity') {
     if (!context.github) return fail('github unavailable', 'Live GitHub data is not available right now. Answer from the index and say it may be out of date.');
-    const args = githubArgs(repos).safeParse(parsed);
-    if (!args.success) return fail('invalid arguments', `Invalid GitHub arguments: ${args.error.issues[0]?.message}`);
+    const args = githubArgs(repos).safeParse(normalizeGitHubArgs(repos, parsed));
+    if (!args.success) return fail('invalid arguments', `Invalid GitHub arguments: ${args.error.issues.map(issue => `${issue.path.join('.') || 'arguments'}: ${issue.message}`).join('; ')}`);
     try { return await githubActivity(context.github, args.data); }
-    catch (error) { return fail(`github ${args.data.kind} ${args.data.repo}: failed`, `GitHub could not answer: ${error instanceof Error ? error.message : 'unknown error'}. Say so; never guess.`); }
+    catch (error) {
+      // A response that fails its schema is our bug or GitHub's change, not the visitor's: log where.
+      if (error instanceof z.ZodError) console.error('github_activity: unexpected response shape', args.data.kind, error.issues.slice(0, 3).map(issue => `${issue.path.join('.')}: ${issue.message}`));
+      const reason = error instanceof z.ZodError ? 'GitHub returned a response in an unexpected shape' : error instanceof Error ? error.message : 'unknown error';
+      return fail(`github ${args.data.kind} ${args.data.repo}: failed`, `GitHub could not answer: ${reason}. Say so; never guess.`);
+    }
   }
 
   if (name === 'search_knowledge') {
@@ -427,64 +471,64 @@ export async function runTool(context: ToolContext, name: string, rawArguments: 
 
 // Only GET paths built here, from validated arguments, reach GitHub. Issue and commit text is written
 // by anyone on the internet, so it is clipped and wrapped as untrusted data like the indexed code.
-async function githubActivity(github: NonNullable<ToolContext['github']>, args: z.infer<ReturnType<typeof githubArgs>>): Promise<ToolOutcome> {
+async function githubActivity(github: NonNullable<ToolContext['github']>, args: GitHubArgs): Promise<ToolOutcome> {
   const base = `/repos/${encodeURIComponent(github.owner)}/${encodeURIComponent(args.repo)}`;
+  const fetchAs = async <T extends z.ZodType>(schema: T, path: string) => schema.parse(await github.get<unknown>(path)) as z.infer<T>;
   const limit = args.limit ?? 10;
   const state = args.state ?? 'open';
-  const who = (user: any) => user?.login ?? 'unknown';
+  const who = (user: z.infer<typeof ghUser>) => user?.login ?? 'unknown';
   const day = (stamp?: string | null) => stamp ? stamp.slice(0, 10) : '';
+  const authorOf = (commit: z.infer<typeof ghCommit>) => commit.author?.login ?? commit.commit.author?.name ?? 'unknown';
   let summary: string;
   let body: string;
 
   if (args.kind === 'overview') {
-    const repo = await github.get<any>(base);
+    const repo = await fetchAs(ghRepo, base);
     summary = `github overview ${args.repo}`;
     body = [
       `${repo.full_name}: ${repo.description ?? ''}`, `link: ${repo.html_url}`,
       `stars ${repo.stargazers_count}, forks ${repo.forks_count}, watchers ${repo.subscribers_count}, open issues and pull requests ${repo.open_issues_count}`,
       `language ${repo.language ?? 'none'}, licence ${repo.license?.spdx_id ?? 'none'}, default branch ${repo.default_branch}`,
-      `created ${day(repo.created_at)}, last push ${repo.pushed_at}`, repo.topics?.length ? `topics: ${repo.topics.join(', ')}` : '', repo.homepage ? `homepage: ${repo.homepage}` : '',
+      `created ${day(repo.created_at)}, last push ${repo.pushed_at ?? 'unknown'}`, repo.topics.length ? `topics: ${repo.topics.join(', ')}` : '', repo.homepage ? `homepage: ${repo.homepage}` : '',
     ].filter(Boolean).join('\n');
   } else if (args.kind === 'commits') {
-    const commits = await github.get<any[]>(`${base}/commits?per_page=${limit}`);
+    const commits = await fetchAs(z.array(ghCommit), `${base}/commits?per_page=${limit}`);
     summary = `github commits ${args.repo}: ${commits.length}`;
-    body = commits.map(commit => `${commit.sha.slice(0, 8)} ${commit.commit.author?.date ?? ''} ${commit.author?.login ?? commit.commit.author?.name ?? 'unknown'}: ${clip(commit.commit.message.split('\n')[0], 200)} link: ${commit.html_url}`).join('\n');
+    body = commits.map(commit => `${commit.sha.slice(0, 8)} ${commit.commit.author?.date ?? ''} ${authorOf(commit)}: ${clip(commit.commit.message.split('\n')[0], 200)} link: ${commit.html_url}`).join('\n');
   } else if (args.kind === 'commit') {
-    if (!args.sha) return fail('invalid arguments', 'kind commit needs a sha; list commits first.');
-    const commit = await github.get<any>(`${base}/commits/${args.sha}`);
-    summary = `github commit ${args.repo} ${commit.sha.slice(0, 8)}: ${commit.files?.length ?? 0} files`;
+    const commit = await fetchAs(ghCommitDetail, `${base}/commits/${args.sha}`);
+    summary = `github commit ${args.repo} ${commit.sha.slice(0, 8)}: ${commit.files.length} files`;
     let budget = MAX_PATCH_TOTAL;
-    const files = (commit.files ?? []).map((file: any) => {
+    const files = commit.files.map(file => {
       const patch = budget > 0 ? clip(file.patch, Math.min(MAX_PATCH_PER_FILE, budget)) : '';
       budget -= patch.length;
       return `--- ${file.filename} (${file.status}, +${file.additions} -${file.deletions})${patch ? `\n${patch}` : ' (diff omitted)'}`;
     });
-    body = [`${commit.sha} by ${commit.author?.login ?? commit.commit.author?.name ?? 'unknown'} on ${commit.commit.author?.date ?? ''}`, `link: ${commit.html_url}`,
-      `message: ${clip(commit.commit.message, 1500)}`, `+${commit.stats?.additions ?? 0} -${commit.stats?.deletions ?? 0} in ${commit.files?.length ?? 0} files`, ...files].join('\n');
+    body = [`${commit.sha} by ${authorOf(commit)} on ${commit.commit.author?.date ?? ''}`, `link: ${commit.html_url}`,
+      `message: ${clip(commit.commit.message, 1500)}`, `+${commit.stats?.additions ?? 0} -${commit.stats?.deletions ?? 0} in ${commit.files.length} files`, ...files].join('\n');
   } else if (args.kind === 'pulls') {
-    const pulls = await github.get<any[]>(`${base}/pulls?state=${state}&sort=updated&direction=desc&per_page=${limit}`);
+    const pulls = await fetchAs(z.array(ghPull), `${base}/pulls?state=${state}&sort=updated&direction=desc&per_page=${limit}`);
     summary = `github ${state} pull requests ${args.repo}: ${pulls.length}`;
     body = pulls.map(pull => `#${pull.number} ${pull.merged_at ? 'merged' : pull.state} by ${who(pull.user)} opened ${day(pull.created_at)}${pull.merged_at ? `, merged ${day(pull.merged_at)}` : ''}: ${clip(pull.title, 200)} link: ${pull.html_url}`).join('\n');
   } else if (args.kind === 'issues') {
     // The issues endpoint also returns pull requests; those are listed by kind pulls.
-    const issues = (await github.get<any[]>(`${base}/issues?state=${state}&sort=updated&direction=desc&per_page=${Math.min(limit * 2, 40)}`)).filter(issue => !issue.pull_request).slice(0, limit);
+    const issues = (await fetchAs(z.array(ghIssue), `${base}/issues?state=${state}&sort=updated&direction=desc&per_page=${Math.min(limit * 2, 40)}`)).filter(issue => !issue.pull_request).slice(0, limit);
     summary = `github ${state} issues ${args.repo}: ${issues.length}`;
-    body = issues.map(issue => `#${issue.number} ${issue.state} by ${who(issue.user)} opened ${day(issue.created_at)}, ${issue.comments} comments${issue.labels?.length ? `, labels ${issue.labels.map((label: any) => label.name).join(', ')}` : ''}: ${clip(issue.title, 200)} link: ${issue.html_url}`).join('\n');
+    body = issues.map(issue => `#${issue.number} ${issue.state} by ${who(issue.user)} opened ${day(issue.created_at)}, ${issue.comments} comments${issue.labels.length ? `, labels ${issue.labels.map(label => typeof label === 'string' ? label : label.name).join(', ')}` : ''}: ${clip(issue.title, 200)} link: ${issue.html_url}`).join('\n');
   } else if (args.kind === 'thread') {
-    if (!args.number) return fail('invalid arguments', 'kind thread needs a number; list issues or pulls first.');
     const [issue, comments] = await Promise.all([
-      github.get<any>(`${base}/issues/${args.number}`),
-      github.get<any[]>(`${base}/issues/${args.number}/comments?per_page=${limit}`),
+      fetchAs(ghIssue, `${base}/issues/${args.number}`),
+      fetchAs(z.array(ghComment), `${base}/issues/${args.number}/comments?per_page=${limit}`),
     ]);
     summary = `github #${args.number} ${args.repo}: ${comments.length} comments`;
     body = [`#${issue.number} ${issue.pull_request ? 'pull request' : 'issue'}, ${issue.pull_request?.merged_at ? 'merged' : issue.state}, by ${who(issue.user)} on ${day(issue.created_at)}: ${clip(issue.title, 200)}`, `link: ${issue.html_url}`,
       clip(issue.body, 2000), ...comments.map(comment => `--- ${who(comment.user)} on ${day(comment.created_at)}:\n${clip(comment.body, 800)}`)].join('\n');
   } else if (args.kind === 'releases') {
-    const releases = await github.get<any[]>(`${base}/releases?per_page=${limit}`);
+    const releases = await fetchAs(z.array(ghRelease), `${base}/releases?per_page=${limit}`);
     summary = `github releases ${args.repo}: ${releases.length}`;
     body = releases.map(release => `${release.tag_name}${release.name && release.name !== release.tag_name ? ` "${clip(release.name, 120)}"` : ''} ${day(release.published_at)}${release.prerelease ? ' (pre-release)' : ''} link: ${release.html_url}\n${clip(release.body, 600)}`).join('\n\n');
   } else {
-    const contributors = await github.get<any[]>(`${base}/contributors?per_page=${limit}`);
+    const contributors = await fetchAs(z.array(ghContributor), `${base}/contributors?per_page=${limit}`);
     summary = `github contributors ${args.repo}: ${contributors.length}`;
     body = contributors.map(person => `${person.login}: ${person.contributions} commits`).join('\n');
   }
