@@ -26,22 +26,26 @@ const DETAILS = knowledge.details as Record<string, unknown>;
 const detailSlugs = Object.keys(DETAILS);
 const detailArgs = z.object({ slug: z.enum(detailSlugs as [string, ...string[]]) });
 const MAX_PICKER_SLOTS = 120;
-const GITHUB_KINDS = ['overview', 'commits', 'commit', 'pulls', 'issues', 'thread', 'releases', 'contributors'] as const;
+const GITHUB_KINDS = ['overview', 'commits', 'search', 'history', 'commit', 'pulls', 'issues', 'thread', 'releases', 'contributors'] as const;
 // The model sees this schema in strict mode, so every field is required and the unused ones are
 // null. The same schema validates the call; the rules that span fields are refinements.
 const githubArgs = (repos: string[]) => z.strictObject({
   repo: z.enum(repos as [string, ...string[]]),
-  kind: z.enum(GITHUB_KINDS).describe('overview: stars, forks, watchers, open issues, licence, last push. commits: latest commits. commit: one commit with its message and the code it changed. pulls, issues: lists. thread: one issue or pull request with its description and comments. releases. contributors.'),
+  kind: z.enum(GITHUB_KINDS).describe('overview: stars, forks, watchers, open issues, licence, last push. commits: latest commits. search: commits whose message matches query. history: the commits that touched one file (path), oldest first, so the first one is when it was added. commit: one commit with its message and the code it changed. pulls, issues: lists. thread: one issue or pull request with its description and comments. releases. contributors.'),
   sha: z.string().regex(/^[0-9a-fA-F]{7,40}$/).nullable().describe('For kind commit: the sha, at least 7 characters, from a commits listing. Otherwise null.'),
   number: z.number().int().min(1).nullable().describe('For kind thread: the issue or pull request number. Otherwise null.'),
+  query: z.string().min(2).max(100).nullable().describe('For kind search: plain words to find in commit messages, such as "trash restore". Otherwise null.'),
+  path: z.string().min(1).max(300).refine(value => !value.split('/').includes('..'), 'Not a repository path').nullable().describe('For kind history: a repository-relative file path, as search_knowledge returns it. Otherwise null.'),
   state: z.enum(['open', 'closed', 'all']).nullable().describe('For pulls and issues; null means open.'),
   limit: z.number().int().min(1).max(20).nullable().describe('How many items; null means 10.'),
 }).superRefine((args, context) => {
   if (args.kind === 'commit' && !args.sha) context.addIssue({ code: 'custom', path: ['sha'], message: 'kind commit needs a sha: call kind commits first' });
+  if (args.kind === 'search' && !args.query) context.addIssue({ code: 'custom', path: ['query'], message: 'kind search needs a query' });
+  if (args.kind === 'history' && !args.path) context.addIssue({ code: 'custom', path: ['path'], message: 'kind history needs a path: find the file with search_knowledge first' });
   if (args.kind === 'thread' && !args.number) context.addIssue({ code: 'custom', path: ['number'], message: 'kind thread needs a number: call kind issues or pulls first' });
 });
 type GitHubArgs = z.infer<ReturnType<typeof githubArgs>>;
-const GITHUB_FIELDS = ['sha', 'number', 'state', 'limit'] as const;
+const GITHUB_FIELDS = ['sha', 'number', 'query', 'path', 'state', 'limit'] as const;
 // Providers that ignore strict mode send "" or leave fields out; both mean "not given".
 const normalizeGitHubArgs = (repos: string[], raw: unknown) => {
   const value = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
@@ -82,6 +86,11 @@ const ghIssue = z.object({
 });
 const ghComment = z.object({ user: ghUser, created_at: z.string(), body: z.string().nullable() });
 const ghRelease = z.object({ tag_name: z.string(), name: z.string().nullable(), published_at: z.string().nullable(), prerelease: z.boolean(), html_url: z.string(), body: z.string().nullable() });
+const ghCommitSearch = z.object({ total_count: z.number(), items: z.array(ghCommit) });
+// Search qualifiers are stripped so a query cannot widen the search: GitHub ORs repeated repo: terms.
+const searchWords = (query: string) => query.split(/\s+/).filter(word => !word.includes(':')).join(' ').replace(/[^\p{L}\p{N}\s._-]/gu, ' ').trim();
+// ponytail: one page of 100; a file with a longer history shows its oldest of those 100, and says so.
+const HISTORY_PAGE = 100;
 const ghContributor = z.object({ login: z.string(), contributions: z.number() });
 // A diff can be huge; the model gets enough of each file to say what changed, not the whole patch.
 const MAX_PATCH_PER_FILE = 1500;
@@ -495,6 +504,20 @@ async function githubActivity(github: NonNullable<ToolContext['github']>, args: 
     const commits = await fetchAs(z.array(ghCommit), `${base}/commits?per_page=${limit}`);
     summary = `github commits ${args.repo}: ${commits.length}`;
     body = commits.map(commit => `${commit.sha.slice(0, 8)} ${commit.commit.author?.date ?? ''} ${authorOf(commit)}: ${clip(commit.commit.message.split('\n')[0], 200)} link: ${commit.html_url}`).join('\n');
+  } else if (args.kind === 'search') {
+    const words = searchWords(args.query!);
+    if (!words) return fail('invalid arguments', 'The query has no words left to search for.');
+    const found = await fetchAs(ghCommitSearch, `/search/commits?q=${encodeURIComponent(`repo:${github.owner}/${args.repo} ${words}`)}&sort=committer-date&order=asc&per_page=${limit}`);
+    summary = `github commit search ${args.repo} "${words}": ${found.total_count}`;
+    body = `${found.total_count} commits match "${words}" in their message, oldest first. Only messages are searched: if none match, find the file with search_knowledge and use kind history.\n`
+      + found.items.map(commit => `${commit.sha.slice(0, 8)} ${commit.commit.author?.date ?? ''} ${authorOf(commit)}: ${clip(commit.commit.message.split('\n')[0], 200)} link: ${commit.html_url}`).join('\n');
+  } else if (args.kind === 'history') {
+    const commits = (await fetchAs(z.array(ghCommit), `${base}/commits?path=${encodeURIComponent(args.path!)}&per_page=${HISTORY_PAGE}`)).reverse();
+    summary = `github history ${args.repo}/${args.path}: ${commits.length}${commits.length === HISTORY_PAGE ? '+' : ''} commits`;
+    if (!commits.length) return { summary, result: `Live GitHub data fetched now.\nNo commits touched ${args.path} on the default branch. Check the path with list_files.`, sources: [], live: true };
+    const line = (commit: z.infer<typeof ghCommit>) => `${commit.sha.slice(0, 8)} ${commit.commit.author?.date ?? ''} ${authorOf(commit)}: ${clip(commit.commit.message.split('\n')[0], 200)} link: ${commit.html_url}`;
+    body = [`${commits.length === HISTORY_PAGE ? `At least ${HISTORY_PAGE} commits touched ${args.path}; the oldest of the latest ${HISTORY_PAGE} is shown first, so the true first commit may be earlier.` : `${commits.length} commits touched ${args.path}, oldest first. The first one is when the file was added (or last renamed).`}`,
+      ...commits.slice(0, limit).map(line), ...(commits.length > limit ? [`… and ${commits.length - limit} later commits, the latest:`, line(commits.at(-1)!)] : [])].join('\n');
   } else if (args.kind === 'commit') {
     const commit = await fetchAs(ghCommitDetail, `${base}/commits/${args.sha}`);
     summary = `github commit ${args.repo} ${commit.sha.slice(0, 8)}: ${commit.files.length} files`;

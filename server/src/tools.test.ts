@@ -67,3 +67,25 @@ test('repository names match whatever case the model writes', async () => {
   assert.equal(result.failed, undefined);
   assert.deepEqual(listed, ['LeakNet']);
 });
+
+test('github_activity searches commit messages inside one repository and traces a file oldest first', async () => {
+  const paths: string[] = [];
+  const commit = (sha: string, message: string) => ({ sha, html_url: `https://github.com/c/${sha}`, author: { login: 'jim' }, commit: { message, author: { name: 'Jim', date: '2026-03-22T00:00:00Z' } } });
+  const github = {
+    owner: 'soyeb-jim285',
+    async get<T>(path: string): Promise<T> {
+      paths.push(path);
+      if (path.startsWith('/search/commits')) return { total_count: 1, items: [commit('59ec3b16aaaa', 'feat: add gio trash')] } as T;
+      return [commit('bbbbbbbb2222', 'later change'), commit('aaaaaaaa1111', 'add the file')] as T;
+    },
+  };
+  const live = { ...context, repoNames: ['hyprfm'], github };
+  const base = { repo: 'hyprfm', sha: null, number: null, query: null, path: null, state: null, limit: null };
+  const search = await runTool(live, 'github_activity', JSON.stringify({ ...base, kind: 'search', query: 'trash repo:torvalds/linux' }));
+  assert.match(search.result, /59ec3b16 .*add gio trash/);
+  assert.equal(decodeURIComponent(paths[0]).match(/repo:/g)?.length, 1, 'a qualifier in the query cannot widen the search');
+  const history = await runTool(live, 'github_activity', JSON.stringify({ ...base, kind: 'history', path: 'src/FileOperations.cpp' }));
+  assert.ok(history.result.indexOf('aaaaaaaa') < history.result.indexOf('bbbbbbbb'), 'oldest first: the first line is when the file arrived');
+  assert.equal(paths[1], '/repos/soyeb-jim285/hyprfm/commits?path=src%2FFileOperations.cpp&per_page=100');
+  assert.equal((await runTool(live, 'github_activity', JSON.stringify({ ...base, kind: 'history' }))).failed, true, 'history needs a path');
+});

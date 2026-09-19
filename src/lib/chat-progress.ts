@@ -8,6 +8,8 @@ const own = (repo?: string) => repo ? `${repo}'s` : 'the';
 const github: Record<string, (detail: Detail) => string> = {
   overview: ({ repo }) => `Checking ${repo ?? 'the repository'} on GitHub…`,
   commits: ({ repo }) => `Looking at ${own(repo)} latest commits on GitHub…`,
+  search: ({ repo, query }) => query ? `Searching ${own(repo)} commits for “${quoted(query)}”…` : `Searching ${own(repo)} commits…`,
+  history: ({ path }) => path ? `Tracing the history of ${file(path)}…` : 'Tracing the file history…',
   commit: ({ sha }) => sha ? `Opening commit ${sha.slice(0, 7)} on GitHub…` : 'Opening the commit on GitHub…',
   pulls: ({ repo }) => `Looking at ${own(repo)} pull requests…`,
   issues: ({ repo }) => `Looking at ${own(repo)} issues…`,
