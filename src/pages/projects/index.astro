@@ -15,7 +15,7 @@ import { projects } from '../../data/content';
           <tr>
             <td class="i">{i + 1}</td>
             <td>{p.image ? <a href={`/projects/${p.slug}/`}><img class="thumb" src={p.thumb ?? p.image} alt={`${p.name} screenshot`} loading="lazy" width="150" height="94" /></a> : <span class="small">no fig.</span>}</td>
-            <td><a href={`/projects/${p.slug}/`}>{p.name}</a><small>{p.kicker}{p.stars ? `, ${p.stars} stars` : ''}</small></td>
+            <td><a href={`/projects/${p.slug}/`}>{p.name}</a><small>{p.kicker}{p.stars ? <Fragment>, <span data-gh-repo={p.repo} data-gh-field="stars">{p.stars}</span> stars</Fragment> : ''}</small></td>
             <td>{p.summary}</td>
             <td class="m">{p.stack.join(', ')}</td>
           </tr>

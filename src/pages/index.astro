@@ -13,7 +13,7 @@ const today = new Date();
 const monthsAtWork = (today.getFullYear() - startYear) * 12 + (today.getMonth() + 1 - startMonth);
 const proofs = [
   { value: String(monthsAtWork), since: work.start, label: `months at ${work.employer} as the main engineer on ${work.product}, its AI shopping agent`, href: '/work/' },
-  { value: String(hyprfm.stars), label: `GitHub stars on HyprFM, with ${(hyprfm.contributors ?? 1) - 1} outside contributors`, href: '/projects/hyprfm/' },
+  { value: String(hyprfm.stars), gh: hyprfm.repo, label: `GitHub stars on HyprFM, with ${(hyprfm.contributors ?? 1) - 1} outside contributors`, href: '/projects/hyprfm/' },
   { value: '1714', label: 'Codeforces peak, Expert. ICPC Dhaka regional finalist twice', href: '/record/' },
   { value: '2', label: 'journal papers on physics-informed ML. One published by Elsevier, one under review', href: '/research/' },
 ];
@@ -40,7 +40,7 @@ const proofs = [
 
   <section class="r" data-anchor="home-proof">
     <div class="nums four">
-      {proofs.map((p) => <div><a href={p.href}><strong data-months-since={'since' in p ? p.since : undefined}>{p.value}</strong><span>{p.label}</span></a></div>)}
+      {proofs.map((p) => <div><a href={p.href}><strong data-months-since={'since' in p ? p.since : undefined} data-gh-repo={'gh' in p ? p.gh : undefined} data-gh-field={'gh' in p ? 'stars' : undefined}>{p.value}</strong><span>{p.label}</span></a></div>)}
     </div>
   </section>
 

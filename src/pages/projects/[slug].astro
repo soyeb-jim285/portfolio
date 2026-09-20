@@ -16,7 +16,7 @@ const gallery = p.images?.filter((x) => x !== p.image) ?? [];
 const live = p.links.find((l) => l.label === 'Live')?.href;
 const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid view with thumbnails', '/assets/quick-preview.jpg': 'HyprFM quick preview opened with the Space key' };
 ---
-<Layout title={`${p.name}, Soyeb Pervez Jim`} description={`${p.name}: ${p.kicker}. ${p.summary}`} sheet={`5.${i + 1}`} big={p.name} stamp={p.stars ? { k: 'Stars', v: String(p.stars) } : { k: 'Type', v: 'Open source' }}>
+<Layout title={`${p.name}, Soyeb Pervez Jim`} description={`${p.name}: ${p.kicker}. ${p.summary}`} sheet={`5.${i + 1}`} big={p.name} stamp={p.stars ? { k: 'Stars', v: String(p.stars), gh: p.repo } : { k: 'Type', v: 'Open source' }}>
   <section class="head r" data-anchor="project-detail">
     <h1 class="title">{p.name}</h1>
     <p class="sub">{p.kicker}. {p.summary}</p>
@@ -51,7 +51,7 @@ const alts: Record<string, string> = { '/assets/grid-view.jpg': 'HyprFM grid vie
   <section class="split r">
     <div>
       <ul class="specs tight">
-        {p.slug === 'hyprfm' && <GitHubStats owner="soyeb-jim285" repo="hyprfm" stars={p.stars} forks={p.forks} contributors={p.contributors} />}
+        {p.repo && <GitHubStats repo={p.repo} stars={p.stars} forks={p.forks} contributors={p.contributors} />}
         {p.facts?.filter((f) => p.slug !== 'hyprfm' || f.label !== 'Stars').map((f) => <li><span>{f.label}</span><span>{f.value}</span></li>)}
         <li><span>stack</span><span>{p.stack.join(', ')}</span></li>
         <li><span>links</span><span>{p.links.map((l, k) => <>{k > 0 && ', '}<a href={l.href} target="_blank" rel="noopener">{l.label}</a></>)}</span></li>

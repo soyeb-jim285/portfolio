@@ -14,7 +14,7 @@ interface Props {
   title: string; description: string;
   sheet: string;            // "2" or "5.1"
   big: string;              // title block name
-  stamp: { k: string; v: string }; // page specific title block cell
+  stamp: { k: string; v: string; gh?: string }; // page specific title block cell; gh = owner/repo for a live star count
 }
 const { title, description, sheet, big, stamp } = Astro.props;
 const index = [
@@ -99,7 +99,7 @@ const flip = {
         <div>DRAWN BY<b>S. P. Jim</b></div>
         <div>SHEET<b>{sheet} of 8</b></div>
         <div>REV<b>2026-09</b></div>
-        <div>{stamp.k}<b>{stamp.v}</b></div>
+        <div>{stamp.k}<b data-gh-repo={stamp.gh} data-gh-field={stamp.gh ? 'stars' : undefined}>{stamp.v}</b></div>
         <div class="big">{big}</div>
       </div>
     </main>
@@ -119,9 +119,12 @@ const flip = {
   <script>
     import { init } from '../scripts/schematic';
     import { initAssistantAsk } from '../scripts/assistant-ask';
+    import { refreshGitHubStats } from '../scripts/github-stats';
     init();
     initAssistantAsk();
+    refreshGitHubStats();
     document.addEventListener('astro:page-load', init);
+    document.addEventListener('astro:page-load', refreshGitHubStats);
     // The plot runs toward the higher sheet number, whether the visitor clicked, typed a URL or
     // used browser history: sheet 3 to 5.2 sweeps forward, 5.2 back to 2 sweeps back.
     const sheetOf = (doc: Document) => (doc.querySelector('.tb div:nth-child(2) b')?.textContent ?? '').split(' ')[0].split('.').map(Number);
