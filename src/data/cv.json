@@ -340,7 +340,7 @@
     {
       "name": "HyprFM",
       "repo": "https://github.com/soyeb-jim285/hyprfm",
-      "stars": 315,
+      "stars": 316,
       "language": "C++",
       "src": ["gh-hyprfm", "gh-api-repos", "linuxlinks"],
       "conf": "verified",
@@ -413,7 +413,7 @@
     "account_created": { "v": "2018-04-30", "src": ["gh-api-user"], "conf": "verified" },
     "public_repos": { "v": 57, "src": ["gh-api-user"], "conf": "verified" },
     "non_fork_repos": { "v": 39, "src": ["gh-api-repos"], "conf": "verified" },
-    "total_stars": { "v": 320, "src": ["gh-api-repos"], "conf": "verified", "note": "Sum across public repos; refreshed daily by scripts/update-stars.mjs." },
+    "total_stars": { "v": 321, "src": ["gh-api-repos"], "conf": "verified", "note": "Sum across public repos; refreshed daily by scripts/update-stars.mjs." },
     "followers": { "v": 3, "src": ["gh-api-user"], "conf": "verified" },
     "achievements": { "v": ["Pull Shark", "Arctic Code Vault Contributor"], "src": ["gh-profile"], "conf": "reported" }
   },
