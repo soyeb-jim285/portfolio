@@ -62,7 +62,7 @@ export type Project = {
 
 export const projects: Project[] = [
   {
-    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', repo: 'soyeb-jim285/hyprfm', stars: 316, forks: 17, contributors: 11,
+    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', repo: 'soyeb-jim285/hyprfm', stars: 317, forks: 17, contributors: 11,
     summary: 'Qt6/QML file manager with Miller columns, split panes, async transfers and live-reloading TOML themes. Packaged for AUR, Flatpak, AppImage and Nix.',
     body: [
       'HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.',
@@ -89,7 +89,7 @@ export const projects: Project[] = [
         { who: '@0xBOYD', href: 'https://x.com/0xBOYD/status/2093676066791387237', what: 'as a Finder-style column view for Linux', stats: '5K views, August 2026' },
       ],
     },
-    facts: [{ label: 'Stars', value: '316' }, { label: 'Trending', value: '#3 C++ repository of the day on Trendshift, 25 Aug 2026, and #14 of the week' }, { label: 'Packages', value: 'AUR, Flatpak, AppImage, Nix' }, { label: 'Language', value: 'C++ and QML' }],
+    facts: [{ label: 'Stars', value: '317' }, { label: 'Trending', value: '#3 C++ repository of the day on Trendshift, 25 Aug 2026, and #14 of the week' }, { label: 'Packages', value: 'AUR, Flatpak, AppImage, Nix' }, { label: 'Language', value: 'C++ and QML' }],
   },
   {
     slug: 'neural-network-x-ray', name: 'Neural Network X-Ray', kicker: 'Draw a character, watch 13 CNN layers fire',
