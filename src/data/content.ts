@@ -62,7 +62,7 @@ export type Project = {
 
 export const projects: Project[] = [
   {
-    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', repo: 'soyeb-jim285/hyprfm', stars: 322, forks: 16, contributors: 11,
+    slug: 'hyprfm', name: 'HyprFM', kicker: 'Keyboard-first file manager for Hyprland and Wayland', repo: 'soyeb-jim285/hyprfm', stars: 322, forks: 17, contributors: 11,
     summary: 'Qt6/QML file manager with Miller columns, split panes, async transfers and live-reloading TOML themes. Packaged for AUR, Flatpak, AppImage and Nix.',
     body: [
       'HyprFM started because every Wayland file manager felt like a GTK app wearing a costume. It is built from the ground up in C++ and QML with the QML front end separated from C++ backend services, so the UI stays responsive while copy and move jobs run asynchronously with progress.',
