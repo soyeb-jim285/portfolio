@@ -45,13 +45,15 @@ const lead = p.slug !== 'hyprfm';
     </p>
   </section>
 
-  {p.video && (
-    <figure class="details r" style="grid-template-columns:1fr;margin:0">
-      <div>
-        <video controls playsinline preload="none" poster={p.video.poster} width="1600" height="900" src={p.video.src} aria-label={p.video.caption}></video>
-        <figcaption><b>FIG. 0</b>{p.video.caption}</figcaption>
-      </div>
-    </figure>
+  {p.videos && (
+    <div class="details r" style={p.videos.length > 1 ? undefined : 'grid-template-columns:1fr'}>
+      {p.videos.map((v, k, all) => (
+        <figure>
+          <video controls playsinline preload="none" poster={v.poster} width="1600" height="900" src={v.src} aria-label={v.caption}></video>
+          <figcaption><b>FIG. 0{all.length > 1 ? String.fromCharCode(65 + k) : ''}</b>{v.caption}</figcaption>
+        </figure>
+      ))}
+    </div>
   )}
 
   {p.image ? (

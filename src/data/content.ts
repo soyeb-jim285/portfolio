@@ -49,7 +49,7 @@ export const work = {
 
 export type Project = {
   slug: string; name: string; kicker: string; summary: string; body: string[];
-  image?: string; thumb?: string; loop?: string; teaser?: { src: string; poster: string }; images?: string[]; video?: { src: string; poster: string; caption: string }; size?: [number, number]; clips?: { src: string; poster: string; alt: string }[]; repo?: string; stars?: number; forks?: number; contributors?: number; stack: string[];
+  image?: string; thumb?: string; loop?: string; teaser?: { src: string; poster: string }; images?: string[]; videos?: { src: string; poster: string; caption: string }[]; size?: [number, number]; clips?: { src: string; poster: string; alt: string }[]; repo?: string; stars?: number; forks?: number; contributors?: number; stack: string[];
   links: { label: string; href: string }[]; facts?: { label: string; value: string }[];
   // What people who used it said, quoted word for word and linked to the comment it came from.
   reception?: {
@@ -72,8 +72,14 @@ export const projects: Project[] = [
     ],
     // Screenshots from hyprfm.soyebjim.me, copied here on 2026-10-12.
     image: '/assets/hyprfm-view-miller.webp', thumb: '/assets/hyprfm-view-miller-720.webp', loop: '/assets/hyprfm-loop.webp', teaser: { src: '/assets/hyprfm-teaser.mp4', poster: '/assets/hyprfm-teaser.jpg' }, size: [2000, 1250],
-    video: { src: '/assets/hyprfm-tour.mp4', poster: '/assets/hyprfm-tour.jpg', caption: 'HyprFM tour, 1.5 minutes, with sound' },
+    // Both films come from HyprFM's own launch renders (hyprfm brag-output run7); the loops are the ones on hyprfm.soyebjim.me.
+    videos: [
+      { src: '/assets/hyprfm-short.mp4', poster: '/assets/hyprfm-short.jpg', caption: 'HyprFM in 26 seconds, with sound' },
+      { src: '/assets/hyprfm-tour.mp4', poster: '/assets/hyprfm-tour.jpg', caption: 'The full tour, 1.5 minutes, with sound' },
+    ],
     clips: [
+      { src: '/assets/hyprfm-miller.mp4', poster: '/assets/hyprfm-miller.jpg', alt: 'Miller columns: the preview follows the arrow keys' },
+      { src: '/assets/hyprfm-peek.mp4', poster: '/assets/hyprfm-peek.jpg', alt: 'Space peeks at a file; arrows move to the next one' },
       { src: '/assets/hyprfm-split.mp4', poster: '/assets/hyprfm-split.jpg', alt: 'Split panes: copy across, with a conflict prompt' },
       { src: '/assets/hyprfm-undo.mp4', poster: '/assets/hyprfm-undo.jpg', alt: 'Delete a file, then undo brings it back' },
     ],
@@ -106,7 +112,7 @@ export const projects: Project[] = [
       'Built with Next.js 16, React 19 and TypeScript.',
     ],
     // Intro cut and stills recorded from ocr.soyebjim.me after the October 2026 redesign.
-    video: { src: '/assets/nnxray-intro.mp4', poster: '/assets/nnxray-intro.jpg', caption: 'Neural Network X-Ray intro, 21 seconds, with sound' },
+    videos: [{ src: '/assets/nnxray-intro.mp4', poster: '/assets/nnxray-intro.jpg', caption: 'Neural Network X-Ray intro, 21 seconds, with sound' }],
     image: '/assets/nnxray-network.webp', thumb: '/assets/nnxray-network-720.webp', loop: '/assets/nnxray-loop.webp', teaser: { src: '/assets/nnxray-teaser.mp4', poster: '/assets/nnxray-teaser.jpg' }, size: [1920, 1080],
     images: ['/assets/nnxray-feature-maps.webp', '/assets/nnxray-verdict.webp'],
     stack: ['Next.js 16', 'React 19', 'TypeScript', 'ONNX Runtime', 'WebAssembly', 'PyTorch'],
@@ -123,7 +129,7 @@ export const projects: Project[] = [
       'One TypeScript monorepo: React 19 and Vite on the web, Hono with Postgres and Drizzle on the server, shared scoring and speech logic in a core package, plus native Kotlin (Jetpack Compose) and SwiftUI apps that CI builds but that are not in the stores yet. It ships as one Docker image on Dokploy.',
     ],
     // Launch film and loop cut from the app's own launch video (Oct 2026); stills are post-redesign captures with the demo account cropped out.
-    video: { src: '/assets/ielts-launch.mp4', poster: '/assets/ielts-launch.jpg', caption: 'IELTS Practice launch film, 1 minute, with sound' },
+    videos: [{ src: '/assets/ielts-launch.mp4', poster: '/assets/ielts-launch.jpg', caption: 'IELTS Practice launch film, 1 minute, with sound' }],
     image: '/assets/ielts-transcript.webp', thumb: '/assets/ielts-transcript-720.webp', loop: '/assets/ielts-loop.webp', teaser: { src: '/assets/ielts-teaser.mp4', poster: '/assets/ielts-teaser.jpg' }, size: [1056, 660],
     images: ['/assets/ielts-pace.webp', '/assets/ielts-writing-fixes.webp'],
     stack: ['TypeScript', 'React 19', 'Hono', 'Postgres', 'Drizzle', 'Kotlin', 'Jetpack Compose', 'SwiftUI', 'Whisper', 'OpenAI Realtime'],
