@@ -49,7 +49,7 @@ export const work = {
 
 export type Project = {
   slug: string; name: string; kicker: string; summary: string; body: string[];
-  image?: string; thumb?: string; images?: string[]; repo?: string; stars?: number; forks?: number; contributors?: number; stack: string[];
+  image?: string; thumb?: string; loop?: string; images?: string[]; video?: { src: string; poster: string; caption: string }; size?: [number, number]; clips?: { src: string; poster: string; alt: string }[]; repo?: string; stars?: number; forks?: number; contributors?: number; stack: string[];
   links: { label: string; href: string }[]; facts?: { label: string; value: string }[];
   // What people who used it said, quoted word for word and linked to the comment it came from.
   reception?: {
@@ -70,7 +70,13 @@ export const projects: Project[] = [
       'Theming is a TOML file that reloads live. The icon set is 90+ Lucide-style SVGs built in. It ships as hyprfm-git on the AUR, as a Flatpak from a self-hosted repo, as an AppImage and as a Nix flake. LinuxLinks reviewed it and a downstream fork, Wayfile, rebuilt on top of it.',
       'People from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets.',
     ],
-    image: '/assets/miller-view.jpg', thumb: '/assets/miller-view-720.jpg', images: ['/assets/grid-view.jpg', '/assets/miller-view.jpg', '/assets/quick-preview.jpg'],
+    // Screenshots from hyprfm.soyebjim.me, copied here on 2026-10-12.
+    image: '/assets/hyprfm-view-miller.webp', thumb: '/assets/hyprfm-view-miller-720.webp', loop: '/assets/hyprfm-loop.webp', size: [2000, 1250],
+    video: { src: '/assets/hyprfm-tour.mp4', poster: '/assets/hyprfm-tour.jpg', caption: 'HyprFM tour, 1.5 minutes, with sound' },
+    clips: [
+      { src: '/assets/hyprfm-split.mp4', poster: '/assets/hyprfm-split.jpg', alt: 'Split panes: copy across, with a conflict prompt' },
+      { src: '/assets/hyprfm-undo.mp4', poster: '/assets/hyprfm-undo.jpg', alt: 'Delete a file, then undo brings it back' },
+    ],
     stack: ['C++', 'Qt 6', 'QML', 'Wayland', 'udisks2', 'Flatpak', 'Nix'],
     links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/hyprfm' }, { label: 'Site', href: 'https://hyprfm.soyebjim.me' }, { label: 'LinuxLinks review', href: 'https://www.linuxlinks.com/hyprfm-qt6-qml-file-manager/' }, { label: 'Trendshift', href: 'https://trendshift.io/repositories/182310' }],
     // Picked from both launch threads on 2026-09-18: only comments written after using it. Quotes are
@@ -96,13 +102,16 @@ export const projects: Project[] = [
     summary: 'Interactive CNN visualiser running entirely in the browser through ONNX Runtime on WebAssembly. Latin and Bengali scripts, 146 classes, about 980K training images.',
     body: [
       'You draw a letter or digit on a canvas and every layer of the network lights up as it processes the stroke: convolution, ReLU, pooling, the dense layers and the final softmax. Inference runs in the browser with ONNX Runtime Web, so nothing is uploaded.',
-      'The model was trained on EMNIST ByMerge merged with BanglaLekha-Isolated: 146 classes covering A to Z, a to z, 0 to 9 and Bengali ka to ha plus compound characters, from roughly 980,000 images over 75 epochs. Weights and the merged dataset are published on Hugging Face.',
+      'The model was trained on EMNIST ByMerge merged with BanglaLekha-Isolated: 146 classes covering A to Z, a to z, 0 to 9 and Bengali ka to ha plus compound characters, from roughly 980,000 images over 40 epochs. Weights and the merged dataset are published on Hugging Face.',
       'Built with Next.js 16, React 19 and TypeScript.',
     ],
-    image: '/assets/nnxray.jpg', thumb: '/assets/nnxray-720.jpg',
+    // Intro cut and stills recorded from ocr.soyebjim.me after the October 2026 redesign.
+    video: { src: '/assets/nnxray-intro.mp4', poster: '/assets/nnxray-intro.jpg', caption: 'Neural Network X-Ray intro, 21 seconds, with sound' },
+    image: '/assets/nnxray-network.webp', thumb: '/assets/nnxray-network-720.webp', loop: '/assets/nnxray-loop.webp', size: [1920, 1080],
+    images: ['/assets/nnxray-feature-maps.webp', '/assets/nnxray-verdict.webp'],
     stack: ['Next.js 16', 'React 19', 'TypeScript', 'ONNX Runtime', 'WebAssembly', 'PyTorch'],
     links: [{ label: 'Live', href: 'https://ocr.soyebjim.me' }, { label: 'GitHub', href: 'https://github.com/soyeb-jim285/ocr-visualization-' }, { label: 'Model weights', href: 'https://huggingface.co/soyeb-jim285/ocr-visualization-models' }, { label: 'Dataset', href: 'https://huggingface.co/datasets/soyeb-jim285/ocr-handwriting-data' }],
-    facts: [{ label: 'Classes', value: '146' }, { label: 'Training images', value: '~980K' }, { label: 'Epochs', value: '75' }],
+    facts: [{ label: 'Classes', value: '146' }, { label: 'Training images', value: '~980K' }, { label: 'Epochs', value: '40' }, { label: 'Parameters', value: '1.7M, a 7 MB ONNX file' }, { label: 'Validation accuracy', value: '90.7%' }],
   },
   {
     slug: 'hyprpdf', name: 'hyprpdf', kicker: 'PDF and office viewer with annotations',

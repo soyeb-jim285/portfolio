@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T10:42:59.593Z",
+  "generatedAt": "2026-10-12T07:33:42.538Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -121,7 +121,15 @@
         },
         {
           "label": "Epochs",
-          "value": "75"
+          "value": "40"
+        },
+        {
+          "label": "Parameters",
+          "value": "1.7M, a 7 MB ONNX file"
+        },
+        {
+          "label": "Validation accuracy",
+          "value": "90.7%"
         }
       ]
     },
@@ -481,7 +489,7 @@
     "neural-network-x-ray": {
       "body": [
         "You draw a letter or digit on a canvas and every layer of the network lights up as it processes the stroke: convolution, ReLU, pooling, the dense layers and the final softmax. Inference runs in the browser with ONNX Runtime Web, so nothing is uploaded.",
-        "The model was trained on EMNIST ByMerge merged with BanglaLekha-Isolated: 146 classes covering A to Z, a to z, 0 to 9 and Bengali ka to ha plus compound characters, from roughly 980,000 images over 75 epochs. Weights and the merged dataset are published on Hugging Face.",
+        "The model was trained on EMNIST ByMerge merged with BanglaLekha-Isolated: 146 classes covering A to Z, a to z, 0 to 9 and Bengali ka to ha plus compound characters, from roughly 980,000 images over 40 epochs. Weights and the merged dataset are published on Hugging Face.",
         "Built with Next.js 16, React 19 and TypeScript."
       ]
     },

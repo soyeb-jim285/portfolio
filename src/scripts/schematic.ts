@@ -18,7 +18,12 @@ export function init() {
   observer?.disconnect();
   const strokes = document.querySelectorAll<SVGGeometryElement>('.draw path.draw-me, .draw line.draw-me, .draw polyline.draw-me');
   const targets = document.querySelectorAll<HTMLElement>('.draw');
-  if (reduced()) { targets.forEach(target => target.classList.add('in')); return; }
+  if (reduced()) {
+    targets.forEach(target => target.classList.add('in'));
+    // Looping clips wait for a press instead of playing on their own.
+    document.querySelectorAll<HTMLVideoElement>('video[autoplay]').forEach(video => { video.pause(); video.controls = true; });
+    return;
+  }
   // Hidden until primed, so a stroke is never shown full-length before its figure scrolls in.
   strokes.forEach(stroke => { stroke.style.transition = 'none'; stroke.style.strokeDashoffset = '0'; stroke.style.opacity = '0'; });
   observer = new IntersectionObserver(entries => entries.forEach(entry => {

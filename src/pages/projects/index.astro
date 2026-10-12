@@ -14,7 +14,7 @@ import { projects } from '../../data/content';
         {projects.map((p, i) => (
           <tr>
             <td class="i">{i + 1}</td>
-            <td>{p.image ? <a href={`/projects/${p.slug}/`}><img class="thumb" src={p.thumb ?? p.image} alt={`${p.name} screenshot`} loading="lazy" width="150" height="94" /></a> : <span class="small">no fig.</span>}</td>
+            <td>{p.image ? <a href={`/projects/${p.slug}/`}><picture>{p.loop && <source srcset={p.thumb ?? p.image} media="(prefers-reduced-motion: reduce)" />}<img class="thumb" src={p.loop ?? p.thumb ?? p.image} alt={`${p.name} screenshot`} loading="lazy" width="150" height="94" /></picture></a> : <span class="small">no fig.</span>}</td>
             <td><a href={`/projects/${p.slug}/`}>{p.name}</a><small>{p.kicker}{p.stars ? <Fragment>, <span data-gh-repo={p.repo} data-gh-field="stars">{p.stars}</span> stars</Fragment> : ''}</small></td>
             <td>{p.summary}</td>
             <td class="m">{p.stack.join(', ')}</td>
