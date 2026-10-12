@@ -181,7 +181,7 @@ tr:hover td { background: rgba(201, 214, 234, .04); }
 .parts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
 .part { border: 1px solid var(--line-2); padding: 18px; display: grid; gap: 10px; align-content: start; color: var(--ink); background: var(--bg); }
 .part:hover { text-decoration: none; border-color: var(--accent); }
-.part img { border: 1px solid var(--line); width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; filter: saturate(.8); }
+.part img, .part video { display: block; border: 1px solid var(--line); width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; filter: saturate(.8); }
 .part .lab { justify-self: start; }
 .part b { font-family: var(--display); font-size: 30px; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
 .part span { color: var(--muted); font-size: 14px; }

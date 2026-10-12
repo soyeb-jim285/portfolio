@@ -67,7 +67,7 @@ const proofs = [
       {featured.map((p, i) => (
         <a class={`part${p.image ? '' : ' plain'}`} href={`/projects/${p.slug}/`}>
           <span class="lab">ITEM {i + 1}</span>
-          {p.image ? <img src={p.thumb ?? p.image} alt={`${p.name} screenshot`} loading="lazy" width="480" height="300" /> : <div class="blk" aria-hidden="true">{p.name.slice(0, 2).toUpperCase()}</div>}
+          {p.teaser ? <video autoplay muted loop playsinline poster={p.teaser.poster} src={p.teaser.src} width="480" height="300" aria-hidden="true"></video> : p.image ? <img src={p.thumb ?? p.image} alt={`${p.name} screenshot`} loading="lazy" width="480" height="300" /> : <div class="blk" aria-hidden="true">{p.name.slice(0, 2).toUpperCase()}</div>}
           <b>{p.name}</b>
           <span>{p.kicker}</span>
         </a>

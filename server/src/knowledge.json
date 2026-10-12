@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-10-12T07:45:22.093Z",
+  "generatedAt": "2026-10-12T08:29:19.131Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
+    "ielts-practice",
     "hyprpdf",
     "quill",
     "quill-icons",
     "distrostrap",
-    "gre-vocab-trainer",
-    "CCS_E2CO-RL"
+    "gre-vocab-trainer"
   ],
   "person": {
     "name": "Soyeb Pervez Jim",
@@ -134,6 +134,51 @@
       ]
     },
     {
+      "slug": "ielts-practice",
+      "name": "IELTS Practice",
+      "summary": "IELTS practice on the web with native Android and iPhone apps: an examiner asks out loud, answers are scored against the band descriptors, and every pause, filler and grammar slip is marked in your own transcript.",
+      "stack": [
+        "TypeScript",
+        "React 19",
+        "Hono",
+        "Postgres",
+        "Drizzle",
+        "Kotlin",
+        "Jetpack Compose",
+        "SwiftUI",
+        "Whisper",
+        "OpenAI Realtime"
+      ],
+      "links": [
+        {
+          "label": "Live",
+          "href": "https://ielts.soyebjim.me"
+        },
+        {
+          "label": "GitHub",
+          "href": "https://github.com/soyeb-jim285/ielts-practice"
+        }
+      ],
+      "facts": [
+        {
+          "label": "Writing score",
+          "value": "QWK 0.80, mean error 0.52 bands on 41 held-out essays"
+        },
+        {
+          "label": "Question bank",
+          "value": "120 cue cards, 799 Part 1 and 3 questions, 220 Writing prompts"
+        },
+        {
+          "label": "Platforms",
+          "value": "Web, Android (Kotlin), iPhone (SwiftUI)"
+        },
+        {
+          "label": "Tests",
+          "value": "About 1,000 cases across web, server, Android and iOS"
+        }
+      ]
+    },
+    {
       "slug": "hyprpdf",
       "name": "hyprpdf",
       "summary": "Qt6/QML document viewer with tabs, page thumbnails, outline navigation, search, split views and annotation tools.",
@@ -211,21 +256,6 @@
         {
           "label": "GitHub",
           "href": "https://github.com/soyeb-jim285/gre-vocab-trainer"
-        }
-      ]
-    },
-    {
-      "slug": "pc-e2co",
-      "name": "PC-E2CO",
-      "summary": "A physics-informed Embed-to-Control model for CO2 storage reservoirs, with per-well MLP observation heads (version 19).",
-      "stack": [
-        "Python",
-        "PyTorch"
-      ],
-      "links": [
-        {
-          "label": "GitHub",
-          "href": "https://github.com/soyeb-jim285/CCS_E2CO-RL"
         }
       ]
     }
@@ -493,6 +523,14 @@
         "Built with Next.js 16, React 19 and TypeScript."
       ]
     },
+    "ielts-practice": {
+      "body": [
+        "You record a Speaking answer or write a timed essay. Speech is transcribed with the fillers kept (primed Whisper, or ElevenLabs Scribe), and fluency is measured from the word timings: speech rate, mean length of run, pause ratio, mid-clause pauses, fillers, repetitions and self-corrections. Each mistake is anchored to the word it happened on, so the transcript, the pace chart and the audio line up.",
+        "Writing gets a band per criterion, the three fixes that matter most, every error explained and the essay rewritten one band higher. Listening and Reading run as computer-style tests with highlights, notes and timers, and a full mock exam chains all four skills. Mistakes come back as SM-2 review cards. A live examiner can run the Speaking test over OpenAI Realtime or Gemini Live.",
+        "Bands come from a descriptor-anchored rater with a fitted calibration map. On a frozen test set of 41 published Cambridge and ielts.org essays, Writing lands at QWK 0.80 and a mean error of 0.52 bands; the Speaking curve, fitted on 66 labelled clips, has a leave-one-group-out error of 0.59. Those sets are small, scores run low at band 7.5 and above, and pronunciation is not judged from audio, so the app shows every band as an estimate with a range.",
+        "One TypeScript monorepo: React 19 and Vite on the web, Hono with Postgres and Drizzle on the server, shared scoring and speech logic in a core package, plus native Kotlin (Jetpack Compose) and SwiftUI apps that CI builds but that are not in the stores yet. It ships as one Docker image on Dokploy."
+      ]
+    },
     "hyprpdf": {
       "body": [
         "Built to sit next to HyprFM on the same desktop, with Poppler rendering, QML chrome and keyboard-driven navigation across PDF and office documents."
@@ -511,11 +549,6 @@
     "gre-vocab-trainer": {
       "body": [
         "Swift. Grading is done by an LLM against the reference definition; scheduling follows the FSRS-6 spaced-repetition algorithm."
-      ]
-    },
-    "pc-e2co": {
-      "body": [
-        "Latent dynamics learned under physical constraints so the surrogate stays plausible outside the training distribution. PyTorch, Jupyter."
       ]
     },
     "pce-pinn-pipelines": {

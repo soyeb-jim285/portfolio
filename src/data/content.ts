@@ -49,7 +49,7 @@ export const work = {
 
 export type Project = {
   slug: string; name: string; kicker: string; summary: string; body: string[];
-  image?: string; thumb?: string; loop?: string; images?: string[]; video?: { src: string; poster: string; caption: string }; size?: [number, number]; clips?: { src: string; poster: string; alt: string }[]; repo?: string; stars?: number; forks?: number; contributors?: number; stack: string[];
+  image?: string; thumb?: string; loop?: string; teaser?: { src: string; poster: string }; images?: string[]; video?: { src: string; poster: string; caption: string }; size?: [number, number]; clips?: { src: string; poster: string; alt: string }[]; repo?: string; stars?: number; forks?: number; contributors?: number; stack: string[];
   links: { label: string; href: string }[]; facts?: { label: string; value: string }[];
   // What people who used it said, quoted word for word and linked to the comment it came from.
   reception?: {
@@ -71,7 +71,7 @@ export const projects: Project[] = [
       'People from outside have contributed to it: native Markdown rendering in the preview panes, a background rclone mount for remote directories, unlocking password-protected archives on extract, Nix inputs, extra themes. Most installs come through the AUR package rather than the release assets.',
     ],
     // Screenshots from hyprfm.soyebjim.me, copied here on 2026-10-12.
-    image: '/assets/hyprfm-view-miller.webp', thumb: '/assets/hyprfm-view-miller-720.webp', loop: '/assets/hyprfm-loop.webp', size: [2000, 1250],
+    image: '/assets/hyprfm-view-miller.webp', thumb: '/assets/hyprfm-view-miller-720.webp', loop: '/assets/hyprfm-loop.webp', teaser: { src: '/assets/hyprfm-teaser.mp4', poster: '/assets/hyprfm-teaser.jpg' }, size: [2000, 1250],
     video: { src: '/assets/hyprfm-tour.mp4', poster: '/assets/hyprfm-tour.jpg', caption: 'HyprFM tour, 1.5 minutes, with sound' },
     clips: [
       { src: '/assets/hyprfm-split.mp4', poster: '/assets/hyprfm-split.jpg', alt: 'Split panes: copy across, with a conflict prompt' },
@@ -107,11 +107,33 @@ export const projects: Project[] = [
     ],
     // Intro cut and stills recorded from ocr.soyebjim.me after the October 2026 redesign.
     video: { src: '/assets/nnxray-intro.mp4', poster: '/assets/nnxray-intro.jpg', caption: 'Neural Network X-Ray intro, 21 seconds, with sound' },
-    image: '/assets/nnxray-network.webp', thumb: '/assets/nnxray-network-720.webp', loop: '/assets/nnxray-loop.webp', size: [1920, 1080],
+    image: '/assets/nnxray-network.webp', thumb: '/assets/nnxray-network-720.webp', loop: '/assets/nnxray-loop.webp', teaser: { src: '/assets/nnxray-teaser.mp4', poster: '/assets/nnxray-teaser.jpg' }, size: [1920, 1080],
     images: ['/assets/nnxray-feature-maps.webp', '/assets/nnxray-verdict.webp'],
     stack: ['Next.js 16', 'React 19', 'TypeScript', 'ONNX Runtime', 'WebAssembly', 'PyTorch'],
     links: [{ label: 'Live', href: 'https://ocr.soyebjim.me' }, { label: 'GitHub', href: 'https://github.com/soyeb-jim285/ocr-visualization-' }, { label: 'Model weights', href: 'https://huggingface.co/soyeb-jim285/ocr-visualization-models' }, { label: 'Dataset', href: 'https://huggingface.co/datasets/soyeb-jim285/ocr-handwriting-data' }],
     facts: [{ label: 'Classes', value: '146' }, { label: 'Training images', value: '~980K' }, { label: 'Epochs', value: '40' }, { label: 'Parameters', value: '1.7M, a 7 MB ONNX file' }, { label: 'Validation accuracy', value: '90.7%' }],
+  },
+  {
+    slug: 'ielts-practice', name: 'IELTS Practice', kicker: 'Speaking and Writing practice that pins each mistake to the second',
+    summary: 'IELTS practice on the web with native Android and iPhone apps: an examiner asks out loud, answers are scored against the band descriptors, and every pause, filler and grammar slip is marked in your own transcript.',
+    body: [
+      'You record a Speaking answer or write a timed essay. Speech is transcribed with the fillers kept (primed Whisper, or ElevenLabs Scribe), and fluency is measured from the word timings: speech rate, mean length of run, pause ratio, mid-clause pauses, fillers, repetitions and self-corrections. Each mistake is anchored to the word it happened on, so the transcript, the pace chart and the audio line up.',
+      'Writing gets a band per criterion, the three fixes that matter most, every error explained and the essay rewritten one band higher. Listening and Reading run as computer-style tests with highlights, notes and timers, and a full mock exam chains all four skills. Mistakes come back as SM-2 review cards. A live examiner can run the Speaking test over OpenAI Realtime or Gemini Live.',
+      'Bands come from a descriptor-anchored rater with a fitted calibration map. On a frozen test set of 41 published Cambridge and ielts.org essays, Writing lands at QWK 0.80 and a mean error of 0.52 bands; the Speaking curve, fitted on 66 labelled clips, has a leave-one-group-out error of 0.59. Those sets are small, scores run low at band 7.5 and above, and pronunciation is not judged from audio, so the app shows every band as an estimate with a range.',
+      'One TypeScript monorepo: React 19 and Vite on the web, Hono with Postgres and Drizzle on the server, shared scoring and speech logic in a core package, plus native Kotlin (Jetpack Compose) and SwiftUI apps that CI builds but that are not in the stores yet. It ships as one Docker image on Dokploy.',
+    ],
+    // Launch film and loop cut from the app's own launch video (Oct 2026); stills are post-redesign captures with the demo account cropped out.
+    video: { src: '/assets/ielts-launch.mp4', poster: '/assets/ielts-launch.jpg', caption: 'IELTS Practice launch film, 1 minute, with sound' },
+    image: '/assets/ielts-transcript.webp', thumb: '/assets/ielts-transcript-720.webp', loop: '/assets/ielts-loop.webp', teaser: { src: '/assets/ielts-teaser.mp4', poster: '/assets/ielts-teaser.jpg' }, size: [1056, 660],
+    images: ['/assets/ielts-pace.webp', '/assets/ielts-writing-fixes.webp'],
+    stack: ['TypeScript', 'React 19', 'Hono', 'Postgres', 'Drizzle', 'Kotlin', 'Jetpack Compose', 'SwiftUI', 'Whisper', 'OpenAI Realtime'],
+    links: [{ label: 'Live', href: 'https://ielts.soyebjim.me' }, { label: 'GitHub', href: 'https://github.com/soyeb-jim285/ielts-practice' }],
+    facts: [
+      { label: 'Writing score', value: 'QWK 0.80, mean error 0.52 bands on 41 held-out essays' },
+      { label: 'Question bank', value: '120 cue cards, 799 Part 1 and 3 questions, 220 Writing prompts' },
+      { label: 'Platforms', value: 'Web, Android (Kotlin), iPhone (SwiftUI)' },
+      { label: 'Tests', value: 'About 1,000 cases across web, server, Android and iOS' },
+    ],
   },
   {
     slug: 'hyprpdf', name: 'hyprpdf', kicker: 'PDF and office viewer with annotations',
@@ -142,13 +164,6 @@ export const projects: Project[] = [
     body: ['Swift. Grading is done by an LLM against the reference definition; scheduling follows the FSRS-6 spaced-repetition algorithm.'],
     stack: ['Swift', 'iOS', 'FSRS-6'],
     links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/gre-vocab-trainer' }],
-  },
-  {
-    slug: 'pc-e2co', name: 'PC-E2CO', kicker: 'Physics-constrained surrogate for CO2 storage',
-    summary: 'A physics-informed Embed-to-Control model for CO2 storage reservoirs, with per-well MLP observation heads (version 19).',
-    body: ['Latent dynamics learned under physical constraints so the surrogate stays plausible outside the training distribution. PyTorch, Jupyter.'],
-    stack: ['Python', 'PyTorch'],
-    links: [{ label: 'GitHub', href: 'https://github.com/soyeb-jim285/CCS_E2CO-RL' }],
   },
 ];
 

@@ -20,8 +20,8 @@ export function init() {
   const targets = document.querySelectorAll<HTMLElement>('.draw');
   if (reduced()) {
     targets.forEach(target => target.classList.add('in'));
-    // Looping clips wait for a press instead of playing on their own.
-    document.querySelectorAll<HTMLVideoElement>('video[autoplay]').forEach(video => { video.pause(); video.controls = true; });
+    // Looping clips wait for a press instead of playing on their own; inside a card link the poster stands in.
+    document.querySelectorAll<HTMLVideoElement>('video[autoplay]').forEach(video => { video.pause(); if (!video.closest('a')) video.controls = true; });
     return;
   }
   // Hidden until primed, so a stroke is never shown full-length before its figure scrolls in.

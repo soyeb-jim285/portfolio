@@ -18,6 +18,8 @@ const live = p.links.find((l) => l.label === 'Live')?.href;
 const isGh = (l: { href: string }) => l.href.startsWith('https://github.com/');
 const top = p.links.filter((l) => l.label === 'Live' || l.label === 'Site' || isGh(l)).sort((a, b) => Number(isGh(a)) - Number(isGh(b)));
 const alts: Record<string, string> = {
+  '/assets/ielts-pace.webp': 'Speaking pace in 10-second windows against the band-7 range, with every pause',
+  '/assets/ielts-writing-fixes.webp': 'Writing: the three fixes that matter most, each with a before and after',
   '/assets/nnxray-feature-maps.webp': 'All 64 pooled channels of the third convolution',
   '/assets/nnxray-verdict.webp': 'Softmax verdict with the runner-up classes',
 };
