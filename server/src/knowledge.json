@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T07:33:42.538Z",
+  "generatedAt": "2026-10-12T07:45:22.093Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -57,12 +57,12 @@
           "href": "https://trendshift.io/repositories/182310"
         }
       ],
-      "stars": 329,
-      "forks": 17,
+      "stars": 331,
+      "forks": 18,
       "facts": [
         {
           "label": "Stars",
-          "value": "329"
+          "value": "331"
         },
         {
           "label": "Trending",
@@ -77,8 +77,8 @@
           "value": "C++ and QML"
         }
       ],
-      "contributors": 11,
-      "outsideContributors": 10
+      "contributors": 12,
+      "outsideContributors": 11
     },
     {
       "slug": "neural-network-x-ray",

@@ -340,7 +340,7 @@
     {
       "name": "HyprFM",
       "repo": "https://github.com/soyeb-jim285/hyprfm",
-      "stars": 329,
+      "stars": 331,
       "language": "C++",
       "src": ["gh-hyprfm", "gh-api-repos", "linuxlinks"],
       "conf": "verified",
@@ -362,7 +362,7 @@
         "unique_cloners_14d": 350,
         "clones_14d": 521,
         "repo_views_14d": 854,
-        "external_contributors": 10,
+        "external_contributors": 11,
         "external_commits": 32,
         "reddit": { "r/hyprland": { "upvotes": 675, "comments": 56, "views": "67K" }, "r/unixporn": { "upvotes": 70, "comments": 9, "views": "18K" } },
         "src": ["gh-traffic", "reddit-threads"],
@@ -413,7 +413,7 @@
     "account_created": { "v": "2018-04-30", "src": ["gh-api-user"], "conf": "verified" },
     "public_repos": { "v": 57, "src": ["gh-api-user"], "conf": "verified" },
     "non_fork_repos": { "v": 39, "src": ["gh-api-repos"], "conf": "verified" },
-    "total_stars": { "v": 334, "src": ["gh-api-repos"], "conf": "verified", "note": "Sum across public repos; refreshed daily by scripts/update-stars.mjs." },
+    "total_stars": { "v": 336, "src": ["gh-api-repos"], "conf": "verified", "note": "Sum across public repos; refreshed daily by scripts/update-stars.mjs." },
     "followers": { "v": 3, "src": ["gh-api-user"], "conf": "verified" },
     "achievements": { "v": ["Pull Shark", "Arctic Code Vault Contributor"], "src": ["gh-profile"], "conf": "reported" }
   },
