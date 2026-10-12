@@ -41,6 +41,8 @@ jobs:
       - name: Refuse a resume longer than one page
         if: steps.moved.outputs.resume == 'true'
         run: |
+          # The runner image ships a stale package index; without the update, apt 404s on poppler.
+          sudo apt-get update -qq
           sudo apt-get install -y -qq poppler-utils >/dev/null
           pages=$(pdfinfo outputs/Soyeb_Pervez_Jim_Resume.pdf | awk '/^Pages:/ {print $2}')
           echo "resume pages: $pages"
