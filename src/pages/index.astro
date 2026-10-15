@@ -12,7 +12,7 @@ const [startYear, startMonth] = work.start.split('-').map(Number);
 const today = new Date();
 const monthsAtWork = (today.getFullYear() - startYear) * 12 + (today.getMonth() + 1 - startMonth);
 const proofs = [
-  { value: String(monthsAtWork), since: work.start, label: `months at ${work.employer} as the main engineer on ${work.product}, its AI shopping agent`, href: '/work/' },
+  { value: String(monthsAtWork), since: work.start, label: `months at ${work.employer} building ${work.product}, its AI shopping agent`, href: '/work/' },
   { value: String(hyprfm.stars), gh: hyprfm.repo, label: `GitHub stars on HyprFM, with ${(hyprfm.contributors ?? 1) - 1} outside contributors`, href: '/projects/hyprfm/' },
   { value: '1714', label: 'Codeforces peak, Expert. ICPC Dhaka regional finalist twice', href: '/record/' },
   { value: '2', label: 'journal papers on physics-informed ML. One published by Elsevier, one under review', href: '/research/' },
@@ -47,7 +47,7 @@ const proofs = [
   <section class="split r">
     <h2>What I do</h2>
     <div>
-      <p class="sub">At <a href={work.url} target="_blank" rel="noopener">{work.employer}</a> I am the {work.ownership} behind {work.product}, {work.context}: streamed chat, commerce tools, product search and image and voice input.</p>
+      <p class="sub">At <a href={work.url} target="_blank" rel="noopener">{work.employer}</a> I build {work.product}, {work.context}: streamed chat, commerce tools, product search and image and voice input.</p>
       <p class="sub">On the side: biosignal classifiers for affective-computing challenges, and Linux desktop tooling in C++ and QML.</p>
       <ul class="specs">
         <li><span>day job</span><span>LLM agents, tool calling, retrieval, caching, evals</span></li>

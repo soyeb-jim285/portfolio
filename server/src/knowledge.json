@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T10:44:26.440Z",
+  "generatedAt": "2026-10-15T18:38:49.810Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -267,9 +267,8 @@
     "period": "June 2025 to present",
     "remote": true,
     "context": "a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps",
-    "ownership": "main engineer",
     "bullets": [
-      "Main engineer on Apa, the AI shopping agent inside Fuego's native Shopify apps: streamed chat, configured per brand.",
+      "Building Apa, the AI shopping agent inside Fuego's native Shopify apps: streamed chat, configured per brand.",
       "Tool calling for product search, collections, product details, reviews, recommendations and order help.",
       "Semantic product search over live store catalogs.",
       "Image and voice input alongside text, with results streamed back as product cards.",

@@ -23,7 +23,7 @@ const knowledge = {
     slug, name, summary, stack, links, stars, forks, facts,
     ...(contributors ? { contributors, outsideContributors: contributors - 1 } : {}),
   })),
-  work: { employer: work.employer, product: work.product, title: work.title, period: work.period, remote: work.remote, context: work.context, ownership: work.ownership, bullets: work.bullets, stack: work.stack },
+  work: { employer: work.employer, product: work.product, title: work.title, period: work.period, remote: work.remote, context: work.context, bullets: work.bullets, stack: work.stack },
   research: research.map(({ slug, title, short, venue, status, finding, results }) => ({ slug, title, short, venue, status, finding, results })),
   skills,
   details: Object.fromEntries([

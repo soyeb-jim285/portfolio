@@ -36,9 +36,8 @@ export const work = {
   context: 'a multi-tenant, brand-configurable conversational shopping assistant embedded in native Shopify apps',
   // Fuego's engineering and its numbers are confidential. This describes what the product does for a
   // shopper, at the level Fuego's own marketing does, and nothing about how it is built or how much it handles.
-  ownership: 'main engineer',
   bullets: [
-    'Main engineer on Apa, the AI shopping agent inside Fuego\'s native Shopify apps: streamed chat, configured per brand.',
+    'Building Apa, the AI shopping agent inside Fuego\'s native Shopify apps: streamed chat, configured per brand.',
     'Tool calling for product search, collections, product details, reviews, recommendations and order help.',
     'Semantic product search over live store catalogs.',
     'Image and voice input alongside text, with results streamed back as product cards.',

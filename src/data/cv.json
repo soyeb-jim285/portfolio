@@ -200,10 +200,10 @@
         "note": "Company marketing copy — client list is their claim, not independently checked."
       },
       "ownership": {
-        "v": "Main engineer on Apa.",
+        "v": "Builds Apa.",
         "src": ["user"],
         "conf": "verified",
-        "note": "Say 'main engineer' or 'built and own'. Never 'led': there was no team to lead. Do not publish the team size."
+        "note": "Say 'build' or 'built'. Never 'main engineer' or 'led': there was no team to lead. Do not publish the team size."
       },
       "confidentiality": {
         "v": "Fuego's CTO asked that engineering details stay confidential (stated by Soyeb, 2026-09-18).",
