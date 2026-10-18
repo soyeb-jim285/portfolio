@@ -26,6 +26,7 @@ const index = [
   { n: '6', name: 'Record', href: '/record/' },
   { n: '7', name: 'Contact', href: '/contact/' },
   { n: '8', name: 'Assistant', href: '/assistant/' },
+  { n: '9', name: 'Log', href: '/log/' },
 ];
 const cur = sheet.split('.')[0];
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -97,7 +98,7 @@ const flip = {
       <div class="field" id="field"><slot /></div>
       <div class="tb">
         <div>DRAWN BY<b>S. P. Jim</b></div>
-        <div>SHEET<b>{sheet} of 8</b></div>
+        <div>SHEET<b>{sheet} of 9</b></div>
         <div>REV<b>2026-09</b></div>
         <div>{stamp.k}<b data-gh-repo={stamp.gh} data-gh-field={stamp.gh ? 'stars' : undefined}>{stamp.v}</b></div>
         <div class="big">{big}</div>

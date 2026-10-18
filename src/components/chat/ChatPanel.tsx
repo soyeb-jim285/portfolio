@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowRight, ArrowUp, AudioLines, CalendarClock, Check, Compass, Copy, Download, ExternalLink, FileText, Mail, MessageSquare, Mic, RotateCcw, Send, Square, ThumbsDown, ThumbsUp, Trash2, X } from 'lucide-react';
 import Diagram from './Diagram';
 import ArtifactView from './ArtifactView';
+import GeneratedUI from './GeneratedUI';
 import { Button } from '../ui/button';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Message, MessageActions, MessageContent, MessageResponse, preloadResponse } from '../ai-elements/message';
-import { artifactLink, confirmBooking, createSession, SessionExpired, proposeSlot, sendContact, streamAnswer, transcribeAudio, type Artifact, type Availability, type BookingProposal, type ContactDraft, type RequestedUiAction, type Slot, type SourceCitation, type ShownImage, type ToolActivity, type Usage, type ChatMessage } from '../../lib/chat-stream';
+import { artifactLink, confirmBooking, createSession, SessionExpired, proposeSlot, sendContact, streamAnswer, transcribeAudio, type Artifact, type Availability, type BookingProposal, type ContactDraft, type GeneratedUi, type RequestedUiAction, type Slot, type SourceCitation, type ShownImage, type ToolActivity, type Usage, type ChatMessage } from '../../lib/chat-stream';
 import { clearConversation, loadConversation, saveConversation } from '../../lib/chat-history';
 import { workingLabel } from '../../lib/chat-progress';
 import { acknowledgeAction, runAction, type ActionStatus } from '../../lib/site-actions';
@@ -25,6 +26,7 @@ type Entry = {
   error?: string;
   vote?: 'up' | 'down';
   images?: ShownImage[];
+  ui?: GeneratedUi;
   // A voice note keeps its recording and its transcript together; the transcript is what was sent.
   audio?: { blob: Blob; mediaType: string; seconds: number; transcript: string; model: string };
 };
@@ -316,6 +318,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
       proposal: (proposal: BookingProposal) => patch(entry => ({ ...entry, proposals: [...(entry.proposals ?? []), proposal] })),
       usage: (usage: Usage) => patch(entry => ({ ...entry, usage })),
       image: (image: ShownImage) => patch(entry => ({ ...entry, images: [...(entry.images ?? []), image] })),
+      ui: (ui: GeneratedUi) => patch(entry => ({ ...entry, ui })),
       action: (request: RequestedUiAction) => {
         patch(entry => ({ ...entry, actions: [...(entry.actions ?? []), request] }));
         if (performed.current.has(request.id)) return;
@@ -579,6 +582,7 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
                   <span aria-hidden="true" /><span className="chat-loading-label" key={workingLabel(entry.tools, Boolean(entry.content))}>{workingLabel(entry.tools, Boolean(entry.content))}</span>
                 </p>}
               </MessageContent>
+              {entry.ui && <GeneratedUI ui={entry.ui} />}
               {/* Steps and sources sit under the answer. The trace is open while the model works and folds away as
                   the first words arrive, so the answer never streams above a wall of code. */}
               {(!!entry.tools?.length || !!entry.sources?.length || entry.usage) && <details className="chat-trace" open={entry.state === 'streaming' && !entry.content}>

@@ -1,0 +1,139 @@
+---
+// Variant 3, "Index": the sheet carries its own contents down the left, tracking the reader, with
+// a progress rule under it. Figures are Recharts components that hydrate when they scroll in.
+import '@fontsource/ibm-plex-serif/400.css';
+import '@fontsource/ibm-plex-serif/400-italic.css';
+import '@fontsource/ibm-plex-serif/600.css';
+import '../../styles/log-shared.css';
+import '../../styles/log-v3.css';
+import Layout from '../../layouts/SchematicLayout.astro';
+import VariantSwitch from '../../components/log/VariantSwitch.astro';
+import RechartsFigure from '../../components/log/RechartsFigure';
+import { figures, post, sections } from '../../data/log/startup-halved';
+import { palette } from '../../lib/log-palette';
+
+const contents = sections.filter((section) => section.title);
+const swatch = (id: keyof typeof figures, i: number) => {
+  const figure = figures[id];
+  if (figure.stacked) return palette.stack[i];
+  return i === 0 && figure.series.length > 1 ? palette.dim : palette.accent;
+};
+const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(v < 10 ? 2 : 1));
+---
+<Layout
+  title={`${post.title}, layout 3, Soyeb Pervez Jim`}
+  description={post.dek}
+  sheet="9.3"
+  big="Log V3"
+  stamp={{ k: 'Layout', v: 'Index' }}
+>
+  <VariantSwitch v={3} />
+
+  <div class="vpost vindex" data-anchor="log-post">
+    <nav class="toc" aria-label="On this sheet">
+      <span>On this sheet</span>
+      <ol>
+        {contents.map((section) => (
+          <li><a href={`#${section.id}`} data-for={section.id}><span>{section.n}</span>{section.title}</a></li>
+        ))}
+      </ol>
+      <div class="bar"><i></i></div>
+    </nav>
+
+    <article class="doc">
+      <section class="head">
+        <h1 class="title">{post.title}</h1>
+        <p class="sub">{post.dek}</p>
+        <p class="vby">
+          <span>Sheet <b>9.3</b></span>
+          <span>Written <b>{post.when}</b></span>
+          <span>About <b>{post.subject}</b></span>
+          <span>Reading <b>{post.minutes} min</b></span>
+        </p>
+      </section>
+
+      {sections.map((section) => (
+        <>
+          {section.title && (
+            <section class="sec" id={section.id}>
+              <span class="num">Section {section.n}</span>
+              <h2 class="t2">{section.title}</h2>
+              {section.sub && <p class="sub">{section.sub}</p>}
+            </section>
+          )}
+          {section.blocks.map((block) => {
+            if (block.t === 'p') return <p class={block.lede ? 'lede' : 'copy'} set:html={block.text} />;
+            if (block.t === 'h') return <h3>{block.text}</h3>;
+            if (block.t === 'list') return <ul>{block.items.map((item) => <li set:html={item} />)}</ul>;
+            if (block.t === 'quote') return <p class="vquote">{block.text}</p>;
+            if (block.t === 'note') return (
+              <aside class="vnote">
+                <span>{block.title}</span>
+                {block.paras.map((para) => <p set:html={para} />)}
+              </aside>
+            );
+            if (block.t === 'stats') return (
+              <div class="vstats">{block.items.map((item) => <div><strong>{item.value}</strong><span>{item.label}</span></div>)}</div>
+            );
+            if (block.t === 'table') return (
+              <div class="tw">
+                <table>
+                  <thead><tr>{block.head.map((cell) => <th>{cell}</th>)}</tr></thead>
+                  <tbody>{block.rows.map((row) => <tr>{row.map((cell, i) => <td class={i === row.length - 1 ? 'q' : 'm'} set:html={cell} />)}</tr>)}</tbody>
+                </table>
+              </div>
+            );
+            const figure = figures[block.id];
+            return (
+              <figure class="vfig">
+                <div class="vfig-head">
+                  <span class="no">{figure.fig}</span>
+                  <b>{figure.title}</b>
+                  <span class="unit">{figure.unit}</span>
+                </div>
+                <p class="vfig-note">{figure.note}</p>
+                {figure.series.length > 1 && (
+                  <p class="vkey">{figure.series.map((name, i) => <span><i style={`background:${swatch(block.id, i)}`}></i>{name}</span>)}</p>
+                )}
+                <RechartsFigure figure={figure} client:visible />
+                <figcaption>
+                  <p><b>{figure.fig}</b>{figure.caption}</p>
+                  <details class="vtable">
+                    <summary>The numbers behind this figure</summary>
+                    <div class="tw">
+                      <table>
+                        <thead><tr><th></th>{figure.series.map((name) => <th class="nw">{name} ({figure.unit})</th>)}</tr></thead>
+                        <tbody>
+                          {figure.rows.map((row) => (
+                            <tr>
+                              <td>{row.label}{row.tag && `, ${row.tag}`}</td>
+                              {row.values.map((v) => <td>{v == null ? '—' : fmt(v)}</td>)}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                </figcaption>
+              </figure>
+            );
+          })}
+        </>
+      ))}
+
+      <p class="cap">Layout 3 of 5. Figures are Recharts components hydrated on view; everything else on the sheet is static HTML.</p>
+
+      <nav class="pn" aria-label="Previous and next sheet">
+        <a href="/log/v2/"><small>Previous layout</small><b>V2 Column</b></a>
+        <a href="/log/v4/"><small>Next layout</small><b>V4 Console</b></a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    import { trackSections } from '../../scripts/log-reveal';
+    const start = () => trackSections('.vindex .toc a[data-for]', '.vindex .sec[id]', '.vindex .toc .bar');
+    start();
+    document.addEventListener('astro:page-load', start);
+  </script>
+</Layout>

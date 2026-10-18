@@ -10,6 +10,14 @@
   --on-accent: #17130c;
   --display: "Big Shoulders Display Variable", Impact, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* The reading face, used only for long-form prose on the log sheets. */
+  --read: "IBM Plex Serif", Georgia, serif;
+  /* Chart fills. --c0 is the recessive "before" bar; c1..c3 are one accent hue stepped
+     light to dark, so a stacked bar reads as parts of one measure and not as four brands. */
+  --c0: #6c7f9c;
+  --c1: #e8933f;
+  --c2: #f6c48b;
+  --c3: #a6621f;
 }
 * { box-sizing: border-box; }
 html { background: var(--bg); color-scheme: dark; }
@@ -348,4 +356,138 @@ tr:hover td { background: rgba(201, 214, 234, .04); }
   td .thumb { width: 96px; }
   .pn a:last-child { text-align: left; }
   .is-sent .cd-form::after { font-size: 44px; top: 70px; right: 14px; }
+}
+
+/* ─── log sheet: long-form posts ──────────────────────────────────────────────
+   A sheet of prose is set like a printed report: one reading column of Plex Serif
+   at a measure that does not need a head turn, and a rail beside it carrying the
+   things that would otherwise interrupt the read. The rail is a float rather than
+   a grid track, so a note lands next to the paragraph it belongs to instead of at
+   the top of whichever row a grid put it in. Under 1100px the rail unfloats and
+   its contents fall back into the flow. */
+.post {
+  --rail: 236px;
+  --gutter: 40px;
+  --measure: 66ch;
+  max-width: calc(var(--measure) + var(--gutter) + var(--rail));
+  display: flow-root;
+  font-family: var(--read);
+}
+.post > * + * { margin-top: clamp(26px, 3.4vw, 40px); }
+
+/* the reading column */
+.prose { max-width: var(--measure); font-size: 19px; line-height: 1.65; }
+.prose p { margin: 0; }
+.prose p + p, .prose p + ul, .prose ul + p { margin-top: 1.05em; }
+.prose ul, .prose ol { margin: 0; padding-left: 24px; }
+.prose li + li { margin-top: .55em; }
+.prose li::marker { color: var(--accent); }
+.prose b, .prose strong { font-weight: 600; color: var(--ink); }
+.prose a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: rgba(232, 147, 63, .45); }
+.prose a:hover { text-decoration-color: var(--accent); }
+/* Code keeps the mono face it is written in, sized down to sit on the serif line. */
+.prose code, .cap code, td code, .note code { font-family: var(--mono); font-size: .84em; background: var(--bg-2); border: 1px solid var(--line); padding: 1px 5px; }
+/* The opening paragraphs carry the piece, so they are set a size up. */
+.lede { max-width: var(--measure); font-family: var(--read); font-size: 22px; line-height: 1.55; }
+.lede p + p { margin-top: .8em; }
+
+/* A subsection head belongs to the prose, not to the poster: serif, not display. */
+.t3 { font-family: var(--read); font-size: 25px; font-weight: 600; line-height: 1.25; letter-spacing: 0; text-transform: none; margin: 0; max-width: var(--measure); }
+.prose > .t3 { margin-top: 1.6em; }
+.prose > .t3 + p { margin-top: .5em; }
+
+/* A margin note may run longer than the paragraph it sits beside, but it must never spill past
+   the end of its own section: everything that owns a band of the sheet clears the rail first. */
+.post > .sec, .post > .chart, .post > .tw, .post > .nums, .post > .pull, .post > .toc, .post > .pn { clear: both; }
+
+/* A section head rules the full width of the sheet and hangs its number in the rail. The head
+   itself is only as wide as the reading column, so a float inside it lands in the rail; the rule
+   is drawn by a child that is allowed to overrun that width. */
+.sec { max-width: var(--measure); }
+.sec::before { content: ""; display: block; height: 0; width: calc(var(--measure) + var(--gutter) + var(--rail)); border-top: 1px solid var(--line-2); margin-bottom: 20px; }
+.sec h2 { font-size: clamp(32px, 4vw, 46px); }
+.sec .sub { font-family: var(--read); font-size: 18px; margin-top: 12px; }
+
+/* Anything that lives in the rail: a section number, a short aside, a figure note. */
+.marginal {
+  float: right; clear: right; width: var(--rail);
+  margin: 6px calc(-1 * (var(--rail) + var(--gutter))) 20px var(--gutter);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.5; color: var(--muted);
+}
+.marginal b { display: block; color: var(--ink); font-weight: 500; }
+.marginal .num { color: var(--accent); letter-spacing: .12em; text-transform: uppercase; }
+.marginal.corr { border-left: 2px solid var(--accent); padding-left: 14px; }
+.marginal.corr > span:first-child { display: block; color: var(--accent); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 6px; }
+
+/* A correction long enough to be its own argument stays in the reading column, marked
+   by the accent rule rather than exiled to the margin. */
+.note { border-left: 2px solid var(--muted); padding: 2px 0 2px 20px; max-width: var(--measure); font-family: var(--read); font-size: 17px; line-height: 1.6; display: grid; gap: 10px; }
+.note.corr { border-left-color: var(--accent); }
+.note > span:first-child { font-family: var(--mono); font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+.note.corr > span:first-child { color: var(--accent); }
+.note p { margin: 0; }
+
+.pull { max-width: calc(var(--measure) + 6ch); font-family: var(--read); font-size: 27px; line-height: 1.35; color: var(--ink); border-left: 2px solid var(--accent); padding-left: 22px; }
+
+.byline { display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: var(--mono); font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 10px 0; }
+.byline b { color: var(--ink); font-weight: 500; }
+
+/* Contents: a sheet index for one sheet. */
+.toc { border: 1px solid var(--line-2); padding: 16px 18px; display: grid; gap: 8px; max-width: 460px; font-family: var(--mono); font-size: 13.5px; }
+.toc span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+.toc ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.toc a { color: var(--ink); }
+.toc a:hover { color: var(--accent); }
+
+/* ─── figures ─────────────────────────────────────────────────────────────────
+   A figure is not a card: it is a band of the sheet, opened by a hairline, with the
+   plot drawn straight onto the paper and the caption closing it underneath. */
+.chart { margin: 0; display: grid; gap: 12px; border-top: 1px solid var(--line-2); padding-top: 16px; }
+.chart-head { display: grid; gap: 4px; max-width: var(--measure); }
+.chart-head b { font-family: var(--display); font-size: 27px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; line-height: 1; }
+.chart-head span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; margin-right: 7px; vertical-align: -1px; }
+/* Chart.js sizes its canvas to this box, so the box owns the height. */
+.cwrap { position: relative; width: 100%; }
+.chart figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; border-top: 1px solid var(--line); padding-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.chart figcaption p { max-width: 62ch; }
+.chart figcaption b { color: var(--accent); font-weight: 500; margin-right: 10px; letter-spacing: .08em; }
+/* Every figure carries its own numbers, for a screen reader and for anyone who wants
+   to check the drawing against the data. */
+.tview { font-family: var(--mono); font-size: 13px; }
+.tview summary { cursor: pointer; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+.tview summary:hover { color: var(--accent); }
+.tview .tw { margin-top: 12px; }
+.post .tw table { font-family: var(--mono); }
+
+/* the index sheet's list of entries */
+.posts { display: grid; gap: 0; border-top: 1px solid var(--line-2); }
+.posts a { display: grid; grid-template-columns: 116px 1fr auto; gap: 18px; padding: 20px 6px; border-bottom: 1px solid var(--line); color: var(--ink); align-items: baseline; }
+.posts a:hover { text-decoration: none; background: rgba(201, 214, 234, .04); }
+.posts .when { font-family: var(--mono); color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.posts b { font-family: var(--display); font-size: clamp(28px, 3vw, 36px); font-weight: 700; text-transform: uppercase; letter-spacing: .02em; line-height: 1; display: block; }
+.posts .dek { font-family: var(--read); color: var(--muted); font-size: 17px; line-height: 1.5; margin-top: 10px; display: block; max-width: 62ch; }
+.posts .len { font-family: var(--mono); color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  /* Without the rail the sheet is one column, and the post is as wide as the frame allows. */
+  .post { max-width: 100%; }
+  .sec::before { width: 100%; }
+  /* No room for a rail: its contents rejoin the flow, keeping the rule that marked them. */
+  .marginal { float: none; width: auto; max-width: var(--measure); margin: 0 0 4px; border-left: 2px solid var(--line-2); padding-left: 14px; }
+  .marginal.corr { border-left-color: var(--accent); }
+  /* A bare section number is a label, not a note: it keeps no rule. */
+  .marginal:has(.num) { border-left: 0; padding-left: 0; }
+  .marginal + * { margin-top: 18px; }
+}
+@media (max-width: 767px) {
+  .post { --measure: 100%; }
+  .prose { font-size: 17.5px; }
+  .lede { font-size: 19px; }
+  .pull { font-size: 22px; padding-left: 16px; }
+  .chart-head b { font-size: 23px; }
+  .posts a { grid-template-columns: 1fr; gap: 6px; }
+  .posts .when { order: -1; }
+  .posts .dek { font-size: 16px; }
 }

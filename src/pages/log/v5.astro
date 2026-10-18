@@ -1,0 +1,150 @@
+---
+// Variant 5, "Pinned": the argument scrolls on the left while the figure it is about stays put on
+// the right until the next one takes over. The movement is the pinning itself, plus a quiet fade
+// as a figure becomes the live one. Plates are computed with d3-scale during the build.
+import '@fontsource/ibm-plex-serif/400.css';
+import '@fontsource/ibm-plex-serif/400-italic.css';
+import '@fontsource/ibm-plex-serif/600.css';
+import '../../styles/log-shared.css';
+import '../../styles/log-v5.css';
+import Layout from '../../layouts/SchematicLayout.astro';
+import VariantSwitch from '../../components/log/VariantSwitch.astro';
+import { figures, post, sections } from '../../data/log/startup-halved';
+import type { Block, FigureId } from '../../data/log/startup-halved';
+import { paperFigure } from '../../lib/paper-chart';
+import { palette } from '../../lib/log-palette';
+
+const plates = Object.fromEntries(Object.entries(figures).map(([id, figure]) => [id, paperFigure(figure, 560)]));
+const swatch = (id: FigureId, i: number) => {
+  const figure = figures[id];
+  if (figure.stacked) return palette.stack[i];
+  return i === 0 && figure.series.length > 1 ? palette.dim : palette.accent;
+};
+const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(v < 10 ? 2 : 1));
+
+// A figure and the paragraphs that argue for it travel together: the prose runs down the left,
+// the figure is pinned beside it for exactly as long as that prose lasts.
+type Row = { kind: 'pair'; prose: Block[]; id: FigureId } | { kind: 'flow'; blocks: Block[] };
+const rowsOf = (blocks: Block[]): Row[] => {
+  const rows: Row[] = [];
+  let buffer: Block[] = [];
+  for (const block of blocks) {
+    if (block.t === 'fig') { rows.push({ kind: 'pair', prose: buffer, id: block.id }); buffer = []; }
+    else buffer.push(block);
+  }
+  if (buffer.length) rows.push({ kind: 'flow', blocks: buffer });
+  return rows;
+};
+---
+<Layout
+  title={`${post.title}, layout 5, Soyeb Pervez Jim`}
+  description={post.dek}
+  sheet="9.5"
+  big="Log V5"
+  stamp={{ k: 'Layout', v: 'Pinned' }}
+>
+  <VariantSwitch v={5} />
+
+  <article class="vpost vpin" data-anchor="log-post">
+    <section class="head">
+      <h1 class="title">{post.title}</h1>
+      <p class="sub">{post.dek}</p>
+      <p class="vby">
+        <span>Sheet <b>9.5</b></span>
+        <span>Written <b>{post.when}</b></span>
+        <span>About <b>{post.subject}</b></span>
+        <span>Reading <b>{post.minutes} min</b></span>
+      </p>
+    </section>
+
+    {sections.map((section) => (
+      <>
+        {section.title && (
+          <section class="sec" id={section.id}>
+            <span class="num">Section {section.n}</span>
+            <h2 class="t2">{section.title}</h2>
+            {section.sub && <p class="sub">{section.sub}</p>}
+          </section>
+        )}
+        {rowsOf(section.blocks).map((row) => {
+          const render = (block: Block) => {
+            if (block.t === 'p') return <p class={block.lede ? 'lede' : 'copy'} set:html={block.text} />;
+            if (block.t === 'h') return <h3>{block.text}</h3>;
+            if (block.t === 'list') return <ul>{block.items.map((item) => <li set:html={item} />)}</ul>;
+            if (block.t === 'quote') return <p class="vquote">{block.text}</p>;
+            if (block.t === 'note') return (
+              <aside class="vnote">
+                <span>{block.title}</span>
+                {block.paras.map((para) => <p set:html={para} />)}
+              </aside>
+            );
+            if (block.t === 'stats') return (
+              <div class="vstats">{block.items.map((item) => <div><strong>{item.value}</strong><span>{item.label}</span></div>)}</div>
+            );
+            if (block.t === 'table') return (
+              <div class="tw">
+                <table>
+                  <thead><tr>{block.head.map((cell) => <th>{cell}</th>)}</tr></thead>
+                  <tbody>{block.rows.map((line) => <tr>{line.map((cell, i) => <td class={i === line.length - 1 ? 'q' : 'm'} set:html={cell} />)}</tr>)}</tbody>
+                </table>
+              </div>
+            );
+            return null;
+          };
+
+          if (row.kind === 'flow') return <div class="band">{row.blocks.map(render)}</div>;
+          const figure = figures[row.id];
+          return (
+            <div class="pair">
+              <div class="prose">{row.prose.map(render)}</div>
+              <div class="side">
+                <p class="rule"><b>{figure.fig}</b>{figure.unit}</p>
+                <figure class="vfig">
+                  <div class="vfig-head"><b>{figure.title}</b></div>
+                  <p class="vfig-note">{figure.note}</p>
+                  {figure.series.length > 1 && (
+                    <p class="vkey">{figure.series.map((name, i) => <span><i style={`background:${swatch(row.id, i)}`}></i>{name}</span>)}</p>
+                  )}
+                  <div set:html={plates[row.id]} />
+                  <figcaption>
+                    <p><b>{figure.fig}</b>{figure.caption}</p>
+                    <details class="vtable">
+                      <summary>Tabulated</summary>
+                      <div class="tw">
+                        <table>
+                          <thead><tr><th></th>{figure.series.map((name) => <th class="nw">{name} ({figure.unit})</th>)}</tr></thead>
+                          <tbody>
+                            {figure.rows.map((line) => (
+                              <tr>
+                                <td>{line.label}{line.tag && `, ${line.tag}`}</td>
+                                {line.values.map((v) => <td>{v == null ? '—' : fmt(v)}</td>)}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  </figcaption>
+                </figure>
+              </div>
+            </div>
+          );
+        })}
+      </>
+    ))}
+
+    <p class="cap">Layout 5 of 5. Plates computed with d3-scale and d3-shape at build time and written out as SVG; the browser runs no chart code.</p>
+
+    <nav class="pn" aria-label="Previous and next sheet">
+      <a href="/log/v4/"><small>Previous layout</small><b>V4 Console</b></a>
+      <a href="/log/"><small>Back, sheet 9</small><b>Log index</b></a>
+    </nav>
+  </article>
+
+  <script>
+    import { reveal } from '../../scripts/log-reveal';
+    const start = () => reveal('.vpin .pair .vfig', { threshold: 0.2 });
+    start();
+    document.addEventListener('astro:page-load', start);
+  </script>
+</Layout>

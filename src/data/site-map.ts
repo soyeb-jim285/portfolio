@@ -23,6 +23,8 @@ export const siteTargets: SiteTarget[] = [
   { id: 'research-movement', route: '/research/', anchor: 'research-movement', label: 'Movement intent study', description: 'MUMIDC challenge: EEG, EMG and IMU movement-intent classification.' },
   { id: 'projects', route: '/projects/', anchor: 'projects-list', label: 'Project list', description: 'Table of every project with stack and links.' },
   { id: 'record', route: '/record/', anchor: 'record-table', label: 'Record sheet', description: 'Contests, olympiads, ratings and publications.' },
+  { id: 'log', route: '/log/', anchor: 'log-list', label: 'Log sheet', description: 'Index of written entries: profiling and optimisation write-ups with their measurements.' },
+  { id: 'log-startup-halved', route: '/log/startup-halved/', anchor: 'log-post', label: 'Startup, halved', description: 'Log entry on cutting HyprFM startup from 336 ms to 163 ms and memory from 184 MB to 103 MB, including the four measurements that turned out to be wrong.' },
   { id: 'contact', route: '/contact/', anchor: 'contact-form', label: 'Contact sheet', description: 'Contact details and the message form.' },
   { id: 'contact-dialog', route: '', anchor: '', label: 'Message dialog', action: 'contact', description: 'Open the message dialog over the current page so the visitor can write to Jim.' },
   ...projects.map(project => ({

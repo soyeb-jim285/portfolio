@@ -1,8 +1,9 @@
-// Static sitemap. Fourteen URLs is not worth an integration.
+// Static sitemap. Sixteen URLs is not worth an integration.
 import type { APIRoute } from 'astro';
 import { projects } from '../data/content';
+import { posts } from '../data/posts';
 
-const routes = ['/', '/work/', '/research/', '/projects/', '/record/', '/contact/', '/assistant/', ...projects.map((p) => `/projects/${p.slug}/`)];
+const routes = ['/', '/work/', '/research/', '/projects/', '/record/', '/contact/', '/assistant/', '/log/', ...posts.map((p) => `/log/${p.slug}/`), ...projects.map((p) => `/projects/${p.slug}/`)];
 
 export const GET: APIRoute = ({ site }) => new Response(
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${

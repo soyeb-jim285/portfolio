@@ -1,0 +1,42 @@
+---
+// The whole story in one figure: launch to a mapped window, home directory, after each group of
+// work. Same Chart.js theme as the bar figures, drawn as a line because the x axis is time.
+import type { ChartSpec } from '../../scripts/charts';
+const points = [
+  { ms: 336, when: '30 Aug', what: ['baseline'] },
+  { ms: 194, when: '19 Sep', what: ['renderer, lazy UI,', 'lighter models'] },
+  { ms: 180, when: '20 Sep', what: ['full benchmark', 'as reference'] },
+  { ms: 170, when: '20 Sep', what: ['collation keys,', 'readdir, warm Vulkan'] },
+  { ms: 163, when: '20 Sep', what: ['font stack', 'on a worker'] },
+];
+const spec: ChartSpec = {
+  kind: 'line',
+  labels: points.map((p) => [p.when, ...p.what]),
+  series: [{ name: 'map, home', data: points.map((p) => p.ms), fill: 'accent' }],
+  unit: 'ms',
+  max: 360,
+};
+---
+<figure class="chart">
+  <div class="chart-head">
+    <b>336 down to 163</b>
+    <span>Launch to a mapped window, home directory, one AMD laptop under Hyprland.</span>
+  </div>
+  <div class="cwrap" style="height:320px">
+    <canvas data-chart={JSON.stringify(spec)} role="img" aria-label="Startup time falling from 336 ms on 30 August to 163 ms on 20 September, in five steps. The same figures are in the table below."></canvas>
+  </div>
+  <figcaption>
+    <p><b>FIG. 1</b>Lower is better. Each point is the median of at least seven runs, round robin against the other builds, one discarded warm-up each.</p>
+  </figcaption>
+  <details class="tview">
+    <summary>The numbers behind this chart</summary>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Date</th><th>What landed</th><th class="nw">map, home (ms)</th></tr></thead>
+        <tbody>
+          {points.map((p) => <tr><td class="nw">{p.when} 2026</td><td class="m">{p.what.join(' ')}</td><td class="q">{p.ms}</td></tr>)}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</figure>

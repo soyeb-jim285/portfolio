@@ -1,0 +1,36 @@
+/* Variant 3, "Index". The sheet carries its own index down the left, the way the drawing set
+   carries one across the top, and it tracks the reader. Motion: a progress rule under the sheet
+   index, and the current entry slides its marker. */
+.vindex { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: clamp(28px, 4vw, 56px); align-items: start; }
+.vindex .toc { position: sticky; top: 24px; align-self: start; max-height: calc(100dvh - 80px); overflow: auto; border: 1px solid var(--line-2); }
+.vindex .toc > span { display: block; padding: 10px 14px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.vindex .toc ol { list-style: none; margin: 0; padding: 0; }
+.vindex .toc a { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 9px 14px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); position: relative; }
+.vindex .toc li:last-child a { border-bottom: 0; }
+.vindex .toc a span { color: var(--muted); }
+.vindex .toc a:hover { text-decoration: none; background: var(--bg-2); color: var(--ink); }
+.vindex .toc a::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent); transform: scaleY(0); transform-origin: top; transition: transform .35s cubic-bezier(.65, 0, .35, 1); }
+.vindex .toc a.on { color: var(--accent); background: rgba(232, 147, 63, .08); }
+.vindex .toc a.on::before { transform: scaleY(1); }
+.vindex .toc a.on span { color: var(--accent); }
+/* how far down the sheet the reader is */
+.vindex .toc .bar { height: 2px; background: var(--line); }
+.vindex .toc .bar i { display: block; height: 100%; width: var(--p, 0%); background: var(--accent); }
+
+.vindex .doc { min-width: 0; }
+.vindex .doc > * + * { margin-top: 22px; }
+.vindex .sec { border-top: 1px solid var(--line-2); padding-top: 20px; margin-top: 44px; display: grid; gap: 10px; }
+.vindex .sec .num { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.vindex .sec h2 { font-size: clamp(28px, 3.4vw, 40px); }
+.vindex .sec .sub { font-family: var(--read); font-size: 18px; color: var(--muted); }
+.vindex .copy, .vindex ul, .vindex .lede, .vindex h3, .vindex .vnote { max-width: 68ch; }
+.vindex h3 { margin-top: 1.5em; }
+.vindex .vfig { border: 1px solid var(--line); border-top: 1px solid var(--line); padding: 16px; background: rgba(19, 38, 70, .4); }
+.vindex .vfig figcaption { border-top: 1px solid var(--line); }
+@media (max-width: 1023px) {
+  .vindex { grid-template-columns: 1fr; }
+  .vindex .toc { position: static; max-height: none; }
+  .vindex .toc ol { display: grid; grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) { .vindex .toc ol { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .vindex .toc a::before { transition: none; } }

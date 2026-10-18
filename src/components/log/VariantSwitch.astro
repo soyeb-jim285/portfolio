@@ -1,0 +1,22 @@
+---
+// The five log variants share one switch, drawn the way the sheet index at the top of every
+// drawing is drawn: square, mono, current sheet in the accent.
+interface Props { v: number }
+const { v } = Astro.props;
+const variants = [
+  { v: 1, name: 'Rail' },
+  { v: 2, name: 'Column' },
+  { v: 3, name: 'Index' },
+  { v: 4, name: 'Console' },
+  { v: 5, name: 'Pinned' },
+];
+---
+<nav class="vswitch" aria-label="Log layout variants">
+  <span>Layout</span>
+  {variants.map((variant) => (
+    <a href={`/log/v${variant.v}/`} aria-current={variant.v === v ? 'page' : undefined}>
+      <b>V{variant.v}</b>{variant.name}
+    </a>
+  ))}
+  <a class="plain" href="/log/">Log index</a>
+</nav>

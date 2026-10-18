@@ -29,7 +29,7 @@ Without an endpoint the form falls back to opening the mail client with the mess
 
 ## Portfolio assistant (initial integration)
 
-The site includes a slim full-height assistant side panel, docked beside the page on wide screens and a bottom drawer on mobile. Questions can be typed or recorded: a voice note is transcribed once through OpenRouter, the audio and transcript stay in the browser, and only the text reaches the chat model. Its left edge is a drag handle (also arrow keys when focused, double-click to reset); the width is clamped to 340-760px, kept inside the viewport on resize, and remembered per browser in `localStorage`. It uses an Astro-persisted React island, adapted shadcn Sheet/Button and AI Elements Message components, styled with the portfolio's navy/orange theme. A separate Node.js 22+ Hono API streams answers from OpenRouter using explicitly selected public portfolio fields, stores each anonymous conversation in PostgreSQL, answers code questions from an index of Jim's repositories with citations pinned to the indexed commit, can take the visitor to a section of this site, can draft a message for the visitor to send, can write downloadable documents, can put a real calendar slot in front of the visitor to confirm, and answers a pasted job description as an evidence table with explicit gaps. `/assistant/` explains all of this to visitors.
+The site includes a slim full-height assistant side panel, docked beside the page on wide screens and a bottom drawer on mobile. Questions can be typed or recorded: a voice note is transcribed once through OpenRouter, the audio and transcript stay in the browser, and only the text reaches the chat model. Its left edge is a drag handle (also arrow keys when focused, double-click to reset); the width is clamped to 340-760px, kept inside the viewport on resize, and remembered per browser in `localStorage`. It uses an Astro-persisted React island, adapted shadcn Sheet/Button and AI Elements Message components, styled with the portfolio's navy/orange theme. A separate Node.js 22+ Hono API streams answers from OpenRouter using explicitly selected public portfolio fields, answers code questions from an index of Jim's repositories with citations pinned to the indexed commit, can take the visitor to a section of this site, can draft a message for the visitor to send, can write downloadable documents, and can put a real calendar slot in front of the visitor to confirm. Optionally, Jev selects and arranges server-owned project, research, skill and source-evidence candidates into a JSON Render panel after the prose answer. `/assistant/` explains all of this to visitors.
 
 ### Local setup
 
@@ -37,12 +37,17 @@ The site includes a slim full-height assistant side panel, docked beside the pag
 2. In `server/`, run `npm install`, copy `.env.example` to `.env`, and set `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` and `DATABASE_URL`.
 3. At the site root, run `npm install` and then `npm run dev` to start both services. Visit `http://localhost:4321`.
 
-PostgreSQL 13+ with the `vector` extension available, managed or local. A disposable local one:
+Generative UI uses the existing `OPENROUTER_API_KEY` through OpenRouter's System One endpoint. `JEV_MODEL` defaults to `typesafe/jev-1.13`; set it empty to keep chat Markdown-only.
+
+PostgreSQL 13+ with the `vector` extension available, managed or local. This local container binds only to loopback, persists until removed, and restarts with Docker:
 
 ```sh
-docker run -d --name portfolio-pg -p 55432:5432 \
+docker run -d --name portfolio-pg --restart unless-stopped -p 127.0.0.1:55432:5432 \
   -e POSTGRES_USER=portfolio -e POSTGRES_PASSWORD=portfolio -e POSTGRES_DB=portfolio pgvector/pgvector:pg17
+docker exec portfolio-pg createdb -U portfolio portfolio_test
 ```
+
+Use `DATABASE_URL=postgresql://portfolio:portfolio@127.0.0.1:55432/portfolio` and `TEST_DATABASE_URL=postgresql://portfolio:portfolio@127.0.0.1:55432/portfolio_test` in `server/.env`. Later, `docker stop portfolio-pg` and `docker start portfolio-pg` stop and resume it without losing local data.
 
 `server/src/schema.sql` is applied at boot and by the indexer, so there is no separate migration step yet.
 
@@ -109,6 +114,12 @@ Code blocks are highlighted by Shiki through `@streamdown/code`, loaded on deman
 
 The assistant can put one of the portfolio's own screenshots on screen with `show_image`. The list comes from `src/data/site-map.ts`, built from the project content, so the model names an id and can never point the page at an arbitrary URL.
 
+### Generative UI
+
+When `JEV_MODEL` is set, a finished answer is offered to Jev through OpenRouter as a composition request. The server supplies concrete candidates built from `src/data/content.ts` and the exact source ranges read during the turn. Jev may select a board variant, projects, research, work, skill groups and citations, and arrange them under one root; it cannot write props, URLs, actions or React code. `@json-render/core` validates the composed tree on the server, the browser validates it again against the same closed component catalog, and `@json-render/react` renders it. A timeout, provider error, unavailable decision or one-item result is silently discarded, leaving the completed Markdown answer intact.
+
+The experimental JSON Render packages are pinned to `0.21.0`. Review their release notes and the Jev integration before changing that version.
+
 A visitor can attach an image by button, paste or drag. The browser downscales it to 1400px on the long edge and re-encodes it as JPEG, which also strips camera and location metadata, then sends it as a data URL with that one question. The server validates the media type and the data URL shape before the model sees it. Attachments are never stored: the conversation keeps the question with a note that a picture came with it, so reloading later shows the text without the bytes. This needs a model that accepts images; the configured one does.
 
 ### Citations
@@ -134,7 +145,7 @@ curl -N http://localhost:3001/v1/chat \
   -d '{"message":"Tell me about HyprFM"}'
 ```
 
-Each SSE frame has a `data:` field containing version-1 JSON: `delta` with `text`, `tool` with a real execution and its timing, `sources` with commit-pinned citations, `action` with a requested navigation, `draft` with a message preview, `artifact` with a generated document, `slots` with real availability, `proposal` with a call awaiting confirmation, `done` with `finishReason` (`stop` or `length`), or `error` with `message`. Unknown event types are ignored by the client, so the API can add more. Consume POST responses through `fetch` and a streaming reader rather than `EventSource`. A connection ending without a terminal event is an incomplete response. HTTP validation/rate errors return JSON before streaming starts.
+Each SSE frame has a `data:` field containing version-1 JSON: `delta` with `text`, `tool` with a real execution and its timing, `sources` with commit-pinned citations, `ui` with a validated JSON Render spec, `action` with a requested navigation, `draft` with a message preview, `artifact` with a generated document, `slots` with real availability, `proposal` with a call awaiting confirmation, `done` with `finishReason` (`stop` or `length`), or `error` with `message`. Unknown event types are ignored by the client, so the API can add more. Consume POST responses through `fetch` and a streaming reader rather than `EventSource`. A connection ending without a terminal event is an incomplete response. HTTP validation/rate errors return JSON before streaming starts.
 
 ### Current behavior and deployment
 
@@ -174,7 +185,7 @@ With nginx on the same machine, set `TRUSTED_PROXY_IPS=127.0.0.1,::1` and use `p
 
 - Stored on the server: an anonymous session identified by its token's SHA-256 hash; contact and booking details the visitor supplies; generated documents; hashed rate-limit counters; and cached answers keyed by the full model context. Answers can quote visitor text. Conversation histories remain in the browser rather than a server transcript table. No account or tracking cookie is required.
 - Deleted: expired drafts and bookings, cached answers after `ANSWER_CACHE_TTL_HOURS`, and artifacts with their R2 objects when the artifact or owning session expires. Sessions expire seven days after last use; ownership rows are retained until object deletion succeeds so a storage outage cannot orphan private files. The sweep runs hourly and at boot. Clear chat erases the browser's copy of the conversation.
-- Shared: message text goes to OpenRouter and whichever provider it routes to; a sent message goes to Resend; a booking goes to Cal.com. Nothing else leaves the server.
+- Shared: message text goes to OpenRouter and whichever provider it routes to. When generative UI is enabled, the current question, completed answer and descriptions of public candidate evidence also go through OpenRouter to TypeSafe AI's Jev. A sent message goes to Resend; a booking goes to the configured calendar provider. Nothing else leaves the server.
 - Logged: error text only. No message bodies, no contact content, no credentials. Provider errors are reduced to a status before logging.
 
 ### Checks

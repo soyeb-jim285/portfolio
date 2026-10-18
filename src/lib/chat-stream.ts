@@ -1,3 +1,5 @@
+import type { Spec } from '@json-render/core';
+
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 export type Usage = { ms: number; model: string; promptTokens?: number; completionTokens?: number; costUsd?: number; cached?: boolean };
 export type ToolActivity = { id: string; name: string; summary: string; status: 'running' | 'done' | 'error'; ms?: number; detail?: Record<string, string> };
@@ -10,6 +12,7 @@ export type Artifact = { id: string; kind: string; title: string; bytes: number;
 export type Slot = { start: string; end: string };
 export type Availability = { timeZone: string; durationMinutes: number; label: string; key: string; slots: Slot[] };
 export type BookingProposal = { id: string; start: string; end: string; timeZone: string; durationMinutes: number; label: string; key: string; name: string; email: string; notes: string };
+export type GeneratedUi = { model: string; spec: Spec };
 export type StreamHandlers = {
   text: (text: string) => void;
   tool: (activity: ToolActivity) => void;
@@ -21,6 +24,7 @@ export type StreamHandlers = {
   proposal: (proposal: BookingProposal) => void;
   usage: (usage: Usage) => void;
   image: (image: ShownImage) => void;
+  ui: (ui: GeneratedUi) => void;
 };
 export class SessionExpired extends Error {}
 
@@ -107,6 +111,10 @@ export async function streamAnswer(endpoint: string, token: string, message: str
           handlers.proposal(event.proposal as BookingProposal);
         } else if (event.type === 'image' && event.image?.src) {
           handlers.image(event.image as ShownImage);
+        } else if (event.type === 'ui' && typeof event.ui?.model === 'string' && typeof event.ui?.spec?.root === 'string'
+          && event.ui.spec.elements && typeof event.ui.spec.elements === 'object' && Object.keys(event.ui.spec.elements).length <= 8
+          && event.ui.spec.elements[event.ui.spec.root]) {
+          handlers.ui(event.ui as GeneratedUi);
         } else if (event.type === 'usage' && typeof event.usage?.ms === 'number') {
           handlers.usage(event.usage as Usage);
         } else if (event.type === 'done' && (event.finishReason === 'stop' || event.finishReason === 'length')) {

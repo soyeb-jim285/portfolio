@@ -19,6 +19,7 @@ import { warmAnswers } from './warm';
 import { fixedQuestions } from '../../src/data/assistant-questions';
 import { projects } from '../../src/data/content';
 import { clientAddress } from './client-address';
+import { createGenUiComposer } from './gen-ui';
 
 const config = configSchema.parse(process.env);
 const db = await createDb(config.DATABASE_URL, config.SESSION_TTL_DAYS, config.METRICS_RETENTION_DAYS);
@@ -41,6 +42,9 @@ const scheduler = config.SCHEDULER === 'google'
 console.log(scheduler.configured
   ? `Scheduling: on via ${config.SCHEDULER}, ${scheduler.eventTypes.map(type => `${type.label} (${type.minutes}min)`).join(', ')}`
   : `Scheduling: off, set ${config.SCHEDULER === 'google' ? 'the GOOGLE_* variables' : 'CAL_API_KEY and CAL_EVENT_TYPES'}`);
+
+const genUi = config.JEV_MODEL ? createGenUiComposer(config.OPENROUTER_API_KEY, config.JEV_MODEL, config.JEV_TIMEOUT_MS) : undefined;
+console.log(genUi ? `Generative UI: on via OpenRouter ${config.JEV_MODEL}` : 'Generative UI: off, set JEV_MODEL to enable it');
 
 // Expired rows and their objects go together: a stored document must never outlive its row.
 async function sweepAll() {
@@ -67,7 +71,7 @@ if (config.INDEX_EVERY_HOURS > 0) {
   const embedder = createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS);
   const summarizer = config.SUMMARY_MODEL ? { client: openrouter, model: config.SUMMARY_MODEL } : undefined;
   // A separate app instance whose metrics say 'warmup', so pre-answering never counts as a visitor.
-  const warmApp = createApp(config, db, retrieval, mailer, storage, scheduler, undefined, { metricsOrigin: 'warmup' });
+  const warmApp = createApp(config, db, retrieval, mailer, storage, scheduler, undefined, { metricsOrigin: 'warmup', genUi });
   const pass = () => void runIndex(db.pool, config, github, embedder, { summarizer, log: message => console.log(`[index] ${message}`) })
     .then(() => config.WARM_ANSWERS && config.ANSWER_CACHE_TTL_HOURS
       ? warmAnswers(warmApp, db, config.SITE_ORIGIN, fixedQuestions(projects.map(project => project.name)), message => console.log(`[index] ${message}`))
@@ -84,7 +88,7 @@ app.use('*', async (c, next) => {
   c.set('clientIP', clientAddress(getConnInfo(c).remote.address || 'unknown', c.req.header('x-real-ip'), config.TRUSTED_PROXY_IPS));
   await next();
 });
-app.route('/', createApp(config, db, retrieval, mailer, storage, scheduler, undefined, { github: { owner: config.GITHUB_OWNER, get: github.get } }));
+app.route('/', createApp(config, db, retrieval, mailer, storage, scheduler, undefined, { github: { owner: config.GITHUB_OWNER, get: github.get }, genUi }));
 const server = serve({ fetch: app.fetch, hostname: config.HOST, port: config.PORT });
 if (server instanceof Server) {
   server.requestTimeout = 30000;

@@ -1,0 +1,46 @@
+---
+import '@fontsource/ibm-plex-serif/400.css';
+import Layout from '../../layouts/SchematicLayout.astro';
+import { posts } from '../../data/posts';
+---
+<Layout
+  title="Log, Soyeb Pervez Jim"
+  description="Notes on work that had to be measured: profiling, optimisation and the measurements that turned out to be wrong."
+  sheet="9"
+  big="Log"
+  stamp={{ k: 'Entries', v: `${posts.length}` }}
+>
+  <section class="head" data-anchor="log-list">
+    <h1 class="title">Log</h1>
+    <p class="sub">Write-ups of work where the only honest evidence is a number. Each entry keeps the measurements that justified a change, and the ones that sent me the wrong way for an afternoon.</p>
+  </section>
+
+  <div class="posts">
+    {posts.map((post, i) => (
+      <a href={`/log/${post.slug}/`}>
+        <span class="when">{post.when}<span class="small">Sheet 9.{i + 1}</span></span>
+        <span>
+          <b>{post.title}</b>
+          <span class="dek">{post.dek}</span>
+        </span>
+        <span class="len">{post.minutes} min</span>
+      </a>
+    ))}
+  </div>
+
+  <section class="split">
+    <h2 class="t2">Design variants</h2>
+    <div>
+      <p class="sub">Five layouts for the same entry, on the same sheet, in the same colours and faces as every other drawing here. Same words, same measurements: only the arrangement, the movement and the way the figures are drawn change. A switch at the top of each moves between them.</p>
+      <ul class="specs tight">
+        <li><span><a href="/log/v1/">V1 Rail</a></span><span>Reading column with a margin rail for notes and section numbers. Section rules wipe across; figures draw themselves stroke by stroke. Plotted into SVG at build time, no chart library.</span></li>
+        <li><span><a href="/log/v2/">V2 Column</a></span><span>One centred measure under a large drawing number, figures across the full sheet. Blocks lift into place on arrival and each figure is uncovered left to right. Observable Plot, rendered at build time.</span></li>
+        <li><span><a href="/log/v3/">V3 Index</a></span><span>The sheet carries its own contents down the left, tracking the reader, with a progress rule under it. Recharts, hydrated on view.</span></li>
+        <li><span><a href="/log/v4/">V4 Console</a></span><span>Every block labelled in a left gutter like an instrument rack. Readouts count up; each panel is uncovered by a printing sweep. ECharts, imported on approach.</span></li>
+        <li><span><a href="/log/v5/">V5 Pinned</a></span><span>The argument scrolls on the left while its figure stays pinned on the right until the next one takes over. Plates computed with d3-scale at build time.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <p class="sub">The long-hand version of the first entry lives in the repository as <code>docs/performance-history.md</code>, with every commit hash. This sheet is the readable cut.</p>
+</Layout>

@@ -1,0 +1,142 @@
+---
+// Variant 1. Every figure is plotted at build time into inline SVG: no chart library, no client
+// JavaScript, and the strokes carry the same draw-me class the site's block diagrams use, so a
+// figure draws itself when it scrolls into the frame.
+import type { Figure } from '../../data/log/startup-halved';
+interface Props { figure: Figure }
+const { figure } = Astro.props;
+const { rows, series, unit, stacked = false, kind, lower = true } = figure;
+
+const W = 940, R = 858;
+// The label gutter is sized to the longest name, or a long one runs off the left of the viewBox.
+const widest = Math.max(...rows.map((row) => row.label.length));
+const L = Math.min(Math.max(150, widest * 7.6 + 24), 300);
+const total = (values: (number | null)[]) => values.reduce<number>((a, b) => a + (b ?? 0), 0);
+const reach = Math.max(...rows.map((row) => (stacked ? total(row.values) : Math.max(...row.values.map((v) => v ?? 0)))));
+// A ceiling on a round number keeps the ticks readable without stranding the longest bar.
+const step = Math.pow(10, Math.floor(Math.log10(reach))) / 2;
+const ceiling = Math.ceil((reach * 1.04) / step) * step;
+const ticks = Array.from({ length: Math.round(ceiling / step) + 1 }, (_, i) => i * step).filter((_, i, all) => all.length <= 9 || i % 2 === 0);
+const x = (value: number) => L + (value / ceiling) * (R - L);
+const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(v < 10 ? 2 : 1));
+
+const band = kind === 'line' ? 0 : series.length > 1 && !stacked ? 44 : 32;
+const H = kind === 'line' ? 330 : rows.length * band + 62;
+// Line figures plot the run of measurements; bar figures plot one band per row.
+const lx = (i: number) => L - 40 + (i * (R - (L - 40))) / (rows.length - 1);
+const ly = (v: number) => 44 + (1 - v / ceiling) * 196;
+const line = rows.map((row, i) => `${lx(i)},${ly(row.values[0] ?? 0)}`).join(' ');
+// Segment geometry is worked out here rather than in the template: a running offset inside JSX
+// is the kind of cleverness that reads badly at 3am.
+const stacks = rows.map((row) => {
+  let at = L;
+  return row.values.flatMap((value, i) => {
+    if (value == null) return [];
+    const width = x(value) - L;
+    const segment = { x: at, w: Math.max(width - 2, 1), i };
+    at += width;
+    return [segment];
+  });
+});
+const fillOf = (i: number, hot?: boolean) =>
+  stacked ? ['p2', 'p1', 'p3'][i] : series.length > 1 ? (i === 0 ? 'p0' : 'p1') : hot ? 'p1' : 'p0';
+---
+<figure class="plate">
+  <figcaption class="plate-head">
+    <b>{figure.title}</b>
+    <span>{figure.note}</span>
+  </figcaption>
+
+  {series.length > 1 && (
+    <p class="plate-key">
+      {series.map((name, i) => <span><i class={fillOf(i)}></i>{name}</span>)}
+    </p>
+  )}
+
+  <div class="plate-body">
+    <svg class="plot draw" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${figure.title}. ${figure.note} The same figures are listed in the table below.`}>
+      {kind === 'line' ? (
+        <>
+          {ticks.map((t) => (
+            <>
+              <line class="rule" x1={L - 40} x2={R} y1={ly(t)} y2={ly(t)} />
+              <text class="tick" x={L - 50} y={ly(t) + 4} text-anchor="end">{fmt(t)}</text>
+            </>
+          ))}
+          <polyline class="trace draw-me" points={line} />
+          {rows.map((row, i) => (
+            <>
+              <circle class={row.hot ? 'knot hot' : 'knot'} cx={lx(i)} cy={ly(row.values[0] ?? 0)} r="5" />
+              <text class="value" x={lx(i)} y={ly(row.values[0] ?? 0) - 16} text-anchor="middle">{fmt(row.values[0] ?? 0)}</text>
+              <text class="tick" x={lx(i)} y={272} text-anchor="middle">{row.label}</text>
+              {(row.tag ?? '').split(', ').map((word, k) => (
+                <text class="tick faint" x={lx(i)} y={292 + k * 15} text-anchor="middle">{word}</text>
+              ))}
+            </>
+          ))}
+          <line class="axis" x1={L - 40} x2={R} y1={ly(0)} y2={ly(0)} />
+        </>
+      ) : (
+        <>
+          {ticks.map((t) => (
+            <>
+              <line class="rule" x1={x(t)} x2={x(t)} y1="10" y2={rows.length * band + 12} />
+              <text class="tick" x={x(t)} y={rows.length * band + 32} text-anchor="middle">{fmt(t)}</text>
+            </>
+          ))}
+          {rows.map((row, r) => {
+            const top = r * band + 12;
+            const thick = series.length > 1 && !stacked ? 12 : 14;
+            const mid = top + band / 2;
+            return (
+              <>
+                <text class={row.hot ? 'name hot' : 'name'} x={L - 14} y={mid + (row.tag ? -2 : 4)} text-anchor="end">{row.label}</text>
+                {row.tag && <text class="tick faint" x={L - 14} y={mid + 14} text-anchor="end">{row.tag}</text>}
+                {stacked ? (
+                  <>
+                    {stacks[r].map((segment) => (
+                      <rect class={fillOf(segment.i)} x={segment.x} y={mid - thick / 2} width={segment.w} height={thick} />
+                    ))}
+                    <text class="value" x={x(total(row.values)) + 12} y={mid + 4}>{fmt(total(row.values))} {unit}</text>
+                  </>
+                ) : (
+                  row.values.map((value, i) => {
+                    const offset = series.length > 1 ? (i - 0.5) * (thick + 3) : 0;
+                    const y = mid + offset - thick / 2;
+                    return value == null ? null : (
+                      <>
+                        <rect class={fillOf(i, row.hot)} x={L} y={y} width={Math.max(x(value) - L, 1)} height={thick} />
+                        <text class={i === 0 && series.length > 1 ? 'value faint' : 'value'} x={x(value) + 12} y={y + thick - 2}>{fmt(value)} {unit}</text>
+                      </>
+                    );
+                  })
+                )}
+              </>
+            );
+          })}
+          <line class="axis" x1={L} x2={L} y1="10" y2={rows.length * band + 12} />
+        </>
+      )}
+    </svg>
+  </div>
+
+  <div class="plate-foot">
+    <p><b>{figure.fig}</b>{figure.caption}</p>
+    <details>
+      <summary>Numbers</summary>
+      <table>
+        <thead><tr><th></th>{series.map((name) => <th>{name} ({unit})</th>)}{stacked && <th>total</th>}</tr></thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr>
+              <td>{row.label}{row.tag && <span> {row.tag}</span>}</td>
+              {row.values.map((v) => <td>{v == null ? '—' : fmt(v)}</td>)}
+              {stacked && <td>{fmt(total(row.values))}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </details>
+  </div>
+  <p class="sr">{lower ? 'Lower is better.' : 'Higher is better.'}</p>
+</figure>

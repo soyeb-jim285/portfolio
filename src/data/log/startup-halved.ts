@@ -1,0 +1,650 @@
+// The entry's words and numbers, kept apart from any one way of drawing them. Five variant
+// sheets under /log/v1 to /log/v5 render this same structure with different layouts, type and
+// chart libraries, so a comparison between them is a comparison of the design and nothing else.
+
+export type Block =
+  | { t: 'p'; text: string; lede?: boolean }
+  | { t: 'h'; text: string }
+  | { t: 'list'; items: string[] }
+  | { t: 'note'; side: boolean; title: string; paras: string[] }
+  | { t: 'table'; head: string[]; rows: string[][] }
+  | { t: 'stats'; items: { value: string; label: string }[] }
+  | { t: 'quote'; text: string }
+  | { t: 'fig'; id: FigureId };
+
+export type Section = { n: string; id: string; title: string; sub: string; blocks: Block[] };
+
+export type FigureId = 'f1' | 'f2' | 'f3' | 'f4' | 'f5' | 'f6' | 'f7' | 'f8';
+
+export type Figure = {
+  fig: string;                 // "FIG. 4"
+  kind: 'line' | 'bar';
+  title: string;
+  note: string;
+  unit: string;
+  series: string[];            // one name per value in a row
+  rows: { label: string; values: (number | null)[]; hot?: boolean; tag?: string }[];
+  stacked?: boolean;
+  lower?: boolean;             // smaller is better
+  caption: string;
+};
+
+export const post = {
+  slug: 'startup-halved',
+  title: 'Startup, halved',
+  dek: 'Three weeks of profiling a file manager: 336 ms to 163 ms, 184 MB to 109 MB, and the four numbers I had to publicly take back.',
+  date: '2026-09-20',
+  when: '20 Sep 2026',
+  minutes: 18,
+  subject: 'HyprFM',
+  tags: ['HyprFM', 'Qt', 'C++', 'profiling'],
+};
+
+const medians = 'Every bar is a median of repeated runs, never a single launch.';
+
+export const figures: Record<FigureId, Figure> = {
+  f1: {
+    fig: 'FIG. 1', kind: 'line', title: '336 down to 163',
+    note: 'Launch to a mapped window, home directory, one AMD laptop under Hyprland.',
+    unit: 'ms', series: ['map, home'],
+    rows: [
+      { label: '30 Aug', tag: 'baseline', values: [336] },
+      { label: '19 Sep', tag: 'renderer, lazy UI, lighter models', values: [194] },
+      { label: '20 Sep', tag: 'full benchmark as reference', values: [180] },
+      { label: '20 Sep', tag: 'collation keys, readdir, warm Vulkan', values: [170] },
+      { label: '20 Sep', tag: 'font stack on a worker', values: [163], hot: true },
+    ],
+    caption: 'Lower is better. Each point is the median of at least seven runs, round robin against the other builds, one discarded warm-up each.',
+  },
+  f2: {
+    fig: 'FIG. 2', kind: 'bar', title: 'Scanning 10,000 files',
+    note: 'The three phases of a directory scan, stacked.',
+    unit: 'ms', series: ['listing', 'sort', 'building rows'], stacked: true,
+    rows: [
+      { label: 'before', values: [18.0, 20.0, 0.9] },
+      { label: 'collation keys', values: [15.5, 6.2, 1.0] },
+      { label: 'and readdir', values: [4.0, 7.0, null], hot: true },
+    ],
+    caption: `Lower is better. ${medians}`,
+  },
+  f3: {
+    fig: 'FIG. 3', kind: 'bar', title: 'First frame, Flatpak',
+    note: 'Shipping QML sources against compiling them into the binary.',
+    unit: 'ms', series: ['shipping .qml', 'precompiled'],
+    rows: [
+      { label: 'cold cache', values: [560, 161], hot: true },
+      { label: 'warm cache', values: [133, 132] },
+      { label: 'two branches, alternating', values: [743, 336] },
+    ],
+    caption: `Lower is better. ${medians}`,
+  },
+  f4: {
+    fig: 'FIG. 4', kind: 'bar', title: 'Launch to a mapped window',
+    note: 'Home directory, warm page cache.',
+    unit: 'ms', series: ['map'],
+    rows: [
+      { label: 'HyprFM, software', values: [163], hot: true },
+      { label: 'HyprFM, Vulkan', values: [180] },
+      { label: 'Dolphin', values: [194] },
+      { label: 'HyprFM, August build', values: [336] },
+      { label: 'HyprFM AppImage', values: [338] },
+      { label: 'Nautilus', values: [718] },
+    ],
+    caption: `Lower is better. ${medians}`,
+  },
+  f5: {
+    fig: 'FIG. 5', kind: 'bar', title: 'Memory at rest',
+    note: 'Proportional set size four seconds after launch, home directory.',
+    unit: 'MB', series: ['PSS'],
+    rows: [
+      { label: 'Dolphin', values: [64] },
+      { label: 'HyprFM, software', values: [79], hot: true },
+      { label: 'HyprFM, Vulkan', values: [103] },
+      { label: 'Nautilus', values: [103] },
+      { label: 'HyprFM, August build', values: [170] },
+    ],
+    caption: `Lower is better. ${medians}`,
+  },
+  f6: {
+    fig: 'FIG. 6', kind: 'bar', title: 'Where 113.6 MB goes',
+    note: 'Resident memory grouped by mapping, Vulkan build, at rest.',
+    unit: 'MB', series: ['PSS'], lower: false,
+    rows: [
+      { label: 'libLLVM', tag: 'never called', values: [28.5], hot: true },
+      { label: 'anonymous', values: [26.8] },
+      { label: 'Qt libraries', tag: '13 of them', values: [20.1] },
+      { label: 'everything else', values: [11.6] },
+      { label: 'heap', values: [9.6] },
+      { label: 'hyprfm binary', values: [7.4] },
+      { label: 'libvulkan_radeon', values: [4.6] },
+      { label: 'ICU', values: [3.4] },
+      { label: 'QML JS heap', values: [1.6] },
+    ],
+    caption: 'One mapping the application never calls is the whole Vulkan memory premium.',
+  },
+  f7: {
+    fig: 'FIG. 7', kind: 'bar', title: 'Memory after a full interaction session',
+    note: 'Navigating, tabs, split view, scrolling, then measured.',
+    unit: 'MB', series: ['PSS'],
+    rows: [
+      { label: 'Qt software', values: [175], hot: true },
+      { label: 'OpenGL', values: [340] },
+      { label: 'Vulkan', values: [342] },
+      { label: 'before this work', values: [351] },
+      { label: 'llvmpipe', values: [814] },
+    ],
+    caption: `Lower is better. ${medians}`,
+  },
+  f8: {
+    fig: 'FIG. 8', kind: 'bar', title: 'Interaction latency, A against B',
+    note: 'Two rounds of ten repetitions, alternating between the two binaries.',
+    unit: 'ms', series: ['before the pass', 'after'],
+    rows: [
+      { label: 'into a 10k directory', values: [70.7, 39.6], hot: true },
+      { label: 'the same one again', values: [72.5, 44.9] },
+      { label: 'open a new tab', values: [48.0, 41.5] },
+      { label: 'into /usr/bin', values: [41.2, 37.5] },
+      { label: 'open split view', values: [28.7, 25.3] },
+    ],
+    caption: `Lower is better. ${medians}`,
+  },
+};
+
+export const sections: Section[] = [
+  {
+    n: "00",
+    id: "open",
+    title: "",
+    sub: "",
+    blocks: [
+      {
+        t: "stats",
+        items: [
+          {
+            value: "163",
+            label: "ms to a mapped window, from 336"
+          },
+          {
+            value: "109",
+            label: "MB at rest, from 184"
+          },
+          {
+            value: "81",
+            label: "ms for a second window, from 347"
+          },
+          {
+            value: "39.6",
+            label: "ms into a 10k directory, from 70.7"
+          }
+        ]
+      },
+      {
+        t: "p",
+        text: "HyprFM is a file manager I wrote in C++ and QML for Hyprland. At the end of August it took 336 ms to put a window on screen and sat at 184 MB. Both numbers were fine. Nobody complained. I made the mistake of measuring them properly anyway.",
+        lede: true
+      },
+      {
+        t: "p",
+        text: "Three weeks later it maps a window in 163 ms and rests at 109 MB, opens a second window in 81 ms instead of 347, and lists ten thousand files in 11 ms of scanning instead of 39. The work took maybe thirty commits. About a third of my time went into changes that did nothing, and the single most useful thing I produced was not an optimisation at all: it was a list of measurements that were wrong.",
+        lede: true
+      },
+      {
+        t: "p",
+        text: "This is the readable version of that log. The numbers are medians of repeated runs on one AMD laptop, Arch, Hyprland, Qt 6.11.2, and I will flag it when a number turned out to be a lie.",
+        lede: true
+      }
+    ]
+  },
+  {
+    n: "01",
+    id: "names",
+    title: "Three things are called startup",
+    sub: "",
+    blocks: [
+      {
+        t: "p",
+        text: "Before any of this was worth arguing about, I had to stop using one word for three different measurements. People say an app starts in 200 ms and mean whichever of these flatters them."
+      },
+      {
+        t: "table",
+        head: [
+          "<tr><th>Metric",
+          "What it is",
+          "How it is taken"
+        ],
+        rows: [
+          [
+            "map",
+            "from <code>exec</code> to Hyprland announcing the window",
+            "a script listening on Hyprland's event socket"
+          ],
+          [
+            "first frame",
+            "application object built to the first swapped frame",
+            "marks inside the process"
+          ],
+          [
+            "idle",
+            "launch until the process tree stops burning CPU",
+            "sampling the kernel's own counters"
+          ],
+          [
+            "PSS",
+            "memory it actually costs the machine, 4 s in",
+            "<code>smaps_rollup</code>"
+          ]
+        ]
+      },
+      {
+        t: "p",
+        text: "The harness rules matter more than the tooling, and every one of them is scar tissue:"
+      },
+      {
+        t: "list",
+        items: [
+          "Apps run round robin, never in blocks, so the laptop getting hot lands on everyone equally.",
+          "Every measured run has a discarded warm-up in front of it.",
+          "Two builds are always interleaved, A, B, A, B, in one session. Numbers from two different sessions are not comparable and I do not care how stable they look.",
+          "Benchmark launches go through a sandbox with their own <code>HOME</code>, because of the session file I will get to in section 08.",
+          "Windows open on a workspace attached to a headless output, since a window no monitor shows never receives a frame callback, and a benchmark waiting for the first frame of an invisible window waits forever."
+        ]
+      },
+      {
+        t: "p",
+        text: "That last one took an hour of staring at a hung script to work out."
+      }
+    ]
+  },
+  {
+    n: "02",
+    id: "descent",
+    title: "The descent",
+    sub: "",
+    blocks: [
+      {
+        t: "fig",
+        id: "f1"
+      }
+    ]
+  },
+  {
+    n: "03",
+    id: "worked",
+    title: "What actually worked",
+    sub: "In rough order of how much they paid, not the order I tried them in. The order I tried them in was much stupider.",
+    blocks: [
+      {
+        t: "h",
+        text: "Ask the GPU what it is, once"
+      },
+      {
+        t: "p",
+        text: "Qt Quick renders with OpenGL by default. On this laptop Vulkan is cheaper, and Qt is happy to use it, with one catch: if you ask for Vulkan and there is no Vulkan, the window simply never appears. No error you can catch, no fallback. Just a process sitting there owning nothing."
+      },
+      {
+        t: "p",
+        text: "So the app probes first. It reaches the Vulkan loader through <code>dlopen</code> with hand-declared structs, which means the build needs neither the library nor the headers, and the ABI is frozen so this is less reckless than it sounds. A software-only device gets rejected, because OpenGL on a real GPU beats Vulkan on a CPU every time. The answer is cached under the fingerprint of the installed driver manifests, with a per-process marker file so that a driver crash demotes the next launch to OpenGL instead of crashing in a loop forever."
+      },
+      {
+        t: "p",
+        text: "One detail I got wrong first: I counted any early exit as a Vulkan failure, so a typo in QML would permanently convince the app that its GPU was broken. Now it only blames the driver if the process dies before painting anything."
+      },
+      {
+        t: "h",
+        text: "Build less of the UI before showing it"
+      },
+      {
+        t: "p",
+        text: "The settings window, the quick preview, every dialog, both context menus, the badge icons on cut and paste, and each file view now come into existence the first time something needs them. This is the least clever item on the list and it bought about 40 ms."
+      },
+      {
+        t: "note",
+        side: false,
+        title: "Correction, 30 August",
+        paras: [
+          "I had already tried this in August, eyeballed two runs, wrote \"wrapping hidden UI in loaders gave approximately zero\", and moved on. Re-measured properly at ten runs per arm, the lazy settings panel and preview were worth 318 to 293 ms, the lazy file views another 297 to 281. I threw away a real 40 ms for three weeks because I could not be bothered to run a loop."
+        ]
+      },
+      {
+        t: "h",
+        text: "1.3 KB per file, times ten thousand"
+      },
+      {
+        t: "p",
+        text: "Each row in the directory model carried a fat struct with every display string precomputed. For a 10,000-file folder that is 12.7 MB of rows. A compact struct with strings built on demand takes it to 1.3 MB, roughly 130 bytes a row."
+      },
+      {
+        t: "p",
+        text: "Two more things in the same area were embarrassing. The listing was fetched in a way that kept a second full copy alive, 2.4 MB per ten thousand files, for no reason at all. And resolving a file's owner and group name cost 492 microseconds per file, because each one walked out through the name service stack. Cache the id to name mapping and it happens once per distinct id. Populating a 10,000-file directory went from 6.0 s to 0.68 s across that group of commits, which is the kind of number that makes you glad nobody else was watching."
+      },
+      {
+        t: "p",
+        text: "The icon cache was also capped at 512 entries, which sounds bounded until you notice nothing bounds how big an entry is. It is now capped at 24 MB."
+      },
+      {
+        t: "h",
+        text: "Two ways to not read a directory"
+      },
+      {
+        t: "p",
+        text: "Sorting file names has to be locale aware and numeric, so <code>file2</code> comes before <code>file10</code> and <code>Ä</code> sorts after <code>z</code>. Qt's collator does that correctly and costs a lot, and a comparison sort calls it O(n log n) times, about 120,000 calls for ten thousand files."
+      },
+      {
+        t: "p",
+        text: "The fix is as old as Perl: compute one sort key per entry, then sort the keys, since a collation key is a byte string whose plain memory comparison gives the collator's order. Identical output, verified against the old ordering on a list full of accents and embedded numbers before I touched the model. Sorting fell from 20 ms to 6.2. Bonus: the directory listing was also being sorted by code point first, purely so the result could be thrown away and sorted again."
+      },
+      {
+        t: "p",
+        text: "Then the listing itself. Asking Qt for file info objects builds a path string, a shared data block and a pile of cached metadata per entry, 15 to 22 ms for ten thousand files, to answer two questions the kernel already answered while reading the directory. Now it is <code>opendir</code> and <code>readdir</code> reading the dirent type directly, and it only calls <code>stat</code> for what a dirent cannot answer: symlinks, filesystems that report an unknown type, and every entry when the sort is by size or time."
+      },
+      {
+        t: "p",
+        text: "That last clause is where the bugs live, so the awkward cases are pinned by a test: a directory holding a fifo, a unix socket, a symlink to a directory, a symlink to a file and a broken symlink has to come back exactly as Qt would have returned it."
+      },
+      {
+        t: "fig",
+        id: "f2"
+      },
+      {
+        t: "h",
+        text: "One process, every window"
+      },
+      {
+        t: "p",
+        text: "A second window used to cost 368 ms, because it was a second process doing the whole startup again. Now every window is served by one process, each with its own QML context, and a launch that finds an instance already running hands its arguments over a socket and exits. A second window takes 95 ms. The client process that forwarded the request lives for 36 ms."
+      },
+      {
+        t: "p",
+        text: "The trade is real and worth saying out loud instead of burying: one process means one crash takes every window with it, and one freeze freezes all of them. That is exactly why the next three commits moved blocking work off the GUI thread. Metadata for the properties dialog runs <code>exiftool</code> and <code>ffprobe</code>, about 120 ms each, on a worker pool. Folder item counts go to a worker. Remote directory properties over SFTP are fetched asynchronously with an 8 s kill timer, so a dead mount no longer takes the window down with it."
+      },
+      {
+        t: "p",
+        text: "Closing windows also used to ratchet memory upward. A garbage collection and a <code>malloc_trim</code> one second after a window closes turned eight open-and-close cycles from 202 MB into 129."
+      },
+      {
+        t: "h",
+        text: "The update cliff"
+      },
+      {
+        t: "p",
+        text: "Qt caches compiled QML on disk, keyed by each source file's path and modification time. Which means the cache is empty after every install and every update, and the first launch after an update compiles all 86 QML files. That is 400 ms, paid by exactly the person who just updated and is watching."
+      },
+      {
+        t: "p",
+        text: "The switch to compile QML into the binary ahead of time already existed. It defaulted to off, because development builds want it off, and only the AppImage script turned it on. So every package I shipped for months shipped uncompiled QML. Release builds now default it on, and the app produces no cache files at all afterwards, because there is nothing left to compile."
+      },
+      {
+        t: "fig",
+        id: "f3"
+      },
+      {
+        t: "h",
+        text: "The 6.5 ms every Qt process pays once"
+      },
+      {
+        t: "p",
+        text: "The oddest line in the profile was 6.2 ms to create two text items in the status bar. Two labels. The status bar was innocent: that is the cost of the first string any Qt process measures, where fontconfig matches the family, FreeType loads the face and the shaper wakes up. Measured on its own it is 6.5 to 6.9 ms for the first call, and 1.4 ms for a second typeface."
+      },
+      {
+        t: "p",
+        text: "The font database and FreeType are shared across threads under their own locks, and only the per-thread font cache is private. So a worker thread can pay the bill, and the GUI thread arrives to find the expensive part already done. Launch went from 171 ms to 163."
+      },
+      {
+        t: "p",
+        text: "In the same spirit, Qt was spending 47 ms between \"the QML tree is ready\" and \"the scene graph is up\", creating its Vulkan instance and device on the GUI thread, after the window was already shown, while the machine's other eleven cores did nothing. Bringing a throwaway Vulkan instance up on a worker as soon as the renderer choice is known overlaps that with the 60 ms of QML construction. The phase fell to 34 ms."
+      },
+      {
+        t: "h",
+        text: "Open the window on the folder you were asked for"
+      },
+      {
+        t: "p",
+        text: "Running <code>hyprfm ~/Downloads</code> opened a window on my home directory and then immediately navigated to Downloads. Two listings, two model resets, and the grid building its delegates twice: 112 delegate creations for a folder with 30 files in it. The launch path is now handed to the window before it opens."
+      },
+      {
+        t: "note",
+        side: true,
+        title: "The part I do not like",
+        paras: [
+          "The first frame now waits for the real listing, so launching straight into a 10,000-file directory maps at 190 ms instead of 171. It used to map faster by showing the wrong folder first. I would rather be 19 ms slower than flash the wrong contents, but it is a regression and pretending otherwise would be dishonest. Launching with no argument is unaffected."
+        ]
+      },
+      {
+        t: "p",
+        text: "That trade is recorded in the margin rather than buried in a commit message, because it is the only change in the pass that made one case measurably worse."
+      }
+    ]
+  },
+  {
+    n: "04",
+    id: "neighbours",
+    title: "Against the neighbours",
+    sub: "Same machine, same session, round robin, seven runs each. Dolphin and Nautilus were launched exactly the way a user would launch them.",
+    blocks: [
+      {
+        t: "fig",
+        id: "f4"
+      },
+      {
+        t: "fig",
+        id: "f5"
+      },
+      {
+        t: "p",
+        text: "Dolphin is the honest benchmark here. It maps its window in 194 ms and rests at 64 MB, and that 64 MB is a number I am not going to reach while Qt Quick owns a GPU context. Nautilus takes 718 ms to appear and burns 1.83 s of CPU listing ten thousand files, against 0.32 s here, which is the one comparison I am allowed to feel smug about."
+      },
+      {
+        t: "p",
+        text: "The AppImage is still 158 ms behind the native build, and I was sure that was QML compilation until I proved otherwise. It is not. A native build with compilation enabled loads QML just as fast. The AppImage pays for FUSE and for reading a bundled Qt out of a squashfs image, and no application-side change will fix that."
+      }
+    ]
+  },
+  {
+    n: "05",
+    id: "renderer",
+    title: "The renderer nobody picks",
+    sub: "",
+    blocks: [
+      {
+        t: "p",
+        text: "I spent a day making the Vulkan path work and then measured Qt's software renderer out of completeness. It starts 14 ms faster and uses 25 MB less."
+      },
+      {
+        t: "p",
+        text: "The 25 MB has a name. About 28.5 MB of resident memory belongs to libLLVM, which Mesa links into the Radeon Vulkan driver even though that driver compiles shaders with its own compiler and never calls into LLVM. Its constructors run when the library loads. There is no application-side change that can decline it. That single unused dependency is the entire Vulkan versus software memory gap."
+      },
+      {
+        t: "fig",
+        id: "f6"
+      },
+      {
+        t: "fig",
+        id: "f7"
+      },
+      {
+        t: "p",
+        text: "Vulkan stays the default anyway, because startup is not the only thing that matters: it keeps work off the GUI thread and it does not spend a core on filling pixels. And llvmpipe, the software OpenGL path, is in that chart as a warning. It reaches 814 MB and 1.66 s of CPU, and it is what a user gets on a machine with no render node if the app does not check. HyprFM now checks, and a machine with no GPU at all maps a window in 166 ms at 79 MB, where it used to take 427 ms, 290 MB and nearly two seconds of CPU."
+      },
+      {
+        t: "p",
+        text: "Whether software rendering should become the default is still open, and I refuse to decide it from this laptop. The whole argument for software rendering here is measured on a 1080p display, where fill rate costs nothing. On a HiDPI screen the answer could easily flip, and I do not own one."
+      }
+    ]
+  },
+  {
+    n: "06",
+    id: "feel",
+    title: "Does it feel faster?",
+    sub: "",
+    blocks: [
+      {
+        t: "p",
+        text: "Startup is the number people quote, but it happens once. So there is a second harness that drives real interactions and measures how long each one takes to reach a painted frame, interleaved against a binary built from the commit before the optimisation pass."
+      },
+      {
+        t: "fig",
+        id: "f8"
+      },
+      {
+        t: "p",
+        text: "Fourteen other actions came out within 2 ms either way, which is the correct result: the directory scan work should show up in directory scans and nowhere else."
+      },
+      {
+        t: "p",
+        text: "One action looked like a 25 ms regression for a while. The context menu's first open is bimodal, 34 ms or 67 ms, one frame or two, and its median flips between rounds in both builds. You cannot subtract medians of a distribution like that. Scroll latency, meanwhile, is identical under every renderer at 16.6 ms, because it is capped by a 60 Hz display. Any benchmark on this monitor that claims to rank renderers by frame latency is measuring my monitor."
+      }
+    ]
+  },
+  {
+    n: "07",
+    id: "wrong",
+    title: "Four things I had to take back",
+    sub: "This is the part of the log I would keep if I had to delete the rest.",
+    blocks: [
+      {
+        t: "note",
+        side: false,
+        title: "Correction, the Flatpak that was never slow",
+        paras: [
+          "The benchmark measured the Flatpak at 731 ms, seven runs, a 15 ms spread. I published it as the worst number in the matrix. Run on its own, with nothing rebuilt, it takes 282 ms.",
+          "The cause was my own rule about interleaving. The harness alternated two branches of the same Flatpak, same application id, therefore one shared QML cache directory, where compiled units are keyed by source path and modification time. Each launch invalidated the other's entries and every single run recompiled all 86 files. Wipe the cache, launch three times, and you get 560, 133, 141. Alternate the branches again and 743 ms comes back on demand. Interleaving protects you from drift between sessions, and it will happily invent a result when the two arms share state.",
+          "The artefact was pointing at a real bug, which is the only reason that fake number was worth anything: it is what made me look at when the QML cache is cold, and that is the update cliff in section 03."
+        ]
+      },
+      {
+        t: "note",
+        side: false,
+        title: "Correction, 1,716 lines that weighed nothing",
+        paras: [
+          "The main QML file is 4,276 lines, of which 1,716 are inline component blocks for dialogs that start inactive. Obviously that weight is loaded on every launch. Obviously moving them into their own files would shrink the largest compilation unit.",
+          "I stripped all 1,716 lines and re-measured: 33 ms against 34 ms. File size is not the cost. Loading the types the file actually uses is the cost. A large, risky refactor got priced at zero before anyone wrote a line of it, which is the cheapest outcome available."
+        ]
+      },
+      {
+        t: "note",
+        side: true,
+        title: "Correction, a faster answer that was wrong",
+        paras: [
+          "Resolving a file's type by unique filename glob instead of sniffing its contents was about eight times faster. It also disagreed with the correct answer on 2,054 real files on my disk: XHTML files named <code>.html</code>, TypeScript modules named <code>.mts</code>. Not committed."
+        ]
+      },
+      {
+        t: "p",
+        text: "Being fast is not a defence. A file type resolver that is wrong twice in two thousand files is wrong in the preview pane, in the icon, and in the menu that decides what you are allowed to do with the file."
+      },
+      {
+        t: "note",
+        side: false,
+        title: "Correction, a leak that did not exist",
+        paras: [
+          "The interaction harness appeared to leak about 7 MB per navigation, 40 MB per loop. I wrote an idle memory reclaimer to fix it. The harness was pumping the event loop in a way that never runs deferred deletions, so the \"leak\" was objects queued for deletion that nothing was deleting. One line in the harness fixed it, the reclaimer went in the bin, and the real application running a real event loop never had the problem at all."
+        ]
+      },
+      {
+        t: "p",
+        text: "Two smaller ones, for completeness. I recorded that ahead-of-time QML compilation was not worth it, which was true for the case I measured, a native build with a warm cache, and wrong as a general statement, since the warm cache only exists after a first launch. And I spent a while blaming a test failure on parallelism when it was failing because I had exported an environment variable that made Qt draw to nowhere, while the test counted real windows."
+      },
+      {
+        t: "quote",
+        text: "Every wrong number in that list came from the same habit: I measured once, got a plausible answer, and stopped. The correct number takes ten runs and four more minutes."
+      }
+    ]
+  },
+  {
+    n: "08",
+    id: "traps",
+    title: "Traps, and what they cost",
+    sub: "Each of these cost at least an hour. They are in no particular order because pain has no ordering.",
+    blocks: [
+      {
+        t: "list",
+        items: [
+          "A profiler changes what it measures. Qt's QML profiler forces recompilation even when compiled units are linked into the binary, so the compilation rows in its output are fabricated. I believed them for a while.",
+          "A busy-wait in the benchmark drowns the signal. Whole-session CPU came out at 53 to 55 s for every renderer except one, because the settle loop was pegging a core and reporting it as the app's.",
+          "<code>pkill -f pattern</code> kills the calling shell when the pattern appears in the shell's own command line, including inside a heredoc. I did this to myself five times before moving every kill pattern into a script file. Five.",
+          "HyprFM rewrites its session file on quit, so a killed instance can save after a script has restored the user's file. This destroyed a real session of mine once, which is why every benchmark launch now runs against a sandboxed home.",
+          "If your own copy of the app is already running, a benchmark launch is forwarded to it over the single-instance socket and no new window appears. The harness waits patiently for a window that already exists.",
+          "A scratch file called <code>bisect.py</code> shadows Python's standard library <code>bisect</code>, which breaks <code>statistics</code>, which is how the harness computes medians. Half an hour, and it was not even a real bug."
+        ]
+      }
+    ]
+  },
+  {
+    n: "09",
+    id: "stands",
+    title: "Where it stands",
+    sub: "",
+    blocks: [
+      {
+        t: "table",
+        head: [
+          "<tr><th>Measure",
+          "before",
+          "now"
+        ],
+        rows: [
+          [
+            "Launch to window, home",
+            "336 ms",
+            "163 to 170 ms"
+          ],
+          [
+            "Launch to window, 10k directory",
+            "332 ms",
+            "169 ms"
+          ],
+          [
+            "Memory at rest",
+            "170 to 184 MB",
+            "103 to 114 MB"
+          ],
+          [
+            "Navigate into a 10k directory",
+            "70.7 ms",
+            "39.6 ms"
+          ],
+          [
+            "Second window",
+            "347 ms",
+            "81 ms"
+          ],
+          [
+            "First launch after an update",
+            "plus 400 ms of QML compilation",
+            "none"
+          ],
+          [
+            "A machine with no GPU",
+            "427 ms, 290 MB, 1.93 s CPU",
+            "166 ms, 79 MB, 0.28 s CPU"
+          ],
+          [
+            "PDF page thumbnail, repeated",
+            "207 ms",
+            "0.05 ms"
+          ]
+        ]
+      },
+      {
+        t: "h",
+        text: "Still open"
+      },
+      {
+        t: "p",
+        text: "Loading the QML engine is 58 ms and I have taken it apart: 4 ms to warm the engine, 6 for the Controls import, 14 for the toolbar, 9 for the file view container, 7 for the sidebar, and so on down to nothing. There is no hotspot. It is a user interface with a lot of buttons in it, and the only way to make it cheaper is to build less of it before the first frame."
+      },
+      {
+        t: "p",
+        text: "Which leads to the number I find funniest in the whole log. At the first frame the window contains 662 items, and 257 of them are invisible. Thirty-nine percent of the interface is built to not be seen: a hidden text item per file used only to measure whether a filename fits on two lines, whichever of the icon or the thumbnail is not currently showing, two inactive badge loaders per row. That is worth about 2 ms and a lighter row while scrolling. It is recorded as a finding, not shipped as a change, because I ran out of week."
+      },
+      {
+        t: "p",
+        text: "Also open: the settings window's first open at 85 ms, about 60 of which is creating a swapchain for a second top level window, the AppImage's FUSE tax, and one clipboard call that is still synchronous on an explicit paste."
+      },
+      {
+        t: "p",
+        text: "The long version of this log, with commit hashes and the measurements in the order they happened, lives in the HyprFM repository as <code>docs/performance-history.md</code>. It is less polite than this sheet."
+      }
+    ]
+  }
+] as Section[];

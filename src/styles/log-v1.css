@@ -1,0 +1,52 @@
+/* Variant 1, "Rail". The reading column keeps a margin rail beside it for section numbers and
+   short notes, the way a drawing hangs its annotations off the frame. Motion: figures plot
+   themselves stroke by stroke when they scroll in, and each section rule wipes across first. */
+.vrail {
+  --rail: 232px;
+  --gutter: 44px;
+  --measure: 65ch;
+  max-width: calc(var(--measure) + var(--gutter) + var(--rail));
+}
+.vrail > * + * { margin-top: clamp(26px, 3.4vw, 40px); }
+.vrail .band { display: flow-root; max-width: var(--measure); }
+.vrail .band > * + * { margin-top: 20px; }
+.vrail .copy, .vrail ul, .vrail .lede, .vrail h3, .vrail .vnote, .vrail .vquote { max-width: var(--measure); }
+.vrail .sec { max-width: var(--measure); }
+.vrail .sec::before {
+  content: ""; display: block; height: 0; width: calc(var(--measure) + var(--gutter) + var(--rail));
+  border-top: 1px solid var(--line-2); margin-bottom: 20px; transform-origin: left;
+}
+.js .vrail .sec::before { transform: scaleX(0); transition: transform .7s cubic-bezier(.65, 0, .35, 1); }
+.js .vrail .sec.in::before { transform: scaleX(1); }
+.vrail .sec h2 { font-size: clamp(32px, 4vw, 46px); }
+.vrail .sec .sub { font-family: var(--read); font-size: 18px; color: var(--muted); margin-top: 12px; }
+.vrail h3 { margin-top: 1.6em; }
+.vrail .marginal {
+  float: right; clear: right; width: var(--rail);
+  margin: 6px calc(-1 * (var(--rail) + var(--gutter))) 22px var(--gutter);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.5; color: var(--muted);
+}
+.vrail .marginal .num { color: var(--accent); letter-spacing: .14em; text-transform: uppercase; }
+.vrail .marginal.corr { border-left: 2px solid var(--accent); padding-left: 14px; }
+.vrail .marginal.corr > span:first-child { display: block; color: var(--accent); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 6px; }
+.vrail .sec, .vrail .vfig, .vrail .tw, .vrail .vstats, .vrail .vquote { clear: both; }
+.vrail .vfig, .vrail .vstats, .vrail .tw { width: calc(var(--measure) + var(--gutter) + var(--rail)); }
+.vrail .plotwrap { overflow-x: auto; }
+.vrail .plot { min-width: 560px; }
+/* Labels arrive once the strokes that carry them have been drawn. */
+.js .vrail .plot text { opacity: 0; transition: opacity .45s .5s; }
+.js .vrail .plot.in text { opacity: 1; }
+
+@media (max-width: 1100px) {
+  .vrail { max-width: 100%; }
+  .vrail .band, .vrail .sec, .vrail .vfig, .vrail .vstats, .vrail .tw { max-width: 100%; width: 100%; }
+  .vrail .sec::before { width: 100%; }
+  .vrail .marginal { float: none; width: auto; margin: 0 0 6px; border-left: 2px solid var(--line-2); padding-left: 14px; }
+  .vrail .marginal.corr { border-left-color: var(--accent); }
+  .vrail .marginal:has(.num) { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 767px) { .vrail { --measure: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .js .vrail .sec::before { transform: none; transition: none; }
+  .js .vrail .plot text { opacity: 1; transition: none; }
+}

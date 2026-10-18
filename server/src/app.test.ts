@@ -101,6 +101,40 @@ test('documents the real routes and streams a session-grounded answer', async ()
   assert.equal(sent.body.messages.at(-1).content, 'Tell me about HyprFM');
 });
 
+test('streams Jev-composed UI after the answer without exposing arbitrary components', async () => {
+  const composed = {
+    model: 'typesafe/jev-1.13',
+    spec: {
+      root: 'node_0',
+      elements: {
+        node_0: { type: 'Board', props: { eyebrow: 'Selected evidence', title: 'Relevant work' }, children: [] },
+      },
+      state: {},
+    },
+  };
+  let input: unknown;
+  const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), replying('Relevant answer.').client, {
+    genUi: async value => { input = value; return composed; },
+  });
+  const token = await newSession(app);
+  const frames = events(await (await app.fetch(ask(token, 'Show relevant projects'))).text());
+  assert.deepEqual(frames.find(event => event.type === 'ui')?.ui, composed);
+  assert.deepEqual(input, { message: 'Show relevant projects', answer: 'Relevant answer.', sources: [] });
+  assert.ok(frames.findIndex(event => event.type === 'ui') > frames.findIndex(event => event.type === 'delta'));
+  assert.ok(frames.findIndex(event => event.type === 'ui') < frames.findIndex(event => event.type === 'done'));
+});
+
+test('a failed Jev composition leaves the completed text answer intact', async () => {
+  const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), replying('Text still works.').client, {
+    genUi: async () => { throw new Error('gateway unavailable'); },
+  });
+  const token = await newSession(app);
+  const frames = events(await (await app.fetch(ask(token))).text());
+  assert.equal(frames.filter(event => event.type === 'delta').map(event => event.text).join(''), 'Text still works.');
+  assert.equal(frames.some(event => event.type === 'ui'), false);
+  assert.equal(frames.at(-1).type, 'done');
+});
+
 test('the browser history reaches the model and nothing is stored', async () => {
   const { sent, client } = replying('Second answer.');
   const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);

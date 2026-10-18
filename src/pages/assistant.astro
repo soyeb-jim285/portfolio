@@ -38,7 +38,7 @@ import { hardQuestion } from '../data/assistant-questions';
       <li><span>1 / session</span><span>The browser asks for an anonymous session token. Only its hash is stored, so a leaked row cannot be replayed.</span></li>
       <li><span>2 / context</span><span>The browser keeps the conversation and sends its recent turns with each question. The API trims them to its own limits and stores none of it.</span></li>
       <li><span>3 / tools</span><span>The model may search and read indexed source, move you around this site, draft a message, write a document, or read calendar availability. Tool results are labelled untrusted data.</span></li>
-      <li><span>4 / answer</span><span>Tokens stream back as they arrive, with the tool calls that ran, their timings, and the source ranges read.</span></li>
+      <li><span>4 / answer</span><span>Tokens stream back as they arrive, with the tool calls that ran, their timings, and the source ranges read. Jev may then arrange relevant, pre-approved portfolio evidence into a visual panel.</span></li>
       <li><span>5 / your move</span><span>Anything outward-facing waits for you: a message is sent, and a call is booked, only when you press the button.</span></li>
     </ul>
   </section>
@@ -65,7 +65,7 @@ import { hardQuestion } from '../data/assistant-questions';
     <ul class="specs tight">
       <li><span>stored</span><span>The conversation stays in your browser. The server keeps the hash of an anonymous session token, and for 24 hours a copy of each answer, filed under a hash of the whole conversation so an identical conversation is answered without a new model call. For each answer it also records how it went, never what it said: timings, token counts, cost, which tools ran and whether it came from the cache. No account, no name, no tracking cookie.</span></li>
       <li><span>deleted</span><span>Clear chat erases the conversation from your browser. On the server, a session goes seven days after last use, a cached answer after 24 hours, a contact draft within the hour, and the per-answer timing records after 90 days. Generated documents expire after seven days and their files are deleted with them.</span></li>
-      <li><span>shared</span><span>Message text goes to OpenRouter and the model provider it routes to. A message you send goes to Resend. A call you book becomes an event in Jim's Google Calendar. Nothing else leaves.</span></li>
+      <li><span>shared</span><span>Message text goes to OpenRouter and the model provider it routes to. For a visual companion, the current question, finished answer and public evidence descriptions go through OpenRouter to TypeSafe AI's Jev. A message you send goes to Resend. A call you book becomes a calendar event. Nothing else leaves.</span></li>
       <li><span>bot check</span><span>Opening the assistant or sending the contact form runs Cloudflare Turnstile once, which reads browser signals to tell people from scripts. Its script loads when you reach for the assistant or open the contact form, never on a page view.</span></li>
       <li><span>never logged</span><span>Message bodies, contact text and credentials stay out of the server logs.</span></li>
     </ul>
@@ -80,7 +80,7 @@ import { hardQuestion } from '../data/assistant-questions';
 
   <section class="r">
     <h2 class="t2" style="margin-bottom:16px">Built with</h2>
-    <p class="lead">Astro and a React island on the front, Hono on Node with an OpenAPI schema on the back, PostgreSQL with pgvector for sessions and retrieval, OpenRouter for the model and embeddings, Cloudflare R2 for generated documents, Resend for mail, and the Google Calendar API for scheduling. The API documents itself; every route, event and error shape is in the generated specification.</p>
+    <p class="lead">Astro and a React island on the front, Hono on Node with an OpenAPI schema on the back, PostgreSQL with pgvector for sessions and retrieval, OpenRouter for the conversational model and embeddings, Jev with JSON Render for catalog-constrained visual answers, Cloudflare R2 for generated documents, Resend for mail, and a calendar provider for scheduling. The API documents itself; every route, event and error shape is in the generated specification.</p>
     <p class="lead">The reference is public: <a href="https://api.soyebjim.me/docs" target="_blank" rel="noopener">api.soyebjim.me/docs</a>, with the raw schema at <a href="https://api.soyebjim.me/openapi.json" target="_blank" rel="noopener">/openapi.json</a>. Sending a request from that page returns 403. Every <code>/v1</code> route checks the calling origin against this site, and the documentation is served from a different one, so the refusal is the check working rather than a fault.</p>
     <p class="btns">
       <button type="button" class="btn fill" data-assistant-ask={hardQuestion}>Ask it something hard</button>

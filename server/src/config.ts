@@ -32,6 +32,9 @@ export const configSchema = z.object({
   RERANK_MODEL: z.string().default('openai/gpt-4.1-nano'),
   // Reasoning effort for the chat model on every step; empty leaves the provider's default.
   CHAT_REASONING_EFFORT: z.enum(['', 'minimal', 'low', 'medium', 'high']).default('minimal'),
+  // Jev uses the existing OpenRouter key; empty disables catalog-constrained chat UI.
+  JEV_MODEL: z.string().default('typesafe/jev-1.13'),
+  JEV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30000).default(12000),
   // Answer the site's fixed questions after each index pass so they replay from the cache.
   WARM_ANSWERS: z.enum(['true', 'false']).default('true').transform(value => value === 'true'),
   MAX_TOOL_STEPS: z.coerce.number().int().min(0).max(6).default(3),

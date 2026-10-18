@@ -1,0 +1,87 @@
+---
+// Variant 1, "Rail": the reading column with a margin rail, on the sheet the rest of the site
+// uses. Figures are plotted into SVG at build time and draw themselves on arrival.
+import '@fontsource/ibm-plex-serif/400.css';
+import '@fontsource/ibm-plex-serif/400-italic.css';
+import '@fontsource/ibm-plex-serif/600.css';
+import '../../styles/log-shared.css';
+import '../../styles/log-v1.css';
+import Layout from '../../layouts/SchematicLayout.astro';
+import VariantSwitch from '../../components/log/VariantSwitch.astro';
+import PlotterChart from '../../components/log/PlotterChart.astro';
+import { figures, post, sections } from '../../data/log/startup-halved';
+---
+<Layout
+  title={`${post.title}, layout 1, Soyeb Pervez Jim`}
+  description={post.dek}
+  sheet="9.1"
+  big="Log V1"
+  stamp={{ k: 'Layout', v: 'Rail' }}
+>
+  <VariantSwitch v={1} />
+
+  <article class="vpost vrail" data-anchor="log-post">
+    <section class="head">
+      <h1 class="title">{post.title}</h1>
+      <p class="sub">{post.dek}</p>
+      <p class="vby">
+        <span>Sheet <b>9.1</b></span>
+        <span>Written <b>{post.when}</b></span>
+        <span>About <b>{post.subject}</b></span>
+        <span>Reading <b>{post.minutes} min</b></span>
+      </p>
+    </section>
+
+    {sections.map((section) => (
+      <>
+        {section.title && (
+          <section class="sec" id={section.id}>
+            <p class="marginal"><span class="num">Section {section.n}</span></p>
+            <h2 class="t2">{section.title}</h2>
+            {section.sub && <p class="sub">{section.sub}</p>}
+          </section>
+        )}
+        {section.blocks.map((block) => {
+          if (block.t === 'p') return <div class="band"><p class={block.lede ? 'lede' : 'copy'} set:html={block.text} /></div>;
+          if (block.t === 'h') return <div class="band"><h3>{block.text}</h3></div>;
+          if (block.t === 'list') return <div class="band"><ul>{block.items.map((item) => <li set:html={item} />)}</ul></div>;
+          if (block.t === 'quote') return <p class="vquote">{block.text}</p>;
+          if (block.t === 'stats') return (
+            <div class="vstats">{block.items.map((item) => <div><strong>{item.value}</strong><span>{item.label}</span></div>)}</div>
+          );
+          if (block.t === 'table') return (
+            <div class="tw">
+              <table>
+                <thead><tr>{block.head.map((cell) => <th>{cell}</th>)}</tr></thead>
+                <tbody>{block.rows.map((row) => <tr>{row.map((cell, i) => <td class={i === row.length - 1 ? 'q' : 'm'} set:html={cell} />)}</tr>)}</tbody>
+              </table>
+            </div>
+          );
+          if (block.t === 'note') return block.side ? (
+            <div class="band"><p class="marginal corr"><span>{block.title}</span><span set:html={block.paras[0]} /></p></div>
+          ) : (
+            <aside class="vnote">
+              <span>{block.title}</span>
+              {block.paras.map((para) => <p set:html={para} />)}
+            </aside>
+          );
+          return <PlotterChart figure={figures[block.id]} />;
+        })}
+      </>
+    ))}
+
+    <p class="cap">Layout 1 of 5. Figures plotted into SVG by the build, no chart library, no client-side rendering.</p>
+
+    <nav class="pn" aria-label="Previous and next sheet">
+      <a href="/log/"><small>Back, sheet 9</small><b>Log index</b></a>
+      <a href="/log/v2/"><small>Next layout</small><b>V2 Column</b></a>
+    </nav>
+  </article>
+
+  <script>
+    import { drawPlots, reveal } from '../../scripts/log-reveal';
+    const start = () => { drawPlots('.vrail .plot'); reveal('.vrail .sec'); };
+    start();
+    document.addEventListener('astro:page-load', start);
+  </script>
+</Layout>

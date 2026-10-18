@@ -1,0 +1,74 @@
+---
+// One bar chart for the log sheets. The drawing is Chart.js on a canvas, themed to the sheet
+// and built when it scrolls into view; the numbers behind it are printed as a table too, so a
+// value is never reachable only by pointing at a picture.
+// Three shapes, one component: a single measure with one row emphasised, two measures compared
+// (the dim bar is the "before"), and parts of one total stacked.
+import type { ChartSpec } from '../../scripts/charts';
+interface Props {
+  fig: string;                 // "FIG. 3", printed in the caption
+  title: string;
+  note?: string;               // what the reader is looking at, one line
+  series: string[];            // legend names, in the order the values appear
+  unit: string;
+  rows: { label: string; values: (number | null)[]; hot?: boolean; tag?: string }[];
+  stacked?: boolean;
+  max?: number;
+  lower?: boolean;             // true when smaller is better, said in the caption
+  table?: string;              // summary line for the table view
+}
+const { fig, title, note, series, unit, rows, stacked = false, max, lower = true, table } = Astro.props;
+
+// Stacked parts run light to dark in the order they are listed, so a stack reads as one measure
+// cut into pieces. Two series dim the "before" and accent the "after". A single series dims every
+// row except the one the paragraph is about, which is emphasis rather than identity.
+const fills = stacked ? (['light', 'accent', 'dark'] as const) : series.length > 1 ? (['dim', 'accent'] as const) : (['accent'] as const);
+const spec: ChartSpec = {
+  kind: 'bar',
+  labels: rows.map((row) => (row.tag ? [row.label, row.tag] : row.label)),
+  series: series.map((name, i) => ({ name, data: rows.map((row) => row.values[i] ?? null), fill: fills[i] ?? 'accent' })),
+  perRow: series.length === 1 ? rows.map((row) => (row.hot ? 'accent' : 'dim')) : undefined,
+  unit,
+  stacked,
+  max,
+};
+// A grouped row carries two bars, so it needs more air than a single or stacked one.
+const height = rows.length * (series.length > 1 && !stacked ? 48 : 36) + 40;
+const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(v < 10 ? 2 : 1));
+const totals = rows.map((row) => row.values.reduce<number>((a, b) => a + (b ?? 0), 0));
+const swatch = (fill: string) => `var(--${fill === 'dim' ? 'c0' : fill === 'light' ? 'c2' : fill === 'dark' ? 'c3' : 'c1'})`;
+---
+<figure class="chart">
+  <div class="chart-head">
+    <b>{title}</b>
+    {note && <span>{note}</span>}
+  </div>
+  {series.length > 1 && (
+    <p class="legend">
+      {series.map((name, i) => <span><i style={`background:${swatch(fills[i] ?? 'accent')}`}></i>{name}</span>)}
+    </p>
+  )}
+  <div class="cwrap" style={`height:${height}px`}>
+    <canvas data-chart={JSON.stringify(spec)} role="img" aria-label={`${title}. ${note ?? ''} The same figures are in the table below.`}></canvas>
+  </div>
+  <figcaption>
+    <p><b>{fig}</b>{lower ? 'Lower is better.' : 'Higher is better.'} Every bar is a median of repeated runs, never a single launch.</p>
+  </figcaption>
+  <details class="tview">
+    <summary>{table ?? 'The numbers behind this chart'}</summary>
+    <div class="tw">
+      <table>
+        <thead><tr><th></th>{series.map((name) => <th class="nw">{name} ({unit})</th>)}{stacked && <th class="nw">total ({unit})</th>}</tr></thead>
+        <tbody>
+          {rows.map((row, r) => (
+            <tr>
+              <td>{row.label}{row.tag && ` ${row.tag}`}</td>
+              {row.values.map((v) => <td>{v == null ? '—' : fmt(v)}</td>)}
+              {stacked && <td class="q">{fmt(totals[r])}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</figure>

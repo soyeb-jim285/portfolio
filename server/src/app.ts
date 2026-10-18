@@ -15,6 +15,7 @@ import { AmbiguousDeliveryError, type Mailer } from './mailer';
 import type { Storage } from './storage';
 import { AmbiguousBookingError, type EventType, type Scheduler, type Slot } from './scheduler';
 import { buildToolDefinitions, runTool, type ToolContext, type ToolOutcome } from './tools';
+import type { GenUiComposer } from './gen-ui';
 
 const MAX_CONTEXT_CHARS = 24000;
 // However lively the stream, one answer never runs longer than this.
@@ -84,6 +85,16 @@ const usageSchema = z.object({
   ms: z.number(), model: z.string(), promptTokens: z.number().optional(), completionTokens: z.number().optional(), costUsd: z.number().optional(),
   cached: z.boolean().optional().openapi({ description: 'True when a stored answer was replayed instead of generated.' }),
 }).openapi('Usage');
+const generatedUiSchema = z.object({
+  model: z.string(),
+  spec: z.object({
+    root: z.string(),
+    elements: z.record(z.string(), z.object({
+      type: z.string(), props: z.record(z.string(), z.unknown()), children: z.array(z.string()).optional(), slots: z.record(z.string(), z.array(z.string())).optional(),
+    }).passthrough()),
+    state: z.record(z.string(), z.unknown()).optional(),
+  }).passthrough(),
+}).openapi('GeneratedUi');
 const eventSchema = z.discriminatedUnion('type', [
   z.object({ version: z.literal(1), type: z.literal('delta'), text: z.string() }),
   z.object({ version: z.literal(1), type: z.literal('tool'), id: z.string(), name: z.string(), summary: z.string(), status: z.enum(['running', 'done', 'error']), ms: z.number().optional() })
@@ -102,6 +113,8 @@ const eventSchema = z.discriminatedUnion('type', [
     .openapi({ description: 'Real free slots read from the calendar, for the visitor to pick from.' }),
   z.object({ version: z.literal(1), type: z.literal('proposal'), proposal: proposalSchema })
     .openapi({ description: 'A call awaiting the visitor\'s confirmation at /v1/bookings. Nothing is booked yet.' }),
+  z.object({ version: z.literal(1), type: z.literal('ui'), ui: generatedUiSchema })
+    .openapi({ description: 'A Jev-composed, catalog-constrained JSON Render spec. Component types and props come from server-owned candidates.' }),
   z.object({ version: z.literal(1), type: z.literal('usage'), usage: usageSchema })
     .openapi({ description: 'Measured answer latency and the provider-reported token usage, when the provider reports it.' }),
   z.object({ version: z.literal(1), type: z.literal('done'), finishReason: z.enum(['stop', 'length']) }),
@@ -123,7 +136,7 @@ type Vars = { clientIP: string; sessionId: string };
 // metricsOrigin labels every metric this app instance records: the public app says 'visitor', while the
 // eval and the cache warm-up build their own instances, so no request header can relabel traffic.
 export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: Mailer, storage: Storage, scheduler: Scheduler, client = new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 0 }),
-  options: { metricsOrigin?: 'visitor' | 'eval' | 'warmup'; github?: ToolContext['github'] } = {}) {
+  options: { metricsOrigin?: 'visitor' | 'eval' | 'warmup'; github?: ToolContext['github']; genUi?: GenUiComposer } = {}) {
   const origin = options.metricsOrigin ?? 'visitor';
   const app = new OpenAPIHono<{ Variables: Vars }>({ defaultHook: (result, c) => {
     if (!result.success) return c.json({ error: 'Invalid request. Send one non-empty message under 8000 characters with a valid session.' }, 400);
@@ -258,7 +271,7 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
     // The visitor's time zone is not part of the key: it only shapes calendar answers, and those carry
     // session-bound events that are never cached. Leaving it in split every answer by time zone.
     const cacheKey = !config.ANSWER_CACHE_TTL_HOURS ? undefined : createHash('sha256').update(JSON.stringify({
-      model: config.OPENROUTER_MODEL, system: systemPrompt,
+      model: config.OPENROUTER_MODEL, genUi: options.genUi ? config.JEV_MODEL : '', system: systemPrompt,
       commits: indexed.map(entry => `${entry.repo}@${entry.commit}`),
       turns: [...history, { role: 'user', content: message }].map(({ role, content }) => [role, content]),
     })).digest();
@@ -505,6 +518,15 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
         }
         if (finish !== 'stop' && finish !== 'length') throw new Error('Incomplete provider response');
         if (!answer.trim()) throw new Error('Empty provider response');
+        if (finish === 'stop' && options.genUi) {
+          try {
+            const ui = await options.genUi({ message, answer, sources }, controller.signal);
+            if (ui) await send({ type: 'ui', ui });
+          } catch (error) {
+            if (controller.signal.aborted) throw error;
+            console.error('Jev UI composition failed');
+          }
+        }
         // Only a whole answer is reused; one cut off at the length limit is not.
         if (cacheKey && recorded && finish === 'stop') {
           await db.cacheAnswer(cacheKey, recorded, config.ANSWER_CACHE_TTL_HOURS).catch(error => console.error('Could not cache answer:', error.message));

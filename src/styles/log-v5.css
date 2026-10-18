@@ -1,0 +1,30 @@
+/* Variant 5, "Pinned". Two columns: the argument scrolls on the left while the figure it is
+   about stays pinned on the right until the next one takes its place. Motion comes from the
+   pinning itself, plus a quiet fade as each figure takes over. */
+.vpin > * + * { margin-top: clamp(26px, 3vw, 40px); }
+.vpin .sec { border-top: 1px solid var(--line-2); padding-top: 20px; display: grid; gap: 10px; max-width: 70ch; }
+.vpin .sec .num { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.vpin .sec h2 { font-size: clamp(30px, 3.8vw, 44px); }
+.vpin .sec .sub { font-family: var(--read); font-size: 18px; color: var(--muted); }
+.vpin .band { max-width: 68ch; }
+.vpin .band > * + * { margin-top: 20px; }
+.vpin h3 { margin-top: 1.5em; }
+
+/* a pair: prose on the left, its figure pinned on the right for the length of the pair */
+.vpin .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(24px, 3.5vw, 52px); align-items: start; }
+.vpin .pair .side { position: sticky; top: 28px; }
+.vpin .pair .prose > * + * { margin-top: 20px; }
+.vpin .pair .vfig { padding-top: 14px; }
+.js .vpin .pair .vfig { opacity: .35; transition: opacity .5s ease; }
+.js .vpin .pair .vfig.in { opacity: 1; }
+.vpin .vstats, .vpin .tw { width: 100%; }
+.vpin .vnote, .vpin .vquote { max-width: 68ch; }
+/* a marker in the gutter counts the pairs off, so the pinning reads as deliberate */
+.vpin .pair .side .rule { display: flex; align-items: baseline; gap: 10px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.vpin .pair .side .rule b { color: var(--accent); font-weight: 500; }
+@media (max-width: 900px) {
+  .vpin .pair { grid-template-columns: 1fr; }
+  .vpin .pair .side { position: static; }
+  .js .vpin .pair .vfig { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .js .vpin .pair .vfig { opacity: 1; transition: none; } }

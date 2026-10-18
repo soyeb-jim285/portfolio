@@ -3,7 +3,7 @@ import test from 'node:test';
 import { SessionExpired, streamAnswer, type StreamHandlers } from '../../src/lib/chat-stream';
 
 const question = 'Explain Qt';
-const noop: StreamHandlers = { text: () => {}, tool: () => {}, sources: () => {}, action: () => {}, draft: () => {}, artifact: () => {}, slots: () => {}, proposal: () => {}, usage: () => {}, image: () => {} };
+const noop: StreamHandlers = { text: () => {}, tool: () => {}, sources: () => {}, action: () => {}, draft: () => {}, artifact: () => {}, slots: () => {}, proposal: () => {}, usage: () => {}, image: () => {}, ui: () => {} };
 const frame = (event: unknown) => `data: ${JSON.stringify(event)}\r\n\r\n`;
 
 test('browser stream consumer handles fragmented UTF-8 and CRLF frames', async t => {
@@ -60,4 +60,25 @@ test('browser stream consumer surfaces tool activity and citations, and ignores 
   assert.equal(result.text, 'Transfers run on a worker pool.');
   assert.deepEqual(tools.map((tool: any) => [tool.status, tool.ms]), [['running', undefined], ['done', 42]]);
   assert.deepEqual(cited, [source]);
+});
+
+test('browser stream consumer surfaces a validated generative UI snapshot', async t => {
+  const ui = {
+    model: 'typesafe/jev-1.13',
+    spec: {
+      root: 'node_0',
+      elements: {
+        node_0: { type: 'Board', props: { eyebrow: 'Selected evidence', title: 'Relevant work' }, children: [] },
+      },
+      state: {},
+    },
+  };
+  const body = frame({ version: 1, type: 'ui', ui })
+    + frame({ version: 1, type: 'delta', text: 'Here is the relevant work.' })
+    + frame({ version: 1, type: 'done', finishReason: 'stop' });
+  t.mock.method(globalThis, 'fetch', async () => new Response(body, { headers: { 'content-type': 'text/event-stream' } }));
+  const received: unknown[] = [];
+  await streamAnswer('http://localhost', 'token', question, [], new AbortController().signal,
+    { ...noop, ui: value => received.push(value) });
+  assert.deepEqual(received, [ui]);
 });
