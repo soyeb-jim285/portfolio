@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-20T08:39:39.190Z",
+  "generatedAt": "2026-10-21T08:41:33.388Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -77,8 +77,8 @@
           "value": "C++ and QML"
         }
       ],
-      "contributors": 12,
-      "outsideContributors": 11
+      "contributors": 14,
+      "outsideContributors": 13
     },
     {
       "slug": "neural-network-x-ray",
