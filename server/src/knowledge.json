@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-23T08:37:22.489Z",
+  "generatedAt": "2026-10-27T09:08:00.441Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -57,12 +57,12 @@
           "href": "https://trendshift.io/repositories/182310"
         }
       ],
-      "stars": 340,
-      "forks": 21,
+      "stars": 342,
+      "forks": 22,
       "facts": [
         {
           "label": "Stars",
-          "value": "340"
+          "value": "342"
         },
         {
           "label": "Trending",
