@@ -362,7 +362,7 @@
         "unique_cloners_14d": 350,
         "clones_14d": 521,
         "repo_views_14d": 854,
-        "external_contributors": 13,
+        "external_contributors": 14,
         "external_commits": 32,
         "reddit": { "r/hyprland": { "upvotes": 675, "comments": 56, "views": "67K" }, "r/unixporn": { "upvotes": 70, "comments": 9, "views": "18K" } },
         "src": ["gh-traffic", "reddit-threads"],
