@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-31T09:45:55.046Z",
+  "generatedAt": "2026-10-31T21:11:14.498Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -134,25 +134,27 @@
       ]
     },
     {
-      "slug": "ielts-practice",
-      "name": "IELTS Practice",
-      "summary": "IELTS practice on the web with native Android and iPhone apps: an examiner asks out loud, answers are scored against the band descriptors, and every pause, filler and grammar slip is marked in your own transcript.",
+      "slug": "nextband",
+      "name": "NextBand",
+      "summary": "NextBand (formerly IELTS Practice) is IELTS practice on the web with native Android and iPhone apps: a live examiner asks out loud, answers are scored against the band descriptors, every pause, filler and grammar slip is marked in your own transcript, and a daily coach turns your history into the next thing to practise.",
       "stack": [
         "TypeScript",
         "React 19",
         "Hono",
         "Postgres",
         "Drizzle",
+        "LiveKit",
+        "Python",
         "Kotlin",
         "Jetpack Compose",
         "SwiftUI",
         "Whisper",
-        "OpenAI Realtime"
+        "wav2vec2"
       ],
       "links": [
         {
           "label": "Live",
-          "href": "https://ielts.soyebjim.me"
+          "href": "https://nextband.app"
         },
         {
           "label": "GitHub",
@@ -165,8 +167,12 @@
           "value": "QWK 0.80, mean error 0.52 bands on 41 held-out essays"
         },
         {
+          "label": "Speaking score",
+          "value": "Mean error 0.55 bands, leave-one-speaker-out on 66 clips"
+        },
+        {
           "label": "Question bank",
-          "value": "120 cue cards, 799 Part 1 and 3 questions, 220 Writing prompts"
+          "value": "320 cue cards, 2,407 Part 1 and 3 questions, 720 Writing prompts"
         },
         {
           "label": "Platforms",
@@ -174,7 +180,7 @@
         },
         {
           "label": "Tests",
-          "value": "About 1,000 cases across web, server, Android and iOS"
+          "value": "About 1,050 cases across web, server, Android, iOS and the examiner"
         }
       ]
     },
@@ -522,12 +528,13 @@
         "Built with Next.js 16, React 19 and TypeScript."
       ]
     },
-    "ielts-practice": {
+    "nextband": {
       "body": [
-        "You record a Speaking answer or write a timed essay. Speech is transcribed with the fillers kept (primed Whisper, or ElevenLabs Scribe), and fluency is measured from the word timings: speech rate, mean length of run, pause ratio, mid-clause pauses, fillers, repetitions and self-corrections. Each mistake is anchored to the word it happened on, so the transcript, the pace chart and the audio line up.",
-        "Writing gets a band per criterion, the three fixes that matter most, every error explained and the essay rewritten one band higher. Listening and Reading run as computer-style tests with highlights, notes and timers, and a full mock exam chains all four skills. Mistakes come back as SM-2 review cards. A live examiner can run the Speaking test over OpenAI Realtime or Gemini Live.",
-        "Bands come from a descriptor-anchored rater with a fitted calibration map. On a frozen test set of 41 published Cambridge and ielts.org essays, Writing lands at QWK 0.80 and a mean error of 0.52 bands; the Speaking curve, fitted on 66 labelled clips, has a leave-one-group-out error of 0.59. Those sets are small, scores run low at band 7.5 and above, and pronunciation is not judged from audio, so the app shows every band as an estimate with a range.",
-        "One TypeScript monorepo: React 19 and Vite on the web, Hono with Postgres and Drizzle on the server, shared scoring and speech logic in a core package, plus native Kotlin (Jetpack Compose) and SwiftUI apps that CI builds but that are not in the stores yet. It ships as one Docker image on Dokploy."
+        "You record a Speaking answer or write a timed essay. Speech is transcribed with the fillers kept (primed Whisper, or ElevenLabs Scribe), and fluency is measured from the word timings: speech rate, mean length of run, pause ratio, mid-clause pauses, fillers, repetitions and self-corrections. Each mistake is anchored to the word it happened on, so the transcript, the pace chart and the audio line up. A wav2vec2 phoneme model scores pronunciation word by word, with your own clip next to a dictionary recording, and the Improve tab rewrites your answer at Band 9 with the same ideas.",
+        "The live Speaking test runs on a self-hosted LiveKit server: a Python worker with Soniox streaming transcription, local turn detection and a topic-led examiner that speaks every line. Writing gets a band per criterion, the three fixes that matter most, every error explained and the essay rewritten one band higher. Listening and Reading run as computer-style tests with highlights, notes and timers, and a full mock exam chains all four skills. Mistakes come back as SM-2 review cards.",
+        "A daily coach builds facts from a student's history (bands, trends, recurring mistakes, days to the exam), picks a priority with plain rules, and has Haiku word the report under a validator that rejects anything the facts do not support. The same facts feed a weekly email. Plans are paid in Bangladeshi Taka through PayStation (bKash, Nagad, Rocket, Upay or card), with a free tier and plan-based limits.",
+        "Bands come from a descriptor-anchored rater with a fitted calibration map. On a frozen test set of 41 published Cambridge and ielts.org essays, Writing lands at QWK 0.80 and a mean error of 0.52 bands; the Speaking curve, fitted on 66 labelled clips with pronunciation accuracy included, has a leave-one-speaker-out error of 0.55. Those sets are small and scores run low at band 7.5 and above, so the app shows every band as an estimate with a range.",
+        "One TypeScript monorepo: React 19 and Vite on the web, Hono with Postgres and Drizzle on the server, shared scoring and speech logic in a core package, plus native Kotlin (Jetpack Compose) and SwiftUI apps that CI builds but that are not in the stores yet. It ships as one Docker image on Dokploy, with the LiveKit examiner as its own service."
       ]
     },
     "hyprpdf": {
