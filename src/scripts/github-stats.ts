@@ -1,4 +1,4 @@
-// The counts baked into src/data/content.ts come from scripts/update-stars.mjs, which runs once a
+// The counts baked into src/data/projects.ts come from scripts/update-stars.mjs, which runs once a
 // day. Refresh them in the browser so a quiet month without a deploy cannot leave a page behind.
 // Any element with data-gh-repo="owner/name" and data-gh-field gets its text replaced.
 type Field = 'stars' | 'forks' | 'contributors' | 'outside';

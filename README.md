@@ -15,7 +15,7 @@ npm run preview
 
 ## Content
 
-Everything visible comes from `src/data/content.ts`. Numbers there are sourced in `src/data/cv.json`, which records where each fact came from. Edit `content.ts`, not the pages.
+Everything visible comes from `src/data/content.ts`, with projects and research in `projects.ts` and `research.ts` beside it. Numbers there are sourced in `src/data/cv.json`, which records where each fact came from. Edit those files, not the pages.
 
 ## Contact form
 
@@ -49,7 +49,7 @@ docker exec portfolio-pg createdb -U portfolio portfolio_test
 
 Use `DATABASE_URL=postgresql://portfolio:portfolio@127.0.0.1:55432/portfolio` and `TEST_DATABASE_URL=postgresql://portfolio:portfolio@127.0.0.1:55432/portfolio_test` in `server/.env`. Later, `docker stop portfolio-pg` and `docker start portfolio-pg` stop and resume it without losing local data.
 
-`server/src/schema.sql` is applied at boot and by the indexer, so there is no separate migration step yet.
+`server/src/schema/*.sql` is applied at boot and by the indexer, so there is no separate migration step yet.
 
 ### Code index
 
@@ -161,7 +161,7 @@ Each SSE frame has a `data:` field containing version-1 JSON: `delta` with `text
 - Identical read-only tool calls reuse results within a turn. Calendar lookups are reused within that turn, but a visitor's confirmation always checks live availability. Query embeddings share in-flight calls and a bounded 256-entry, ten-minute per-process cache; requests time out after ten seconds per attempt and permanent failures are not retried. Tool calls are limited to twelve per model step with bounded arguments.
 - Deploy the repository together: `server/src/knowledge.ts` imports public content from `src/data/content.ts`. Start the API from `server/` with `npm start`; serve Astro's static output separately. Rebuild the site after changing `PUBLIC_API_URL`.
 - Keep the API behind HTTPS in production. Disable proxy buffering for streaming responses and allow at least the configured request timeout. The default API bind address is loopback.
-- `server/src/schema.sql` is applied idempotently at boot. Once columns start changing, move to a real migration tool. Back the database up and check a restore before launch.
+- `server/src/schema/*.sql` is applied idempotently at boot. Once columns start changing, move to a real migration tool. Back the database up and check a restore before launch.
 - Run `npm run check` and the database-backed tests before release. Schema changes are applied at startup. Verify HTTPS, trusted proxy headers, streamed responses, provider spending limits and database backups in the deployed environment; local tests use mocked providers.
 
 ### Operations
@@ -214,7 +214,7 @@ The mocked browser suites cannot catch CORS, so that one exists specifically to 
 
 `eval:answers` covers grounding, admitting unavailable source, tool selection for contact and scheduling, and ignoring an instruction injected into a visitor message. It stubs out mail and storage, so it can never send or upload.
 
-`npm run export:knowledge` regenerates `server/src/knowledge.json` from the site's content module. Run it after editing `src/data/content.ts`; `npm run dev` does it automatically. The API reads only that JSON, so it no longer imports frontend TypeScript.
+`npm run export:knowledge` regenerates `server/src/knowledge.json` from the site's content module. Run it after editing `src/data/content.ts`, `projects.ts` or `research.ts`; `npm run dev` does it automatically. The API reads only that JSON, so it no longer imports frontend TypeScript.
 
 ## Social card
 
@@ -222,7 +222,7 @@ The mocked browser suites cannot catch CORS, so that one exists specifically to 
 
 ## Images
 
-`public/assets/` holds the full-size screenshots plus a `-720.jpg` variant of each one that appears in a card or table cell. The small slots (home cards at 338px, parts-list thumbs at 150px) reference the 720px file through `thumb` in `content.ts`; the detail sheets, which render nearly full width, use the full-size file. Regenerate a variant by resizing the original to 720px wide at quality 80.
+`public/assets/` holds the full-size screenshots plus a `-720.jpg` variant of each one that appears in a card or table cell. The small slots (home cards at 338px, parts-list thumbs at 150px) reference the 720px file through `thumb` in `projects.ts`; the detail sheets, which render nearly full width, use the full-size file. Regenerate a variant by resizing the original to 720px wide at quality 80.
 
 ## Sitemap
 

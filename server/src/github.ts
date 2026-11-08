@@ -22,7 +22,7 @@ export function createGitHub(token: string | undefined, fetchImpl: typeof fetch 
 
   return {
     authenticated: Boolean(token),
-    // GET only. Callers build the path from validated arguments; see github_activity in tools.ts.
+    // GET only. Callers build the path from validated arguments; see github_activity in assistant-tools/github.ts.
     get,
 
     async repos(owner: string): Promise<RemoteRepo[]> {

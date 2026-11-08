@@ -1,0 +1,121 @@
+/* diagrams */
+/* a full-width diagram still needs a ceiling, or the labels blow up on a wide screen */
+.diag-wide { max-width: 860px; margin: 32px auto 0; }
+/* below ~700px the block diagrams stop being readable, so let them pan instead of shrink */
+@media (max-width: 700px) {
+  .diag-wide { overflow-x: auto; margin: 8px 0 0; }
+  .diag-wide .diag { min-width: 620px; }
+}
+.diag { width: 100%; height: auto; font-family: var(--mono); }
+.diag text { fill: var(--ink); font-size: 13px; transition: opacity .5s var(--label-delay, .6s); }
+.diag text.s { font-size: 11px; fill: var(--muted); }
+.diag text.n { font-family: var(--display); font-size: 34px; font-weight: 700; fill: var(--accent); }
+.diag path, .diag line, .diag polyline, .diag circle { fill: none; stroke: var(--ink); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.diag .o { stroke: var(--accent); }
+.diag .d { stroke-dasharray: 5 5; stroke: var(--muted); transition: opacity .5s .9s; }
+.diag .box { fill: rgba(15, 31, 58, .9); }
+.diag .draw-me { transition: stroke-dashoffset 1s cubic-bezier(.65, 0, .35, 1); }
+.js .draw text, .js .draw .d { opacity: 0; }
+.js .draw.in text, .js .draw.in .d { opacity: 1; }
+.diag g[data-blk] { cursor: default; }
+/* One transition property: the hover colours must list the draw-in too, or a grouped box never draws. */
+.diag g[data-blk] .box { transition: fill .2s, stroke .2s, stroke-dashoffset 1s cubic-bezier(.65, 0, .35, 1); }
+.diag g.hot .box { stroke: var(--accent); fill: rgba(232, 147, 63, .14); }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 4vw, 48px); align-items: start; }
+/* a split led by a heading gives the heading the narrow column */
+/* A heading column is a heading column whether or not the heading is wrapped with its
+   standfirst, so both spellings get the same ratio and the tables below line up. */
+.split:has(> h2), .split:has(> h3), .split:has(> div > h2), .split:has(> div > h3) { grid-template-columns: 4fr 8fr; }
+/* a diagram is short next to a tall column: centre it instead of stranding it at the top */
+/* hover is a mouse idea */
+@media (hover: none) { .hover-hint { display: none; } }
+
+/* spec list */
+.specs { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 0; font-size: 14px; }
+.specs li { display: grid; grid-template-columns: 110px 1fr; gap: 14px; padding: 10px 6px; border-top: 1px solid var(--line); margin: 0 -6px; transition: background .2s; }
+.specs li:last-child { border-bottom: 1px solid var(--line); }
+.specs li > span:first-child { color: var(--muted); }
+.specs li.hot { background: rgba(232, 147, 63, .14); }
+.specs li.hot > span:first-child { color: var(--accent); }
+.specs.tight { margin-top: 0; }
+.specs .gh-value { color: var(--accent); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* tables */
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 12px; border-bottom: 2px solid var(--line-2); border-right: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); vertical-align: top; }
+th:last-child, td:last-child { border-right: 0; }
+td.i { color: var(--muted); width: 56px; white-space: nowrap; }
+td.q { color: var(--accent); font-weight: 500; white-space: nowrap; }
+td.n { font-family: var(--display); font-size: 30px; font-weight: 700; line-height: 1; color: var(--accent); white-space: nowrap; }
+td.m { color: var(--muted); }
+td.nw, th.nw { white-space: nowrap; }
+td small, .small { font-size: 12px; color: var(--muted); display: block; }
+td .thumb { width: 150px; min-width: 150px; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border: 1px solid var(--line-2); filter: saturate(.8); }
+tr:hover td { background: rgba(201, 214, 234, .04); }
+
+/* figures grid (project detail, home) */
+.details { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.details figure { margin: 0; }
+.details img, .details video { border: 1px solid var(--line-2); width: 100%; height: auto; }
+.details video { display: block; background: var(--line-2); }
+.details figcaption { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.details figcaption b { color: var(--ink); font-weight: 500; margin-right: 10px; }
+.parts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.part { border: 1px solid var(--line-2); padding: 18px; display: grid; gap: 10px; align-content: start; color: var(--ink); background: var(--bg); }
+.part:hover { text-decoration: none; border-color: var(--accent); }
+.part img, .part video { display: block; border: 1px solid var(--line); width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; filter: saturate(.8); }
+.part .lab { justify-self: start; }
+.part b { font-family: var(--display); font-size: 30px; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
+.part span { color: var(--muted); font-size: 14px; }
+.part.plain { grid-template-rows: auto auto 1fr; }
+.part .blk { border: 1px solid var(--line-2); aspect-ratio: 16 / 10; display: grid; place-items: center; font-family: var(--display); font-size: 42px; color: var(--muted); }
+
+/* a sheet with no photograph still needs something in the frame */
+.nofig {
+  border: 1px dashed var(--line-2); min-height: 220px; display: grid; place-content: center; gap: 6px; text-align: center;
+  background-image: repeating-linear-gradient(135deg, transparent 0 14px, rgba(201, 214, 234, .05) 14px 15px);
+}
+.nofig > span:first-child { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+
+/* numbers row (home) */
+.nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+.nums div { padding: 18px 20px; border-right: 1px solid var(--line); }
+.nums div:last-child { border-right: 0; }
+.nums a { display: block; color: inherit; }
+.nums a:hover { text-decoration: none; }
+.nums a:hover span { color: var(--ink); }
+/* Four proofs read as one strip on a wide sheet, and as two by two on anything narrower. */
+.nums.four { grid-template-columns: repeat(4, 1fr); }
+.nums.four strong { font-size: clamp(40px, 4.6vw, 64px); }
+@media (max-width: 1023px) {
+  .nums.four { grid-template-columns: 1fr 1fr; }
+  .nums.four div { border-right: 1px solid var(--line); border-bottom: 0; }
+  .nums.four div:nth-child(even) { border-right: 0; }
+  .nums.four div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+}
+.nums strong { display: block; font-family: var(--display); font-size: clamp(44px, 6vw, 72px); font-weight: 700; line-height: 1; color: var(--accent); }
+.nums span { font-size: 13px; color: var(--muted); }
+
+/* tags */
+.tags { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.tags li { border: 1px solid var(--line-2); padding: 3px 10px; font-size: 13px; color: var(--ink); }
+.pn { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid var(--line-2); padding-top: 18px; }
+.pn a { display: grid; gap: 4px; }
+.pn a:last-child { text-align: right; }
+.pn small { color: var(--muted); font-size: 12px; }
+.pn b { font-family: var(--display); font-size: 26px; text-transform: uppercase; letter-spacing: .02em; }
+
+/* contact page */
+.cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.tbl { border: 1px solid var(--line-2); display: grid; }
+.tbl div { display: grid; grid-template-columns: 120px 1fr; border-bottom: 1px solid var(--line); }
+.tbl div:last-child { border-bottom: 0; }
+.tbl span { padding: 10px 14px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; border-right: 1px solid var(--line); }
+.tbl b { padding: 9px 14px; font-weight: 500; overflow-wrap: anywhere; }
+
+/* footer */
+.foot { display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 0 6px; }
+.foot-links { display: flex; gap: 18px; flex-wrap: wrap; }

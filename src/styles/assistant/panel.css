@@ -1,0 +1,116 @@
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-muted: var(--bg-2);
+  --color-muted-foreground: var(--muted);
+  --color-border: var(--line-2);
+  --color-primary: var(--accent);
+  --color-secondary: var(--bg-2);
+  --color-sidebar: var(--bg-2);
+}
+
+/* Width is owned by the panel script (drag handle + localStorage); this is the first-paint default. */
+:root { --assistant-width: 420px; --assistant-pad: 18px; }
+/* Panel: layer 5 above sheet navigation. Native contact dialogs retain top-layer priority. */
+/* Keep Safari from inflating text when an expanded code sample is wider than the drawer. */
+.assistant-root { font: 13px/1.6 var(--mono); color: var(--ink); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.assistant-root [hidden] { display: none !important; }
+.assistant-resizing { cursor: col-resize; user-select: none; }
+
+.chat-button { display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0; gap: 8px; padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 0; background: var(--bg-2); color: var(--ink); font: 500 12px/1.4 var(--mono); cursor: pointer; white-space: nowrap; }
+.chat-button[data-variant=default] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chat-button[data-variant=ghost] { border-color: transparent; background: transparent; color: var(--muted); }
+.chat-button[data-size=icon] { width: 34px; height: 34px; padding: 0; }
+.chat-button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.chat-button[data-variant=default]:hover:not(:disabled) { color: var(--on-accent); }
+.chat-button:active:not(:disabled) { transform: translateY(1px); }
+.chat-button:disabled { opacity: .4; cursor: default; }
+.chat-button svg { flex-shrink: 0; }
+
+.assistant-launch { position: fixed; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 5; height: 40px; }
+.assistant-panel { position: fixed; inset: 0 0 0 auto; width: var(--assistant-width); height: 100dvh; z-index: 5; display: flex; flex-direction: column; background: var(--bg); border-left: 1px solid var(--line-2); outline: none; box-shadow: -14px 0 44px rgba(8, 18, 35, .28); }
+/* Closed but still mounted (see sheet.tsx): hidden from sight, pointer and assistive technology. */
+.assistant-panel[data-state=closed] { visibility: hidden; }
+.assistant-overlay { position: fixed; inset: 0; z-index: 5; background: rgba(8, 18, 35, .65); }
+/* Drag handle straddles the panel edge; 9px hit area, 1px visible line. */
+.assistant-resizer { position: absolute; inset: 0 auto 0 -4px; width: 9px; z-index: 1; cursor: col-resize; touch-action: none; background: transparent; }
+.assistant-resizer::after { content: ""; position: absolute; inset: 0 0 0 4px; width: 1px; background: transparent; }
+.assistant-resizer:hover::after, .assistant-resizer:focus-visible::after, .assistant-resizing .assistant-resizer::after { background: var(--accent); }
+.assistant-resizer:focus-visible { outline: none; }
+
+.assistant-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 48px; padding: 0 10px 0 var(--assistant-pad); border-bottom: 1px solid var(--line-2); }
+.assistant-title { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.assistant-title span { color: var(--accent); margin: 0 2px; }
+.assistant-header-actions { display: flex; gap: 2px; }
+
+
+.assistant-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; padding: var(--assistant-pad); }
+/* The default bar is a bright full-height rail. A transparent border clipped to the content box
+   leaves a 4px mark inside a 10px gutter: present when you need it, quiet when you do not. */
+.assistant-body::-webkit-scrollbar { width: 10px; }
+.assistant-body::-webkit-scrollbar-track { background: transparent; }
+.assistant-body::-webkit-scrollbar-thumb { background: var(--line-2); background-clip: content-box; border: 3px solid transparent; }
+.assistant-body::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: content-box; }
+.assistant-empty h3 { font: 500 13px/1.5 var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.assistant-empty > p { color: var(--muted); margin-top: 6px; max-width: 46ch; }
+.assistant-prompts { display: grid; margin-top: 18px; border-top: 1px solid var(--line); }
+.assistant-prompts .chat-button { justify-content: space-between; gap: 16px; text-align: left; white-space: normal; padding: 13px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; font-weight: 400; color: var(--ink); }
+.assistant-prompts .chat-button:hover { color: var(--accent); }
+.assistant-prompts small { display: block; color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 5px; }
+
+.assistant-messages { display: flex; flex-direction: column; gap: 24px; }
+.assistant-empty + .assistant-messages:empty { display: none; }
+.chat-message { display: flex; flex-direction: column; gap: 7px; min-width: 0; max-width: 100%; }
+.chat-message.is-user { align-self: flex-end; width: fit-content; max-width: 88%; }
+.chat-message-label { display: flex; justify-content: space-between; gap: 12px; color: var(--accent); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.is-user .chat-message-label { justify-content: flex-end; color: var(--muted); }
+.chat-live-label { color: var(--muted); }
+.chat-message-content { min-width: 0; overflow-wrap: anywhere; }
+.is-user .chat-message-content { background: var(--bg-2); border-left: 2px solid var(--line-2); padding: 10px 14px; }
+.chat-user-text { white-space: pre-wrap; }
+
+.chat-response { font-size: 13px; line-height: 1.75; }
+.chat-response > * + * { margin-top: 12px; }
+.chat-response :is(h1,h2,h3,h4,h5,h6) { font: 600 13px/1.4 var(--mono); letter-spacing: 0; text-transform: none; margin-block: 18px 8px; color: var(--ink); }
+.chat-response :is(ul,ol) { padding-left: 18px; }
+.chat-response li { margin-block: 4px; }
+.chat-response strong { color: var(--ink); font-weight: 600; }
+.chat-response a { text-decoration: underline; text-underline-offset: 3px; }
+.chat-response pre { max-width: 100%; overflow-x: auto; border-radius: 0; font: 12px/1.65 var(--mono); }
+.chat-response code { font-family: var(--mono); }
+.chat-response :not(pre) > code { background: var(--bg-2); color: var(--ink); border-radius: 0; padding: 1px 4px; }
+.chat-response [data-streamdown=code-block] { border: 1px solid var(--line-2); border-radius: 0; background: var(--bg-2); padding: 6px; gap: 0; }
+.chat-response [data-streamdown=code-block-header] { padding-left: 4px; font-size: 10px; letter-spacing: .08em; }
+.chat-response [data-streamdown=code-block-body] { border: 0; border-radius: 0; background: transparent; padding: 4px 0 0; }
+.chat-response [data-streamdown=code-block-actions] { border: 0; border-radius: 0; background: transparent; padding: 0; }
+.chat-response [data-streamdown=code-block-copy-button] { min-width: 34px; min-height: 34px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+/* Streamdown's diagram controls carry Tailwind classes but assume its preflight reset, which this site
+   does not load, so they fell back to grey browser buttons. They get the panel's ghost buttons instead.
+   Selectors are not scoped to the panel: the full-screen view mounts on <body>. */
+[data-streamdown^=mermaid], [data-streamdown^=mermaid] :is(div, button) { border-radius: 0; }
+[data-streamdown^=mermaid] button {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 30px; min-height: 30px; padding: 0 8px; border: 1px solid transparent; background: transparent;
+  color: var(--muted); font: 500 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+}
+[data-streamdown^=mermaid] button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: var(--bg-2); }
+[data-streamdown^=mermaid] button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+[data-streamdown^=mermaid] button:disabled { opacity: .4; cursor: default; }
+[data-streamdown^=mermaid] button svg { width: 14px; height: 14px; }
+/* The toolbar and zoom stack are flat strips on the diagram's own ground. */
+[data-streamdown=mermaid-block-actions], [data-streamdown=mermaid] .absolute:has(> button) { border: 1px solid var(--line-2); background: var(--bg); gap: 2px; padding: 2px; }
+/* The format menu, the only box that follows the download button, reads as a list of options. */
+[data-streamdown^=mermaid] .relative > button + div { display: grid; min-width: 96px; border: 1px solid var(--line-2); background: var(--bg); box-shadow: 0 10px 28px rgba(8, 18, 35, .45); }
+[data-streamdown^=mermaid] .relative > button + div > button { justify-content: flex-start; width: 100%; min-height: 34px; padding: 0 12px; border-width: 0 0 1px; border-color: var(--line); }
+[data-streamdown^=mermaid] .relative > button + div > button:last-child { border-bottom: 0; }
+[data-streamdown^=mermaid] .relative > button + div > button:hover { border-color: var(--line); background: var(--bg-2); }
+[data-streamdown=mermaid-fullscreen] { background: var(--bg); }
+/* Mermaid writes an inline max-width sized for the panel; full screen should use the screen. */
+[data-streamdown=mermaid-fullscreen] [role=img] svg { max-width: min(100%, 1400px) !important; width: 100% !important; max-height: 100%; height: auto !important; }
+@media (pointer: coarse) { [data-streamdown^=mermaid] button { min-width: 44px; min-height: 44px; } }
+.chat-response [data-streamdown=table-wrapper] { max-width: 100%; overflow-x: auto; border: 0; border-radius: 0; background: transparent; padding: 0; }
+.chat-response [data-streamdown=table-wrapper] > div { border: 0; border-radius: 0; }
+.chat-response table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.chat-response :is(th,td) { border: 1px solid var(--line-2); padding: 7px 9px; white-space: normal; }
+.chat-response thead { background: var(--bg-2); }
+.chat-response blockquote { border-left: 2px solid var(--accent); padding-left: 12px; color: var(--muted); }

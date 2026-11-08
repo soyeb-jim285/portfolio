@@ -1,0 +1,38 @@
+---
+import DescentChart from '../schematic/DescentChart.astro';
+---
+<section class="sec" id="names">
+  <p class="marginal"><span class="num">Section 01</span></p>
+  <h2 class="t2">Three things are called startup</h2>
+</section>
+<div class="prose">
+  <p>Before any of this was worth arguing about, I had to stop using one word for three different measurements. People say an app starts in 200 ms and mean whichever of these flatters them.</p>
+</div>
+<div class="tw stacked">
+  <table>
+    <thead><tr><th>Metric</th><th>What it is</th><th>How it is taken</th></tr></thead>
+    <tbody>
+      <tr><td class="q">map</td><td>from <code>exec</code> to Hyprland announcing the window</td><td class="m">a script listening on Hyprland's event socket</td></tr>
+      <tr><td class="q">first frame</td><td>application object built to the first swapped frame</td><td class="m">marks inside the process</td></tr>
+      <tr><td class="q">idle</td><td>launch until the process tree stops burning CPU</td><td class="m">sampling the kernel's own counters</td></tr>
+      <tr><td class="q">PSS</td><td>memory it actually costs the machine, 4 s in</td><td class="m"><code>smaps_rollup</code></td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="prose">
+  <p>The harness rules matter more than the tooling, and every one of them is scar tissue:</p>
+  <ul>
+    <li>Apps run round robin, never in blocks, so the laptop getting hot lands on everyone equally.</li>
+    <li>Every measured run has a discarded warm-up in front of it.</li>
+    <li>Two builds are always interleaved, A, B, A, B, in one session. Numbers from two different sessions are not comparable and I do not care how stable they look.</li>
+    <li>Benchmark launches go through a sandbox with their own <code>HOME</code>, because of the session file I will get to in section 08.</li>
+    <li>Windows open on a workspace attached to a headless output, since a window no monitor shows never receives a frame callback, and a benchmark waiting for the first frame of an invisible window waits forever.</li>
+  </ul>
+  <p>That last one took an hour of staring at a hung script to work out.</p>
+</div>
+
+<section class="sec" id="descent">
+  <p class="marginal"><span class="num">Section 02</span></p>
+  <h2 class="t2">The descent</h2>
+</section>
+<DescentChart />

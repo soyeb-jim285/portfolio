@@ -2,7 +2,7 @@
 // Run by .github/workflows/update-stars.yml once a day; safe to run by hand.
 //
 // Sources of truth it rewrites:
-//   src/data/content.ts  — projects[].stars / .forks / .contributors (hyprfm) and the Stars fact
+//   src/data/projects.ts — projects[].stars / .forks / .contributors (hyprfm) and the Stars fact
 //   src/data/cv.json     — open_source[].stars, github_stats.total_stars, HyprFM external_contributors
 //   outputs/*.tex        — the resume's star and outside-contributor counts (the workflow rebuilds the PDF)
 import { readFile, writeFile } from 'node:fs/promises';
@@ -54,7 +54,7 @@ const edit = async (path, replacer) => {
   return true;
 };
 
-await edit('src/data/content.ts', (text) =>
+await edit('src/data/projects.ts', (text) =>
   text
     .replace(/stars: \d+, forks: \d+, contributors: \d+,/, `stars: ${stars}, forks: ${forks}, contributors: ${contributors},`)
     .replace(/\{ label: 'Stars', value: '\d+' \}/, `{ label: 'Stars', value: '${stars}' }`));

@@ -1,0 +1,118 @@
+---
+import Bars from '../schematic/Bars.astro';
+const rivals = [
+  { label: 'HyprFM, software', values: [163], hot: true },
+  { label: 'HyprFM, Vulkan', values: [180] },
+  { label: 'Dolphin', values: [194] },
+  { label: 'HyprFM, August build', values: [336] },
+  { label: 'HyprFM AppImage', values: [338] },
+  { label: 'Nautilus', values: [718] },
+];
+const memory = [
+  { label: 'Dolphin', values: [64] },
+  { label: 'HyprFM, software', values: [79], hot: true },
+  { label: 'HyprFM, Vulkan', values: [103] },
+  { label: 'Nautilus', values: [103] },
+  { label: 'HyprFM, August build', values: [170] },
+];
+const mappings = [
+  { label: 'libLLVM', values: [28.5], hot: true, tag: 'never called' },
+  { label: 'anonymous', values: [26.8] },
+  { label: 'Qt libraries', values: [20.1], tag: '13 of them' },
+  { label: 'everything else', values: [11.6] },
+  { label: 'heap', values: [9.6] },
+  { label: 'hyprfm binary', values: [7.4] },
+  { label: 'libvulkan_radeon', values: [4.6] },
+  { label: 'ICU', values: [3.4] },
+  { label: 'QML JS heap', values: [1.6] },
+];
+const latency = [
+  { label: 'into a 10k directory', values: [70.7, 39.6], hot: true },
+  { label: 'the same one again', values: [72.5, 44.9] },
+  { label: 'open a new tab', values: [48.0, 41.5] },
+  { label: 'into /usr/bin', values: [41.2, 37.5] },
+  { label: 'open split view', values: [28.7, 25.3] },
+];
+const session = [
+  { label: 'Qt software', values: [175], hot: true },
+  { label: 'OpenGL', values: [340] },
+  { label: 'Vulkan', values: [342] },
+  { label: 'before this work', values: [351] },
+  { label: 'llvmpipe', values: [814] },
+];
+---
+<section class="sec" id="neighbours">
+  <p class="marginal"><span class="num">Section 04</span></p>
+  <h2 class="t2">Against the neighbours</h2>
+  <p class="sub">Same machine, same session, round robin, seven runs each. Dolphin and Nautilus were launched exactly the way a user would launch them.</p>
+</section>
+<Bars
+  fig="FIG. 4"
+  title="Launch to a mapped window"
+  note="Home directory, warm page cache."
+  series={['map']}
+  unit="ms"
+  rows={rivals}
+/>
+<Bars
+  fig="FIG. 5"
+  title="Memory at rest"
+  note="Proportional set size four seconds after launch, home directory."
+  series={['PSS']}
+  unit="MB"
+  rows={memory}
+/>
+<div class="prose">
+  <p>Dolphin is the honest benchmark here. It maps its window in 194 ms and rests at 64 MB, and that 64 MB is a number I am not going to reach while Qt Quick owns a GPU context. Nautilus takes 718 ms to appear and burns 1.83 s of CPU listing ten thousand files, against 0.32 s here, which is the one comparison I am allowed to feel smug about.</p>
+  <p>The AppImage is still 158 ms behind the native build, and I was sure that was QML compilation until I proved otherwise. It is not. A native build with compilation enabled loads QML just as fast. The AppImage pays for FUSE and for reading a bundled Qt out of a squashfs image, and no application-side change will fix that.</p>
+</div>
+
+<section class="sec" id="renderer">
+  <p class="marginal"><span class="num">Section 05</span></p>
+  <h2 class="t2">The renderer nobody picks</h2>
+</section>
+<div class="prose">
+  <p>I spent a day making the Vulkan path work and then measured Qt's software renderer out of completeness. It starts 14 ms faster and uses 25 MB less.</p>
+  <p>The 25 MB has a name. About 28.5 MB of resident memory belongs to libLLVM, which Mesa links into the Radeon Vulkan driver even though that driver compiles shaders with its own compiler and never calls into LLVM. Its constructors run when the library loads. There is no application-side change that can decline it. That single unused dependency is the entire Vulkan versus software memory gap.</p>
+</div>
+<Bars
+  fig="FIG. 6"
+  title="Where 113.6 MB goes"
+  note="Resident memory grouped by mapping, Vulkan build, at rest."
+  series={['PSS']}
+  unit="MB"
+  rows={mappings}
+  lower={false}
+/>
+<Bars
+  fig="FIG. 7"
+  title="Memory after a full interaction session"
+  note="Navigating, tabs, split view, scrolling, then measured."
+  series={['PSS']}
+  unit="MB"
+  rows={session}
+/>
+<div class="prose">
+  <p>Vulkan stays the default anyway, because startup is not the only thing that matters: it keeps work off the GUI thread and it does not spend a core on filling pixels. And llvmpipe, the software OpenGL path, is in that chart as a warning. It reaches 814 MB and 1.66 s of CPU, and it is what a user gets on a machine with no render node if the app does not check. HyprFM now checks, and a machine with no GPU at all maps a window in 166 ms at 79 MB, where it used to take 427 ms, 290 MB and nearly two seconds of CPU.</p>
+  <p>Whether software rendering should become the default is still open, and I refuse to decide it from this laptop. The whole argument for software rendering here is measured on a 1080p display, where fill rate costs nothing. On a HiDPI screen the answer could easily flip, and I do not own one.</p>
+</div>
+
+<section class="sec" id="feel">
+  <p class="marginal"><span class="num">Section 06</span></p>
+  <h2 class="t2">Does it feel faster?</h2>
+</section>
+<div class="prose">
+  <p>Startup is the number people quote, but it happens once. So there is a second harness that drives real interactions and measures how long each one takes to reach a painted frame, interleaved against a binary built from the commit before the optimisation pass.</p>
+</div>
+<Bars
+  fig="FIG. 8"
+  title="Interaction latency, A against B"
+  note="Two rounds of ten repetitions, alternating between the two binaries."
+  series={['before the pass', 'after']}
+  unit="ms"
+  rows={latency}
+/>
+<div class="prose">
+  <p>Fourteen other actions came out within 2 ms either way, which is the correct result: the directory scan work should show up in directory scans and nowhere else.</p>
+  <p>One action looked like a 25 ms regression for a while. The context menu's first open is bimodal, 34 ms or 67 ms, one frame or two, and its median flips between rounds in both builds. You cannot subtract medians of a distribution like that. Scroll latency, meanwhile, is identical under every renderer at 16.6 ms, because it is capped by a 60 Hz display. Any benchmark on this monitor that claims to rank renderers by frame latency is measuring my monitor.</p>
+</div>

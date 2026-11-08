@@ -1,0 +1,84 @@
+---
+import Bars from '../schematic/Bars.astro';
+const scan = [
+  { label: 'before', values: [18.0, 20.0, 0.9] },
+  { label: 'collation keys', values: [15.5, 6.2, 1.0] },
+  { label: 'and readdir', values: [4.0, 7.0, null], hot: true },
+];
+const qml = [
+  { label: 'cold cache', values: [560, 161], hot: true },
+  { label: 'warm cache', values: [133, 132] },
+  { label: 'two branches, alternating', values: [743, 336] },
+];
+---
+<section class="sec" id="worked">
+  <p class="marginal"><span class="num">Section 03</span></p>
+  <h2 class="t2">What actually worked</h2>
+  <p class="sub">In rough order of how much they paid, not the order I tried them in. The order I tried them in was much stupider.</p>
+</section>
+
+<div class="prose">
+  <h3 class="t3">Ask the GPU what it is, once</h3>
+  <p>Qt Quick renders with OpenGL by default. On this laptop Vulkan is cheaper, and Qt is happy to use it, with one catch: if you ask for Vulkan and there is no Vulkan, the window simply never appears. No error you can catch, no fallback. Just a process sitting there owning nothing.</p>
+  <p>So the app probes first. It reaches the Vulkan loader through <code>dlopen</code> with hand-declared structs, which means the build needs neither the library nor the headers, and the ABI is frozen so this is less reckless than it sounds. A software-only device gets rejected, because OpenGL on a real GPU beats Vulkan on a CPU every time. The answer is cached under the fingerprint of the installed driver manifests, with a per-process marker file so that a driver crash demotes the next launch to OpenGL instead of crashing in a loop forever.</p>
+  <p>One detail I got wrong first: I counted any early exit as a Vulkan failure, so a typo in QML would permanently convince the app that its GPU was broken. Now it only blames the driver if the process dies before painting anything.</p>
+
+  <h3 class="t3">Build less of the UI before showing it</h3>
+  <p>The settings window, the quick preview, every dialog, both context menus, the badge icons on cut and paste, and each file view now come into existence the first time something needs them. This is the least clever item on the list and it bought about 40 ms.</p>
+</div>
+<div class="note corr">
+  <span>Correction, 30 August</span>
+  <p>I had already tried this in August, eyeballed two runs, wrote "wrapping hidden UI in loaders gave approximately zero", and moved on. Re-measured properly at ten runs per arm, the lazy settings panel and preview were worth 318 to 293 ms, the lazy file views another 297 to 281. I threw away a real 40 ms for three weeks because I could not be bothered to run a loop.</p>
+</div>
+<div class="prose">
+  <h3 class="t3">1.3 KB per file, times ten thousand</h3>
+  <p>Each row in the directory model carried a fat struct with every display string precomputed. For a 10,000-file folder that is 12.7 MB of rows. A compact struct with strings built on demand takes it to 1.3 MB, roughly 130 bytes a row.</p>
+  <p>Two more things in the same area were embarrassing. The listing was fetched in a way that kept a second full copy alive, 2.4 MB per ten thousand files, for no reason at all. And resolving a file's owner and group name cost 492 microseconds per file, because each one walked out through the name service stack. Cache the id to name mapping and it happens once per distinct id. Populating a 10,000-file directory went from 6.0 s to 0.68 s across that group of commits, which is the kind of number that makes you glad nobody else was watching.</p>
+  <p>The icon cache was also capped at 512 entries, which sounds bounded until you notice nothing bounds how big an entry is. It is now capped at 24 MB.</p>
+
+  <h3 class="t3">Two ways to not read a directory</h3>
+  <p>Sorting file names has to be locale aware and numeric, so <code>file2</code> comes before <code>file10</code> and <code>Ä</code> sorts after <code>z</code>. Qt's collator does that correctly and costs a lot, and a comparison sort calls it O(n log n) times, about 120,000 calls for ten thousand files.</p>
+  <p>The fix is as old as Perl: compute one sort key per entry, then sort the keys, since a collation key is a byte string whose plain memory comparison gives the collator's order. Identical output, verified against the old ordering on a list full of accents and embedded numbers before I touched the model. Sorting fell from 20 ms to 6.2. Bonus: the directory listing was also being sorted by code point first, purely so the result could be thrown away and sorted again.</p>
+  <p>Then the listing itself. Asking Qt for file info objects builds a path string, a shared data block and a pile of cached metadata per entry, 15 to 22 ms for ten thousand files, to answer two questions the kernel already answered while reading the directory. Now it is <code>opendir</code> and <code>readdir</code> reading the dirent type directly, and it only calls <code>stat</code> for what a dirent cannot answer: symlinks, filesystems that report an unknown type, and every entry when the sort is by size or time.</p>
+  <p>That last clause is where the bugs live, so the awkward cases are pinned by a test: a directory holding a fifo, a unix socket, a symlink to a directory, a symlink to a file and a broken symlink has to come back exactly as Qt would have returned it.</p>
+</div>
+<Bars
+  fig="FIG. 2"
+  title="Scanning 10,000 files"
+  note="The three phases of a directory scan, stacked."
+  series={['listing', 'sort', 'building rows']}
+  unit="ms"
+  rows={scan}
+  stacked
+/>
+<div class="prose">
+  <h3 class="t3">One process, every window</h3>
+  <p>A second window used to cost 368 ms, because it was a second process doing the whole startup again. Now every window is served by one process, each with its own QML context, and a launch that finds an instance already running hands its arguments over a socket and exits. A second window takes 95 ms. The client process that forwarded the request lives for 36 ms.</p>
+  <p>The trade is real and worth saying out loud instead of burying: one process means one crash takes every window with it, and one freeze freezes all of them. That is exactly why the next three commits moved blocking work off the GUI thread. Metadata for the properties dialog runs <code>exiftool</code> and <code>ffprobe</code>, about 120 ms each, on a worker pool. Folder item counts go to a worker. Remote directory properties over SFTP are fetched asynchronously with an 8 s kill timer, so a dead mount no longer takes the window down with it.</p>
+  <p>Closing windows also used to ratchet memory upward. A garbage collection and a <code>malloc_trim</code> one second after a window closes turned eight open-and-close cycles from 202 MB into 129.</p>
+
+  <h3 class="t3">The update cliff</h3>
+  <p>Qt caches compiled QML on disk, keyed by each source file's path and modification time. Which means the cache is empty after every install and every update, and the first launch after an update compiles all 86 QML files. That is 400 ms, paid by exactly the person who just updated and is watching.</p>
+  <p>The switch to compile QML into the binary ahead of time already existed. It defaulted to off, because development builds want it off, and only the AppImage script turned it on. So every package I shipped for months shipped uncompiled QML. Release builds now default it on, and the app produces no cache files at all afterwards, because there is nothing left to compile.</p>
+</div>
+<Bars
+  fig="FIG. 3"
+  title="First frame, Flatpak"
+  note="Shipping QML sources against compiling them into the binary."
+  series={['shipping .qml', 'precompiled']}
+  unit="ms"
+  rows={qml}
+/>
+<div class="prose">
+  <h3 class="t3">The 6.5 ms every Qt process pays once</h3>
+  <p>The oddest line in the profile was 6.2 ms to create two text items in the status bar. Two labels. The status bar was innocent: that is the cost of the first string any Qt process measures, where fontconfig matches the family, FreeType loads the face and the shaper wakes up. Measured on its own it is 6.5 to 6.9 ms for the first call, and 1.4 ms for a second typeface.</p>
+  <p>The font database and FreeType are shared across threads under their own locks, and only the per-thread font cache is private. So a worker thread can pay the bill, and the GUI thread arrives to find the expensive part already done. Launch went from 171 ms to 163.</p>
+  <p>In the same spirit, Qt was spending 47 ms between "the QML tree is ready" and "the scene graph is up", creating its Vulkan instance and device on the GUI thread, after the window was already shown, while the machine's other eleven cores did nothing. Bringing a throwaway Vulkan instance up on a worker as soon as the renderer choice is known overlaps that with the 60 ms of QML construction. The phase fell to 34 ms.</p>
+
+  <h3 class="t3">Open the window on the folder you were asked for</h3>
+  <p>Running <code>hyprfm ~/Downloads</code> opened a window on my home directory and then immediately navigated to Downloads. Two listings, two model resets, and the grid building its delegates twice: 112 delegate creations for a folder with 30 files in it. The launch path is now handed to the window before it opens.</p>
+</div>
+<div class="prose">
+  <p class="marginal corr"><span>The part I do not like</span>The first frame now waits for the real listing, so launching straight into a 10,000-file directory maps at 190 ms instead of 171. It used to map faster by showing the wrong folder first. I would rather be 19 ms slower than flash the wrong contents, but it is a regression and pretending otherwise would be dishonest. Launching with no argument is unaffected.</p>
+  <p>That trade is recorded in the margin rather than buried in a commit message, because it is the only change in the pass that made one case measurably worse.</p>
+</div>

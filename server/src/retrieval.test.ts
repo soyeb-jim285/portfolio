@@ -1,82 +1,18 @@
 import assert from 'node:assert/strict';
 import test, { after, before } from 'node:test';
-import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { promisify } from 'node:util';
-import { Pool } from 'pg';
-import { applySchema } from './db';
 import type { Embedder } from './embeddings';
 import { indexRepo, wantedPaths } from './indexer';
-import type { GitHub } from './github';
-import { createRetrieval, queryTerms } from './retrieval';
-import type { Repo } from './repos';
+import { createRetrieval } from './retrieval';
+import { commitIn, createFixture, fakeEmbedder, fakeGitHubOver, pool, repo, run } from './test-retrieval-helpers';
 
-const run = promisify(execFile);
-const url = process.env.TEST_DATABASE_URL;
-if (!url) throw new Error('Set TEST_DATABASE_URL to a disposable PostgreSQL database. These tests delete all rows, so never point it at a database you care about.');
-
-// Deterministic, offline stand-in: a bag-of-characters vector is enough to rank by overlap.
-const fakeEmbedder = (dims = 16): Embedder => ({
-  model: 'test/fake-embedding', dims,
-  async embed(texts) {
-    return texts.map(text => {
-      const vector = new Array(dims).fill(0);
-      for (const character of text.toLowerCase()) vector[character.charCodeAt(0) % dims] += 1;
-      const length = Math.hypot(...vector) || 1;
-      return vector.map(value => value / length);
-    });
-  },
-});
-
-const pool = new Pool({ connectionString: url });
-// Stands in for the GitHub tree call: the fixture repository is local, so list it from disk.
-const fakeGitHub = {
-  authenticated: false,
-  async repos() { return []; },
-  async tree() {
-    const { readdir, stat: statFile } = await import('node:fs/promises');
-    const walk = async (base: string, prefix = ''): Promise<{ path: string; size: number }[]> => {
-      const entries = await readdir(join(base, prefix), { withFileTypes: true });
-      const found: { path: string; size: number }[] = [];
-      for (const entry of entries) {
-        if (entry.name === '.git') continue;
-        const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) found.push(...await walk(base, relative));
-        else found.push({ path: relative, size: (await statFile(join(base, relative))).size });
-      }
-      return found;
-    };
-    return { entries: await walk(origin), truncated: false };
-  },
-} as unknown as GitHub;
 let workspace = '';
 let origin = '';
-const repo: Repo = { name: 'hyprfm', owner: 'soyeb-jim285', url: '', branch: 'main', blurb: 'test fixture' };
+const fakeGitHub = fakeGitHubOver(() => origin);
+const commitAll = (message: string) => commitIn(origin, message);
 
-const commitAll = async (message: string) => {
-  await run('git', ['add', '-A'], { cwd: origin });
-  await run('git', ['-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '-m', message], { cwd: origin });
-};
-
-before(async () => {
-  await applySchema(pool);
-  await pool.query('TRUNCATE index_revisions CASCADE');
-  workspace = await mkdtemp(join(tmpdir(), 'portfolio-index-'));
-  origin = join(workspace, 'origin');
-  await mkdir(join(origin, 'src'), { recursive: true });
-  await run('git', ['init', '-q', '-b', 'main', origin]);
-  await writeFile(join(origin, 'src/FileOps.cpp'), `#include "FileOps.h"\n\n// Copy jobs run on a worker pool so the QML interface never blocks.\nvoid FileOps::copy(const QList<QUrl> &sources) {\n  QtConcurrent::run(&pool, [=] { transfer(sources); });\n}\n\nvoid FileOps::cancel() {\n  aborted = true;\n}\n`);
-  await writeFile(join(origin, 'src/Thumbnailer.cpp'), `#include "Thumbnailer.h"\n\n// Thumbnails are generated lazily and cached on disk.\nvoid Thumbnailer::request(const QString &path) {\n  queue.append(path);\n}\n`);
-  await writeFile(join(origin, 'src/legacy.cpp'), 'void legacyHelper() {}\n');
-  await writeFile(join(origin, '.env'), 'OPENROUTER_API_KEY=sk-should-never-be-indexed-1234567890\n');
-  await mkdir(join(origin, 'build'), { recursive: true });
-  await writeFile(join(origin, 'build/generated.cpp'), 'void generated() {}\n');
-  await writeFile(join(origin, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]));
-  await commitAll('initial');
-  repo.url = origin;
-});
+before(async () => { ({ workspace, origin } = await createFixture()); });
 after(async () => { await pool.end(); await rm(workspace, { recursive: true, force: true }); });
 
 test('indexes only reviewable source and pins the commit', async () => {
@@ -228,53 +164,4 @@ test('a repository whose GitHub name has capitals can still be searched, read an
     assert.equal(file?.repo, 'LeakNet', `read scoped to ${asked}`);
   }
   assert.ok((await retrieval.listFiles('leaknet')).some(file => file.path === 'leaknet_experiment.py'));
-});
-
-test('question words become a safe OR query, with camelCase split and kept whole', () => {
-  const terms = queryTerms("How does DrawingCanvas capture what the user draws? ') | !x & (y");
-  assert.equal(terms.split, 'how | does | drawing | canvas | capture | what | the | user | draws | x | y'.split(' | ').filter(word => word.length >= 2).join(' | '));
-  assert.ok(terms.whole.includes('drawingcanvas'));
-  assert.doesNotMatch(terms.split + terms.whole, /[^a-z0-9 |]/, 'nothing but words and the OR operator reaches to_tsquery');
-});
-
-test('each search improvement does what it claims on a fixture', async () => {
-  const sketch = join(workspace, 'SketchPad');
-  await mkdir(join(sketch, 'src'), { recursive: true });
-  await run('git', ['init', '-q', '-b', 'main', sketch]);
-  await writeFile(join(sketch, 'src/DrawingCanvas.tsx'), 'export function DrawingCanvas() {\n  const strokes: Point[] = [];\n  const onPointerMove = (event: PointerEvent) => strokes.push([event.x, event.y]);\n  return onPointerMove;\n}\n');
-  // Shares no word with the question it answers: only a summary can connect them.
-  await writeFile(join(sketch, 'src/Scheduler.swift'), 'func nextInterval(stability: Double, grade: Int) -> Double {\n  return stability * pow(1.3, Double(grade))\n}\n');
-  await writeFile(join(sketch, 'src/palette.ts'), 'export const palette = ["#000", "#fff"];\n');
-  await run('git', ['add', '-A'], { cwd: sketch });
-  await run('git', ['-c', 'user.email=test@example.com', '-c', 'user.name=Test', 'commit', '-m', 'sketch'], { cwd: sketch });
-  const previous = origin;
-  origin = sketch;
-  try {
-    await indexRepo(pool, { name: 'SketchPad', owner: 'soyeb-jim285', url: sketch, branch: 'main', blurb: 'fixture' }, join(workspace, 'cache'), fakeEmbedder(), fakeGitHub);
-  } finally { origin = previous; }
-  const scope = { repo: 'sketchpad' };
-
-  // OR matching over split, stemmed identifiers: "draws" and "capture" meet DrawingCanvas.
-  const retrieval = createRetrieval(pool, fakeEmbedder());
-  const asked = await retrieval.search('how does it capture what the user draws', scope);
-  assert.equal(asked[0].path, 'src/DrawingCanvas.tsx');
-  assert.equal((await retrieval.search('DrawingCanvas', { ...scope, variant: { lexical: 'and', identifiers: false } }))[0].path, 'src/DrawingCanvas.tsx', 'exact identifiers still work in the old mode');
-
-  // Summaries: the description carries the words the code does not.
-  const summary = 'Decides when a vocabulary word is reviewed again, using spaced repetition.';
-  const [summaryVector] = await fakeEmbedder().embed([`SketchPad/src/Scheduler.swift\n${summary}`]);
-  await pool.query(`UPDATE source_files SET summary = $1, summary_model = 'test', summary_embedding = $2::vector
-                    WHERE path = 'src/Scheduler.swift' AND revision_id = (SELECT id FROM index_revisions WHERE repo = 'SketchPad' AND status = 'live')`,
-    [summary, `[${summaryVector.join(',')}]`]);
-  const withSummaries = await retrieval.search('when is a vocabulary word reviewed again', scope);
-  assert.equal(withSummaries[0].path, 'src/Scheduler.swift', 'found through its summary');
-
-  // Rerank only reorders what search returned, and a failure keeps the fused order.
-  const fused = await retrieval.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: false } });
-  const reversing = createRetrieval(pool, fakeEmbedder(), { reranker: async (_query, candidates) => candidates.map((_, index) => candidates.length - 1 - index) });
-  const reranked = await reversing.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: true } });
-  assert.deepEqual(new Set(reranked.map(hit => hit.path)), new Set(fused.map(hit => hit.path)), 'same files, reordered');
-  assert.notDeepEqual(reranked.map(hit => hit.path), fused.map(hit => hit.path));
-  const broken = createRetrieval(pool, fakeEmbedder(), { reranker: async () => { throw new Error('model down'); } });
-  assert.deepEqual((await broken.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: true } })).map(hit => hit.path), fused.map(hit => hit.path));
 });
