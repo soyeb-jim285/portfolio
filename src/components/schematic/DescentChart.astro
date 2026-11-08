@@ -1,7 +1,6 @@
 ---
 // The whole story in one figure: launch to a mapped window, home directory, after each group of
-// work. Same Chart.js theme as the bar figures, drawn as a line because the x axis is time.
-import type { ChartSpec } from '../../scripts/charts';
+// work. Drawn as a line because the x axis is time; points sit at the centre of each label column.
 const points = [
   { ms: 336, when: '30 Aug', what: ['baseline'] },
   { ms: 194, when: '19 Sep', what: ['renderer, lazy UI,', 'lighter models'] },
@@ -9,22 +8,23 @@ const points = [
   { ms: 170, when: '20 Sep', what: ['collation keys,', 'readdir, warm Vulkan'] },
   { ms: 163, when: '20 Sep', what: ['font stack', 'on a worker'] },
 ];
-const spec: ChartSpec = {
-  kind: 'line',
-  labels: points.map((p) => [p.when, ...p.what]),
-  series: [{ name: 'map, home', data: points.map((p) => p.ms), fill: 'accent' }],
-  unit: 'ms',
-  max: 360,
-};
+const max = 360;
+const x = (i: number) => ((i + 0.5) / points.length) * 100;
+const y = (ms: number) => 100 - (ms / max) * 100;
+const line = points.map((p, i) => `${x(i).toFixed(2)},${y(p.ms).toFixed(2)}`).join(' ');
 ---
 <figure class="chart">
   <div class="chart-head">
     <b>336 down to 163</b>
     <span>Launch to a mapped window, home directory, one AMD laptop under Hyprland.</span>
   </div>
-  <div class="cwrap" style="height:320px">
-    <canvas data-chart={JSON.stringify(spec)} role="img" aria-label="Startup time falling from 336 ms on 30 August to 163 ms on 20 September, in five steps. The same figures are in the table below."></canvas>
+  <div class="line-chart" role="img" aria-label="Startup time falling from 336 ms on 30 August to 163 ms on 20 September, in five steps. The same figures are in the table below.">
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={line} vector-effect="non-scaling-stroke" /></svg>
+    {points.map((p, i) => <span class="line-point" style={`left:${x(i)}%;top:${y(p.ms)}%`}><b>{p.ms} ms</b></span>)}
   </div>
+  <ol class="line-x" aria-hidden="true">
+    {points.map((p) => <li>{p.when}<small>{p.what.join(' ')}</small></li>)}
+  </ol>
   <figcaption>
     <p><b>FIG. 1</b>Lower is better. Each point is the median of at least seven runs, round robin against the other builds, one discarded warm-up each.</p>
   </figcaption>

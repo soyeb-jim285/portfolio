@@ -41,7 +41,7 @@ test('each search improvement does what it claims on a fixture', async () => {
   const retrieval = createRetrieval(pool, fakeEmbedder());
   const asked = await retrieval.search('how does it capture what the user draws', scope);
   assert.equal(asked[0].path, 'src/DrawingCanvas.tsx');
-  assert.equal((await retrieval.search('DrawingCanvas', { ...scope, variant: { lexical: 'and', identifiers: false } }))[0].path, 'src/DrawingCanvas.tsx', 'exact identifiers still work in the old mode');
+  assert.equal((await retrieval.search('DrawingCanvas', scope))[0].path, 'src/DrawingCanvas.tsx', 'exact identifiers still work');
 
   // Summaries: the description carries the words the code does not.
   const summary = 'Decides when a vocabulary word is reviewed again, using spaced repetition.';
@@ -51,13 +51,4 @@ test('each search improvement does what it claims on a fixture', async () => {
     [summary, `[${summaryVector.join(',')}]`]);
   const withSummaries = await retrieval.search('when is a vocabulary word reviewed again', scope);
   assert.equal(withSummaries[0].path, 'src/Scheduler.swift', 'found through its summary');
-
-  // Rerank only reorders what search returned, and a failure keeps the fused order.
-  const fused = await retrieval.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: false } });
-  const reversing = createRetrieval(pool, fakeEmbedder(), { reranker: async (_query, candidates) => candidates.map((_, index) => candidates.length - 1 - index) });
-  const reranked = await reversing.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: true } });
-  assert.deepEqual(new Set(reranked.map(hit => hit.path)), new Set(fused.map(hit => hit.path)), 'same files, reordered');
-  assert.notDeepEqual(reranked.map(hit => hit.path), fused.map(hit => hit.path));
-  const broken = createRetrieval(pool, fakeEmbedder(), { reranker: async () => { throw new Error('model down'); } });
-  assert.deepEqual((await broken.search('palette colours canvas', { ...scope, limit: 3, variant: { rerank: true } })).map(hit => hit.path), fused.map(hit => hit.path));
 });

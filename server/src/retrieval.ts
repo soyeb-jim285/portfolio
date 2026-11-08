@@ -1,17 +1,16 @@
 import type { Pool } from 'pg';
 import type { Embedder } from './embeddings';
 import { toVectorLiteral } from './embeddings';
-import type { Reranker } from './rerank';
 import { sourceUrl } from './repos';
 import {
-  CANDIDATES, DEFAULT_VARIANT, FEATURED, FULL_WINDOW_HITS, MAX_READ_CHARS, MAX_READ_LINES, MAX_SNIPPET_CHARS,
-  MAX_TOP_SNIPPET_CHARS, RERANK_POOL, RRF_K, clip, key, queryTerms, type IndexedRepo, type SearchVariant, type SourceHit,
+  CANDIDATES, FEATURED, FULL_WINDOW_HITS, MAX_READ_CHARS, MAX_READ_LINES, MAX_SNIPPET_CHARS,
+  MAX_TOP_SNIPPET_CHARS, RRF_K, clip, key, queryTerms, type IndexedRepo, type SourceHit,
 } from './retrieval-config';
 
-export { BASELINE_VARIANT, DEFAULT_VARIANT, MAX_READ_CHARS, MAX_READ_LINES, MAX_SNIPPET_CHARS, MAX_TOP_SNIPPET_CHARS, queryTerms } from './retrieval-config';
-export type { IndexedRepo, SearchVariant, SourceHit } from './retrieval-config';
+export { MAX_READ_CHARS, MAX_READ_LINES, MAX_SNIPPET_CHARS, MAX_TOP_SNIPPET_CHARS, queryTerms } from './retrieval-config';
+export type { IndexedRepo, SourceHit } from './retrieval-config';
 
-export function createRetrieval(pool: Pool, embedder: Embedder, options: { reranker?: Reranker } = {}) {
+export function createRetrieval(pool: Pool, embedder: Embedder) {
   // One stored file of the live revision, or nothing: an unindexed path has no row to return.
   const indexedFile = async (repo: string, path: string) => {
     const name = key(repo);
@@ -41,38 +40,23 @@ export function createRetrieval(pool: Pool, embedder: Embedder, options: { reran
     },
 
     // Hybrid: lexical for words and identifiers, vector for described behaviour, fused with reciprocal
-    // rank. The switches in `variant` are the measured improvements; see SearchVariant.
-    async search(query: string, searchOptions: { repo?: string; limit?: number; variant?: Partial<SearchVariant> } = {}): Promise<SourceHit[]> {
-      const variant = { ...DEFAULT_VARIANT, ...searchOptions.variant };
+    // rank.
+    async search(query: string, searchOptions: { repo?: string; limit?: number } = {}): Promise<SourceHit[]> {
       const limit = Math.min(Math.max(searchOptions.limit ?? 6, 1), 10);
-      const reranking = variant.rerank && options.reranker;
       const repo = searchOptions.repo ? key(searchOptions.repo) : null;
       const [vector] = await embedder.embed([query]);
       const terms = queryTerms(query);
-      const column = variant.identifiers ? 'search_v2' : 'search';
-      // Fixed SQL fragments chosen by the variant; nothing from the question is interpolated.
-      const weight = variant.weighting === 'strong'
-        ? `1.0 + CASE WHEN lower(r.repo) = ANY($8::text[]) THEN 0.6 ELSE 0 END
-                + CASE WHEN coalesce(f.stars, 0) >= 50 THEN 0.5 WHEN coalesce(f.stars, 0) >= 5 THEN 0.25 ELSE 0 END
-                + CASE WHEN f.pushed_at > now() - interval '180 days' THEN 0.3 WHEN f.pushed_at > now() - interval '730 days' THEN 0.1 ELSE 0 END`
-        : `1.0 + CASE WHEN lower(r.repo) = ANY($8::text[]) THEN 0.004 ELSE 0 END
+      // Fixed SQL fragments; nothing from the question is interpolated.
+      const weight = `1.0 + CASE WHEN lower(r.repo) = ANY($8::text[]) THEN 0.004 ELSE 0 END
                 + CASE WHEN coalesce(f.stars, 0) >= 50 THEN 0.003 WHEN coalesce(f.stars, 0) >= 5 THEN 0.0015 ELSE 0 END
                 + CASE WHEN f.pushed_at > now() - interval '180 days' THEN 0.002 WHEN f.pushed_at > now() - interval '730 days' THEN 0.001 ELSE 0 END`;
       const orQuery = `(CASE WHEN $9 = '' THEN ''::tsquery ELSE to_tsquery('english', $9) END || CASE WHEN $10 = '' THEN ''::tsquery ELSE to_tsquery('simple', $10) END)`;
-      const lexical = variant.lexical === 'and'
-        ? `matched AS (
-             SELECT c.id, ts_rank_cd(c.${column}, tsq.query) AS score
-             FROM source_chunks c JOIN live ON live.id = c.revision_id,
-                  LATERAL (SELECT websearch_to_tsquery('english', $1) AS query UNION ALL SELECT websearch_to_tsquery('simple', $1)) tsq
-             WHERE c.${column} @@ tsq.query
-           ),`
-        : `matched AS (
-             SELECT c.id, ts_rank(c.${column}, tsq.query, 1) AS score
+      const lexical = `matched AS (
+             SELECT c.id, ts_rank(c.search_v2, tsq.query, 1) AS score
              FROM source_chunks c JOIN live ON live.id = c.revision_id, (SELECT ${orQuery} AS query) tsq
-             WHERE c.${column} @@ tsq.query
+             WHERE c.search_v2 @@ tsq.query
            ),`;
-      const fileLegs = variant.summaries
-        ? `file_semantic AS (
+      const fileLegs = `file_semantic AS (
              SELECT f.revision_id, f.path, row_number() OVER (ORDER BY f.summary_embedding <=> $5::vector, f.id) AS rank
              FROM source_files f JOIN live ON live.id = f.revision_id
              WHERE f.summary_embedding IS NOT NULL ORDER BY f.summary_embedding <=> $5::vector LIMIT $4
@@ -85,16 +69,12 @@ export function createRetrieval(pool: Pool, embedder: Embedder, options: { reran
            file_hits AS (
              SELECT revision_id, path, sum(1.0 / ($6 + rank)) AS score
              FROM (SELECT * FROM file_semantic UNION ALL SELECT * FROM file_lexical) files GROUP BY revision_id, path
-           ),`
-        : '';
+           ),`;
       // A file found by its description lends its score to its own chunks; the chunk-level legs then
       // decide which of that file's windows to show.
-      const fileScores = variant.summaries
-        ? `UNION ALL SELECT c.id, fh.score AS weight FROM file_hits fh JOIN source_chunks c ON c.revision_id = fh.revision_id AND c.path = fh.path`
-        : '';
+      const fileScores = `UNION ALL SELECT c.id, fh.score AS weight FROM file_hits fh JOIN source_chunks c ON c.revision_id = fh.revision_id AND c.path = fh.path`;
       const { rows } = await pool.query(
-        // Every parameter is typed here once: each variant leaves some of them unused, and Postgres
-        // cannot infer the type of a parameter it never sees.
+        // Every parameter is typed here once: Postgres cannot infer the type of one it never sees.
         `WITH params AS (SELECT $1::text AS asked, $9::text AS split_terms, $10::text AS whole_terms),
          live AS (
            SELECT r.id, r.repo, r.commit_sha, coalesce(f.url, '') AS url, ${weight} AS weight
@@ -128,21 +108,8 @@ export function createRetrieval(pool: Pool, embedder: Embedder, options: { reran
          -- At most two windows per file: one long document must not fill every result slot.
          SELECT repo, commit_sha, url, path, language, symbols, start_line, end_line, content
          FROM ranked WHERE per_file <= 2 ORDER BY score DESC, path, start_line LIMIT $7`,
-        [query, repo, embedder.dims, CANDIDATES, toVectorLiteral(vector), RRF_K, reranking ? RERANK_POOL : limit, FEATURED, terms.split, terms.whole]);
-      let ordered = rows;
-      if (reranking && rows.length > 1) {
-        try {
-          const order = await options.reranker!(query, rows.map(row => ({
-            repo: row.repo, path: row.path, symbols: row.symbols, startLine: row.start_line, endLine: row.end_line, content: row.content,
-          })));
-          ordered = order.map(index => rows[index]);
-        } catch (error) {
-          // A slow or failed reranker costs precision, never the answer: keep the fused order.
-          console.error('Rerank failed, keeping fused order:', error instanceof Error ? error.message : error);
-        }
-      }
-      ordered = ordered.slice(0, limit);
-      return ordered.map((row, index) => ({
+        [query, repo, embedder.dims, CANDIDATES, toVectorLiteral(vector), RRF_K, limit, FEATURED, terms.split, terms.whole]);
+      return rows.map((row, index) => ({
         repo: row.repo, path: row.path, language: row.language, symbols: row.symbols,
         startLine: row.start_line, endLine: row.end_line, commit: row.commit_sha,
         url: row.url ? sourceUrl({ url: row.url }, row.commit_sha, row.path, row.start_line, row.end_line) : '',

@@ -28,8 +28,6 @@ export const configSchema = z.object({
   INDEX_EVERY_HOURS: z.coerce.number().min(0).max(168).default(24),
   // Small model that writes each file's one-sentence description at index time; empty turns summaries off.
   SUMMARY_MODEL: z.string().default('openai/gpt-4.1-nano'),
-  // Small model that reorders search results when the search variant asks for it; empty turns reranking off.
-  RERANK_MODEL: z.string().default('openai/gpt-4.1-nano'),
   // Reasoning effort for the chat model on every step; empty leaves the provider's default.
   CHAT_REASONING_EFFORT: z.enum(['', 'minimal', 'low', 'medium', 'high']).default('minimal'),
   // Jev uses the existing OpenRouter key; empty disables catalog-constrained chat UI.
@@ -54,14 +52,9 @@ export const configSchema = z.object({
   ARTIFACT_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
   ARTIFACT_MAX_BYTES: z.coerce.number().int().min(1000).max(1000000).default(64000),
   ARTIFACT_URL_TTL_SECONDS: z.coerce.number().int().min(30).max(3600).default(120),
-  // Which calendar the assistant books in.
-  SCHEDULER: z.enum(['cal', 'google']).default('cal'),
 
   // Cal.com. One entry per bookable meeting: "<eventTypeId>:<minutes>:<label>", separated by "|".
   CAL_API_KEY: z.string().min(1).optional(),
-  CAL_API_BASE: z.string().url().default('https://api.cal.com/v2'),
-  CAL_SLOTS_API_VERSION: z.string().min(1).default('2024-09-04'),
-  CAL_BOOKINGS_API_VERSION: z.string().min(1).default('2024-08-13'),
   CAL_EVENT_TYPES: z.string().default('').transform((value, ctx) => {
     if (!value.trim()) return [] as { id: number; minutes: number; label: string; key: string }[];
     const types = value.split('|').map(entry => entry.trim()).filter(Boolean).map(entry => {
@@ -77,36 +70,6 @@ export const configSchema = z.object({
     return types;
   }),
 
-  // Google Calendar, used when SCHEDULER=google. Run `npm run google:auth` for the refresh token.
-  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
-  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
-  GOOGLE_REFRESH_TOKEN: z.string().min(1).optional(),
-  GOOGLE_CALENDAR_ID: z.string().min(1).default('primary'),
-  GOOGLE_ADD_MEET: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
-  // One entry per bookable meeting: "<minutes>:<label>", entries separated by "|".
-  MEETING_TYPES: z.string().default('30:Intro call|15:Quick chat').transform((value, ctx) => {
-    const types = value.split('|').map(entry => entry.trim()).filter(Boolean).map(entry => {
-      const [minutes, ...label] = entry.split(':');
-      return { minutes: Number(minutes), label: label.join(':').trim(), key: `${Number(minutes)}min` };
-    });
-    if (types.some(type => !Number.isInteger(type.minutes) || type.minutes <= 0 || !type.label)) {
-      ctx.addIssue({ code: 'custom', message: 'Each MEETING_TYPES entry must be "<minutes>:<label>"' });
-    }
-    if (new Set(types.map(type => type.key)).size !== types.length) {
-      ctx.addIssue({ code: 'custom', message: 'MEETING_TYPES entries must have distinct durations' });
-    }
-    return types;
-  }),
-  // The host's own zone and working hours: slots exist only inside these.
-  MEETING_TIME_ZONE: z.string().min(1).default('Asia/Dhaka').refine(value => {
-    try { new Intl.DateTimeFormat('en', { timeZone: value }); return true; } catch { return false; }
-  }, 'Use an IANA time zone such as Asia/Dhaka'),
-  MEETING_DAYS: z.string().default('1,2,3,4,5').transform(value => value.split(',').map(day => Number(day.trim())).filter(day => day >= 0 && day <= 6)),
-  MEETING_START: z.string().regex(/^\d{2}:\d{2}$/).default('09:00'),
-  MEETING_END: z.string().regex(/^\d{2}:\d{2}$/).default('18:00'),
-  BOOKING_NOTICE_MINUTES: z.coerce.number().int().min(0).max(20160).default(720),
-  BOOKING_BUFFER_MINUTES: z.coerce.number().int().min(0).max(240).default(10),
-  BOOKING_STEP_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
   BOOKING_WINDOW_DAYS: z.coerce.number().int().min(1).max(90).default(14),
   BOOKING_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(60),
   BOOKINGS_PER_DAY: z.coerce.number().int().min(1).default(5),

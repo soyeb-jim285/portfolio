@@ -65,7 +65,7 @@ const catalog: Experimental_CompositionCatalog = {
 };
 
 export type GeneratedUi = { model: string; spec: Spec };
-export type GenUiInput = { message: string; answer: string; sources: SourceHit[] };
+type GenUiInput = { message: string; answer: string; sources: SourceHit[] };
 export type GenUiComposer = (input: GenUiInput, signal: AbortSignal) => Promise<GeneratedUi | null>;
 
 const roots = [

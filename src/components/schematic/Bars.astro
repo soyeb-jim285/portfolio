@@ -1,10 +1,8 @@
 ---
-// One bar chart for the log sheets. The drawing is Chart.js on a canvas, themed to the sheet
-// and built when it scrolls into view; the numbers behind it are printed as a table too, so a
-// value is never reachable only by pointing at a picture.
+// One bar chart for the log sheets, drawn in HTML at build time. Every bar prints its value, and
+// the numbers behind it are in a table too.
 // Three shapes, one component: a single measure with one row emphasised, two measures compared
 // (the dim bar is the "before"), and parts of one total stacked.
-import type { ChartSpec } from '../../scripts/charts';
 interface Props {
   fig: string;                 // "FIG. 3", printed in the caption
   title: string;
@@ -23,20 +21,13 @@ const { fig, title, note, series, unit, rows, stacked = false, max, lower = true
 // cut into pieces. Two series dim the "before" and accent the "after". A single series dims every
 // row except the one the paragraph is about, which is emphasis rather than identity.
 const fills = stacked ? (['light', 'accent', 'dark'] as const) : series.length > 1 ? (['dim', 'accent'] as const) : (['accent'] as const);
-const spec: ChartSpec = {
-  kind: 'bar',
-  labels: rows.map((row) => (row.tag ? [row.label, row.tag] : row.label)),
-  series: series.map((name, i) => ({ name, data: rows.map((row) => row.values[i] ?? null), fill: fills[i] ?? 'accent' })),
-  perRow: series.length === 1 ? rows.map((row) => (row.hot ? 'accent' : 'dim')) : undefined,
-  unit,
-  stacked,
-  max,
-};
-// A grouped row carries two bars, so it needs more air than a single or stacked one.
-const height = rows.length * (series.length > 1 && !stacked ? 48 : 36) + 40;
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(v < 10 ? 2 : 1));
 const totals = rows.map((row) => row.values.reduce<number>((a, b) => a + (b ?? 0), 0));
 const swatch = (fill: string) => `var(--${fill === 'dim' ? 'c0' : fill === 'light' ? 'c2' : fill === 'dark' ? 'c3' : 'c1'})`;
+// A hard ceiling just past the longest bar, so the plot is not a third empty.
+const reach = max ?? Math.max(...(stacked ? totals : rows.flatMap((row) => row.values.map((v) => v ?? 0)))) * 1.08;
+const fillOf = (hot: boolean | undefined, i: number) => swatch(series.length === 1 ? (hot ? 'accent' : 'dim') : fills[i] ?? 'accent');
+const bar = (v: number, hot: boolean | undefined, i: number) => `width:${(v / reach * 100).toFixed(2)}%;background:${fillOf(hot, i)}`;
 ---
 <figure class="chart">
   <div class="chart-head">
@@ -48,8 +39,22 @@ const swatch = (fill: string) => `var(--${fill === 'dim' ? 'c0' : fill === 'ligh
       {series.map((name, i) => <span><i style={`background:${swatch(fills[i] ?? 'accent')}`}></i>{name}</span>)}
     </p>
   )}
-  <div class="cwrap" style={`height:${height}px`}>
-    <canvas data-chart={JSON.stringify(spec)} role="img" aria-label={`${title}. ${note ?? ''} The same figures are in the table below.`}></canvas>
+  <div class="bars" role="img" aria-label={`${title}. ${note ?? ''} The same figures are in the table below.`}>
+    {rows.map((row, r) => (
+      <div class="bar-row">
+        <span class="bar-name">{row.label}{row.tag && <small>{row.tag}</small>}</span>
+        <div class="bar-plot">
+          {stacked ? (
+            <div class="bar-line">
+              {row.values.map((v, i) => v != null && <i style={bar(v, row.hot, i)}></i>)}
+              <b>{fmt(totals[r])} {unit}</b>
+            </div>
+          ) : row.values.map((v, i) => v != null && (
+            <div class="bar-line"><i style={bar(v, row.hot, i)}></i><b>{fmt(v)} {unit}</b></div>
+          ))}
+        </div>
+      </div>
+    ))}
   </div>
   <figcaption>
     <p><b>{fig}</b>{lower ? 'Lower is better.' : 'Higher is better.'} Every bar is a median of repeated runs, never a single launch.</p>

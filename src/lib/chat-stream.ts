@@ -7,7 +7,7 @@ export type SourceCitation = { repo: string; path: string; language: string; sym
 export type RequestedUiAction = { id: string; target: string; route: string; anchor: string; label: string; action: 'reveal' | 'contact' };
 export type ContactDraft = { id: string; name: string; email: string; message: string; to: string };
 export type ShownImage = { id: string; src: string; alt: string; caption: string };
-export type Transcript = { text: string; model: string; seconds?: number; costUsd?: number };
+type Transcript = { text: string; model: string; seconds?: number; costUsd?: number };
 export type Artifact = { id: string; kind: string; title: string; bytes: number; markdown: string; expiresAt: string };
 export type Slot = { start: string; end: string };
 export type Availability = { timeZone: string; durationMinutes: number; label: string; key: string; slots: Slot[] };
@@ -30,7 +30,7 @@ export class SessionExpired extends Error {}
 
 const base = (endpoint: string) => endpoint.replace(/\/$/, '');
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
-export const browserTimeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } };
+const browserTimeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } };
 
 const postJson = (endpoint: string, path: string, body: unknown, token?: string) =>
   fetch(`${base(endpoint)}${path}`, {

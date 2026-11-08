@@ -1,6 +1,6 @@
 // The log sheet's index. One entry per post, in reverse date order; each post is its own page
 // under src/pages/log/, because a post with its own figures is a drawing, not a template fill.
-export type Post = {
+type Post = {
   slug: string;
   title: string;      // set in the display face, so short
   dek: string;

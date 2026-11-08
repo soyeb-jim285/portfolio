@@ -88,8 +88,34 @@
 .chart-head span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 7px; vertical-align: -1px; }
-/* Chart.js sizes its canvas to this box, so the box owns the height. */
-.cwrap { position: relative; width: 100%; }
+/* Bars are percentages of the plot, so they follow the sheet with no script. The plot's right
+   padding is the room for the value printed past the longest bar. */
+.bars { display: grid; gap: 10px; font-family: var(--mono); font-size: 12px; }
+.bar-row { display: grid; grid-template-columns: 22ch 1fr; gap: 12px; align-items: center; }
+.bar-name { color: var(--muted); text-align: right; }
+.bar-name small { display: block; font-size: 12px; }
+.bar-plot { display: grid; gap: 4px; padding: 3px 76px 3px 0; border-left: 1px solid var(--line-2); }
+.bar-line { display: flex; align-items: center; }
+.bar-line i { flex: none; height: 10px; }
+.bar-line b { flex: none; margin-left: 10px; color: var(--ink); font-weight: 400; }
+.line-chart { position: relative; height: 270px; margin-top: 30px; border-bottom: 1px solid var(--line-2); font-family: var(--mono); font-size: 12px; }
+.line-chart svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.line-chart polyline { fill: none; stroke: var(--c1); stroke-width: 2; }
+.line-point { position: absolute; box-sizing: border-box; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 2px solid var(--c1); border-radius: 50%; background: var(--bg); }
+.line-point b { position: absolute; bottom: 12px; left: 50%; translate: -50% 0; color: var(--ink); font-weight: 400; white-space: nowrap; }
+.line-x { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin: 0; padding: 0; list-style: none; text-align: center; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.line-x small { display: block; font-size: 12px; }
+@media (max-width: 559px) {
+  .bar-row { grid-template-columns: 84px 1fr; }
+  .bar-plot { padding-right: 56px; }
+  .line-x small { display: none; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .bar-line i { transform-origin: left; animation: bar-grow linear both; animation-timeline: view(); animation-range: entry 10% cover 35%; }
+  }
+}
+@keyframes bar-grow { from { transform: scaleX(0); } }
 .chart figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; border-top: 1px solid var(--line); padding-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .chart figcaption p { max-width: 62ch; }
 .chart figcaption b { color: var(--accent); font-weight: 500; margin-right: 10px; letter-spacing: .08em; }

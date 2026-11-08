@@ -43,11 +43,9 @@
   /* One masked backdrop layer, not the eight an iOS progressive blur really uses: the blur is
      strongest against the drawer's top edge and fades out up the screen. Where backdrop-filter
      is unsupported the overlay is still dimmed, which is the whole job. */
-  .assistant-panel[data-mobile] ~ .assistant-overlay,
-  .assistant-overlay:has(~ .assistant-panel[data-mobile]) { background: linear-gradient(to bottom, rgba(8, 18, 35, .35), rgba(8, 18, 35, .72)); }
+  .assistant-panel[data-mobile]::backdrop { background: linear-gradient(to bottom, rgba(8, 18, 35, .35), rgba(8, 18, 35, .72)); }
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-    .assistant-panel[data-mobile] ~ .assistant-overlay,
-    .assistant-overlay:has(~ .assistant-panel[data-mobile]) {
+    .assistant-panel[data-mobile]::backdrop {
       -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
       -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, .25) 34%, #000 82%);
       mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, .25) 34%, #000 82%);
@@ -56,8 +54,7 @@
   .assistant-panel[data-mobile] { --assistant-head: 52px; }
   .assistant-panel[data-mobile] .assistant-header { padding-top: 8px; }
   .assistant-panel[data-mobile] .assistant-header::after { border-radius: 12px 12px 0 0; }
-  /* Radix locks scrolling with an inline style on body, and Astro swaps body on navigation, so
-     the lock is lost while the drawer is still open. A rule in the stylesheet survives the swap. */
+  /* A modal <dialog> does not lock page scrolling, so the stylesheet does, and survives Astro's body swap. */
   body:has(.assistant-panel[data-mobile][data-state=open]) { overflow: hidden; }
   .chat-button[data-size=icon] { width: 40px; height: 40px; }
   .assistant-form textarea { font-size: 16px; }
@@ -119,7 +116,6 @@
   body:has(.assistant-panel[data-state=open]) { padding-right: 0; }
   html[data-printing-artifact] .assistant-root { display: block; }
   html[data-printing-artifact] .assistant-launch,
-  html[data-printing-artifact] .assistant-overlay,
   html[data-printing-artifact] .assistant-header,
   html[data-printing-artifact] .assistant-body,
   html[data-printing-artifact] .assistant-footer,

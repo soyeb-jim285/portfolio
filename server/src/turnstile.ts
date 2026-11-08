@@ -1,7 +1,7 @@
 // Cloudflare Turnstile, checked where a visitor starts something that costs money or sends mail:
 // a new conversation and a direct contact message. Everything later in a conversation rides on the
 // session that passed it, so a visitor sees at most one check per conversation.
-export type Verdict = 'pass' | 'fail' | 'unavailable';
+type Verdict = 'pass' | 'fail' | 'unavailable';
 
 const SITEVERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 

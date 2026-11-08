@@ -1,7 +1,7 @@
 import { navigate } from 'astro:transitions/client';
 import { findTarget, type SiteTarget } from '../data/site-map';
 
-export type RequestedAction = { id: string; target: string; route: string; anchor: string; label: string; action: 'reveal' | 'contact' };
+type RequestedAction = { id: string; target: string; route: string; anchor: string; label: string; action: 'reveal' | 'contact' };
 export type ActionStatus = 'done' | 'missing' | 'failed';
 
 const HIGHLIGHT_MS = 2600;

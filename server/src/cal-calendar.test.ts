@@ -4,8 +4,7 @@ import { createCalScheduler } from './cal-calendar';
 import { AmbiguousBookingError } from './scheduler';
 
 const config = {
-  CAL_API_KEY: 'cal_test', CAL_API_BASE: 'https://api.cal.com/v2',
-  CAL_SLOTS_API_VERSION: '2024-09-04', CAL_BOOKINGS_API_VERSION: '2024-08-13',
+  CAL_API_KEY: 'cal_test',
   CAL_EVENT_TYPES: [
     { id: 7034884, key: '30min', minutes: 30, label: 'Intro call' },
     { id: 7034885, key: '15min', minutes: 15, label: 'Quick chat' },

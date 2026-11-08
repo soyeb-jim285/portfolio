@@ -67,7 +67,7 @@ export function symbolsIn(text: string, language: string, limit = 12) {
   return [...found];
 }
 
-export type Chunk = { path: string; language: string; symbols: string[]; startLine: number; endLine: number; content: string; contentHash: Buffer };
+type Chunk = { path: string; language: string; symbols: string[]; startLine: number; endLine: number; content: string; contentHash: Buffer };
 export const sha256 = (value: string) => createHash('sha256').update(value).digest();
 
 // Fixed overlapping line windows: predictable citations, and every line appears in some chunk.

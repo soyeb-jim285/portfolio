@@ -42,7 +42,7 @@ CREATE INDEX IF NOT EXISTS answer_metrics_created_idx ON answer_metrics (created
 -- Phase 10: search that works for questions, not just identifiers.
 -- search_v2 splits camelCase (DrawingCanvas -> drawing canvas) and stems path, symbols and content
 -- with the English dictionary, so "draws" meets DrawingCanvas; the 'simple' copies keep exact
--- identifiers (qtconcurrent) findable too. The original `search` column stays for comparison.
+-- identifiers (qtconcurrent) findable too.
 ALTER TABLE source_chunks ADD COLUMN IF NOT EXISTS search_v2 tsvector GENERATED ALWAYS AS (
   setweight(to_tsvector('english', regexp_replace(translate(path, '/_.-', '    '), '([a-z0-9])([A-Z])', '\1 \2', 'g')), 'A') ||
   setweight(to_tsvector('english', regexp_replace(symbol_text, '([a-z0-9])([A-Z])', '\1 \2', 'g')), 'A') ||
@@ -51,6 +51,9 @@ ALTER TABLE source_chunks ADD COLUMN IF NOT EXISTS search_v2 tsvector GENERATED 
   setweight(to_tsvector('simple', content), 'D')
 ) STORED;
 CREATE INDEX IF NOT EXISTS source_chunks_search_v2_idx ON source_chunks USING gin (search_v2);
+-- search_v2 replaced the original generated column, which nothing reads any more.
+DROP INDEX IF EXISTS source_chunks_search_idx;
+ALTER TABLE source_chunks DROP COLUMN IF EXISTS search;
 
 -- A one-sentence description of each file, written by a small model at index time, so a question in
 -- plain words can find code whose identifiers share none of them. Reused across revisions by content hash.

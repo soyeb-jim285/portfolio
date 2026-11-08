@@ -1,5 +1,4 @@
-// Provider-neutral scheduling interface. Implemented by `cal-calendar.ts` (the default) and
-// `google-calendar.ts`; SCHEDULER picks one. This file holds the shapes and the one error the
+// The scheduling interface, implemented by `cal-calendar.ts`: the shapes and the one error the
 // API treats specially.
 export type Slot = { start: string; end: string };
 // A meeting length the visitor can book. `key` is what the model and the browser pass around.

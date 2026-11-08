@@ -7,7 +7,6 @@ import { createDb } from './db';
 import { createEmbedder } from './embeddings';
 import { createMailer } from './mailer';
 import { createRetrieval } from './retrieval';
-import { createGoogleScheduler } from './google-calendar';
 import { createCalScheduler } from './cal-calendar';
 import { createStorage } from './storage';
 
@@ -21,7 +20,7 @@ const retrieval = createRetrieval(db.pool, createEmbedder(config.OPENROUTER_API_
 const app = createApp(config, db, retrieval,
   { configured: createMailer(config).configured, recipientLabel: config.CONTACT_LABEL, send: async () => { throw new Error('evaluation never sends'); } },
   { configured: false, put: async () => {}, signedUrl: async () => '', remove: async () => {} },
-  config.SCHEDULER === 'google' ? createGoogleScheduler({ ...config, MEETING_HOURS: { days: config.MEETING_DAYS, start: config.MEETING_START, end: config.MEETING_END } }) : createCalScheduler(config),
+  createCalScheduler(config),
   new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 0 }),
   { metricsOrigin: 'eval' });
 

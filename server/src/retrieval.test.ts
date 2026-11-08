@@ -130,9 +130,6 @@ test('repository weighting: strong lets a featured repo beat a better match, gen
   await pool.query("UPDATE repo_facts SET stars = 307, pushed_at = now() WHERE repo = 'hyprfm'");
   await pool.query("UPDATE repo_facts SET stars = 0, pushed_at = now() - interval '4 years' WHERE repo = 'old-scratch'");
 
-  // The old policy: a multiplier of up to 2.4 puts the featured repository first even over a better match.
-  const strong = await retrieval.search('progressChanged', { variant: { weighting: 'strong' } });
-  assert.equal(strong[0].repo, 'hyprfm', 'strong weighting overrides the better match');
   // The default: weighting is a tie-breaker only, so the better match wins and both stay visible.
   const hits = await retrieval.search('progressChanged');
   assert.equal(hits[0].repo, 'old-scratch', 'gentle weighting lets the better match rank first');

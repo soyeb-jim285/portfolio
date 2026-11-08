@@ -41,7 +41,7 @@ export const findTarget = (id: string) => siteTargets.find(target => target.id =
 
 // The only images the assistant may put on screen. Like the targets above, the model names an
 // id and nothing else: it can never point the page at an arbitrary URL.
-export type SiteImage = { id: string; src: string; alt: string; caption: string };
+type SiteImage = { id: string; src: string; alt: string; caption: string };
 
 export const siteImages: SiteImage[] = [
   { id: 'portrait', src: '/assets/portrait.jpg', alt: 'Soyeb Pervez Jim', caption: 'Soyeb Pervez Jim, Dhaka' },

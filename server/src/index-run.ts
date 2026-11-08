@@ -13,7 +13,7 @@ import { summarizeMissing, type Summarizer } from './summaries';
 // Any fixed number works; it only has to be the same for every process that indexes.
 const INDEX_LOCK = 7_210_421;
 
-export type IndexRun = { skipped?: 'locked'; failed: boolean; unchanged: number; updated: number; embedded: number };
+type IndexRun = { skipped?: 'locked'; failed: boolean; unchanged: number; updated: number; embedded: number };
 
 export async function runIndex(pool: Pool, config: Config, github: GitHub, embedder: Embedder, options: {
   requested?: string[]; force?: boolean; dryRun?: boolean; log?: (message: string) => void; summarizer?: Summarizer;

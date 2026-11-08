@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { ArrowDown, ArrowRight, MessageSquare, Trash2, X } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '../ui/sheet';
+import { SheetContent } from '../ui/sheet';
 import { preloadTurnstile } from '../../lib/turnstile';
 import { starters } from '../../data/assistant-questions';
 import ChatComposer from './ChatComposer';
@@ -41,20 +41,14 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
   const { toBottom } = actions;
 
   return <div className="assistant-root" ref={setPortal}>
-    {/* Modal only while open: the content is force-mounted, and a closed modal would keep its overlay,
-        scroll lock and aria-hidden on the page, leaving it dark and untouchable on mobile. */}
-    <Sheet open={open} onOpenChange={setOpen} modal={mobile && open}>
-      <SheetTrigger asChild>
-        <Button className="assistant-launch" variant="default" hidden={open} disabled={!portal} onPointerEnter={preloadTurnstile} onFocus={preloadTurnstile}>
+    <Button className="assistant-launch" onClick={() => setOpen(true)} variant="default" hidden={open} disabled={!portal} onPointerEnter={preloadTurnstile} onFocus={preloadTurnstile}>
           <MessageSquare size={16} aria-hidden="true" /> Ask about my work
-        </Button>
-      </SheetTrigger>
-      <SheetContent container={portal} data-phase={phase} data-mobile={mobile || undefined}
+    </Button>
+      <SheetContent open={open} modal={mobile} container={portal} onDismiss={() => setOpen(false)} onShown={() => { if (!mobile) input.current?.focus(); }}
+        aria-labelledby="assistant-title" aria-describedby="assistant-description" data-phase={phase} data-mobile={mobile || undefined}
         // A message rises once, when it arrives. Retiring the animation inline outlives the page
         // swap, where the re-inserted conversation would otherwise fade up again in full.
-        onAnimationEnd={event => { if (event.animationName === 'assistant-rise') (event.target as HTMLElement).style.animation = 'none'; }}
-        onOpenAutoFocus={event => { if (!mobile) { event.preventDefault(); input.current?.focus(); } }}
-        onInteractOutside={event => { if (!mobile) event.preventDefault(); }}>
+        onAnimationEnd={event => { if (event.animationName === 'assistant-rise') (event.target as HTMLElement).style.animation = 'none'; }}>
         {!mobile && <div className="assistant-resizer" role="separator" aria-orientation="vertical" aria-label="Resize assistant panel"
           aria-valuenow={width} aria-valuemin={MIN_WIDTH} aria-valuemax={760} tabIndex={0} onPointerDown={drag}
           onDoubleClick={() => setWidth(clampWidth(DEFAULT_WIDTH))}
@@ -63,15 +57,15 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
             if (step) { event.preventDefault(); setWidth(current => clampWidth(current + step)); }
           }} />}
         <header className="assistant-header">
-          <SheetTitle className="assistant-title">Legend</SheetTitle>
+          <h2 id="assistant-title" className="assistant-title">Legend</h2>
           <div className="assistant-header-actions">
             <Button size="icon" variant="ghost" aria-label="Clear chat" title="Clear chat" disabled={busy || !entries.length} onClick={() => {
               setEntries([]); setQuestion(''); setTake(null); setCopied(''); setAlert(''); setStatus('Chat cleared.'); setAtBottom(true); follow.current = true; pinned.current = false; anchor.current = ''; input.current?.focus();
             }}><Trash2 size={15} aria-hidden="true" /></Button>
-            <SheetClose asChild><Button size="icon" variant="ghost" aria-label="Close assistant"><X size={17} aria-hidden="true" /></Button></SheetClose>
+            <Button size="icon" variant="ghost" aria-label="Close assistant" onClick={() => setOpen(false)}><X size={17} aria-hidden="true" /></Button>
           </div>
         </header>
-        <SheetDescription className="assistant-sr-only">Ask about Jim’s projects, engineering work and research. Answers come from public portfolio content.</SheetDescription>
+        <p id="assistant-description" className="assistant-sr-only">Ask about Jim’s projects, engineering work and research. Answers come from public portfolio content.</p>
         <div className="assistant-body" ref={viewport}
           onWheel={() => { pinned.current = false; }} onTouchMove={() => { pinned.current = false; }}
           onScroll={() => {
@@ -94,6 +88,5 @@ export default function ChatPanel({ endpoint }: { endpoint: string }) {
         {!atBottom && !busy && <Button className="assistant-jump" onClick={toBottom}><ArrowDown size={14} aria-hidden="true" /> Latest</Button>}
         <ChatComposer panel={panel} ask={ask} voice={voice} />
       </SheetContent>
-    </Sheet>
   </div>;
 }

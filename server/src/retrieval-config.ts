@@ -25,23 +25,6 @@ export const clip = (text: string, limit: number) => (text.length <= limit ? tex
 // Names are compared lowercased on both sides: GitHub names keep their case (LeakNet), the model's may not.
 export const key = (repo: string) => repo.toLowerCase().trim();
 
-/**
- * How a search is assembled. Each switch is one of the measured improvements, so the evaluation can
- * turn them on one at a time; production uses DEFAULT_VARIANT.
- * - lexical 'and' needs every word of the question in one chunk (only bare identifiers ever matched);
- *   'or' ranks chunks by how many words they contain and where (path and symbols count most).
- * - identifiers: search the camelCase-split, stemmed column, so "draws" meets DrawingCanvas.
- * - weighting 'strong' multiplied scores by up to 2.4 for featured, starred, fresh repositories, which
- *   let any chunk of HyprFM outrank the best chunk elsewhere; 'gentle' only breaks near-ties.
- * - summaries: also rank files by their one-sentence description, in words and in meaning.
- * - rerank: a small model reorders the top candidates after reading them.
- */
-export type SearchVariant = {
-  lexical: 'and' | 'or'; identifiers: boolean; weighting: 'strong' | 'gentle'; summaries: boolean; rerank: boolean;
-};
-export const BASELINE_VARIANT: SearchVariant = { lexical: 'and', identifiers: false, weighting: 'strong', summaries: false, rerank: false };
-export const DEFAULT_VARIANT: SearchVariant = { lexical: 'or', identifiers: true, weighting: 'gentle', summaries: true, rerank: false };
-export const RERANK_POOL = 20;
 
 // Words of the question for an OR query: letters and digits only, so nothing in a question can
 // change the query's syntax. camelCase words are split and also kept whole for exact identifiers.

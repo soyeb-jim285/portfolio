@@ -1,5 +1,4 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
-import { apiReference } from '@scalar/hono-api-reference';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import type { MiddlewareHandler } from 'hono';
@@ -116,7 +115,6 @@ export function createApp(config: Config, db: Db, retrieval: Retrieval, mailer: 
   registerBookingRoutes(app, deps);
 
   app.doc('/openapi.json', { openapi: '3.1.0', info: { title: 'Portfolio Assistant API', version: '0.2.0' } });
-  app.get('/docs', apiReference({ url: '/openapi.json' }));
   app.onError((error, c) => {
     if (error instanceof SyntaxError) return c.json({ error: 'Invalid JSON' }, 400);
     console.error('Unhandled request error:', error.message);

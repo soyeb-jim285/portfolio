@@ -8,13 +8,11 @@ import { createDb } from './db';
 import { createEmbedder } from './embeddings';
 import { createMailer } from './mailer';
 import { createStorage } from './storage';
-import { createGoogleScheduler } from './google-calendar';
 import { createCalScheduler } from './cal-calendar';
 import { createRetrieval } from './retrieval';
 import { createGitHub } from './github';
 import { runIndex } from './index-run';
 import OpenAI from 'openai';
-import { createReranker } from './rerank';
 import { warmAnswers } from './warm';
 import { fixedQuestions } from '../../src/data/assistant-questions';
 import { projects } from '../../src/data/content';
@@ -25,8 +23,7 @@ const config = configSchema.parse(process.env);
 const db = await createDb(config.DATABASE_URL, config.SESSION_TTL_DAYS, config.METRICS_RETENTION_DAYS);
 
 const openrouter = new OpenAI({ apiKey: config.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 1 });
-const retrieval = createRetrieval(db.pool, createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS),
-  { reranker: config.RERANK_MODEL ? createReranker(openrouter, config.RERANK_MODEL) : undefined });
+const retrieval = createRetrieval(db.pool, createEmbedder(config.OPENROUTER_API_KEY, config.OPENROUTER_EMBEDDING_MODEL, config.OPENROUTER_EMBEDDING_DIMS));
 const indexed = await retrieval.indexedRepos().catch(error => { console.error('Could not read the code index:', error.message); return []; });
 console.log(indexed.length ? `Code index: ${indexed.map(entry => `${entry.repo}@${entry.commit.slice(0, 8)}`).join(', ')}` : 'Code index: empty, run `npm run index`');
 
@@ -36,12 +33,10 @@ console.log(mailer.configured ? `Contact delivery: on, to ${config.CONTACT_TO}` 
 const storage = createStorage(config);
 console.log(storage.configured ? `Artifacts: on, bucket ${config.R2_BUCKET}` : 'Artifacts: off, set the R2_* variables');
 
-const scheduler = config.SCHEDULER === 'google'
-  ? createGoogleScheduler({ ...config, MEETING_HOURS: { days: config.MEETING_DAYS, start: config.MEETING_START, end: config.MEETING_END } })
-  : createCalScheduler(config);
+const scheduler = createCalScheduler(config);
 console.log(scheduler.configured
-  ? `Scheduling: on via ${config.SCHEDULER}, ${scheduler.eventTypes.map(type => `${type.label} (${type.minutes}min)`).join(', ')}`
-  : `Scheduling: off, set ${config.SCHEDULER === 'google' ? 'the GOOGLE_* variables' : 'CAL_API_KEY and CAL_EVENT_TYPES'}`);
+  ? `Scheduling: on via Cal.com, ${scheduler.eventTypes.map(type => `${type.label} (${type.minutes}min)`).join(', ')}`
+  : 'Scheduling: off, set CAL_API_KEY and CAL_EVENT_TYPES');
 
 const genUi = config.JEV_MODEL ? createGenUiComposer(config.OPENROUTER_API_KEY, config.JEV_MODEL, config.JEV_TIMEOUT_MS) : undefined;
 console.log(genUi ? `Generative UI: on via OpenRouter ${config.JEV_MODEL}` : 'Generative UI: off, set JEV_MODEL to enable it');

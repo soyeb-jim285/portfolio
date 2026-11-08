@@ -42,12 +42,6 @@ CREATE TABLE IF NOT EXISTS source_chunks (
   content_hash bytea NOT NULL,
   -- Unconstrained vector, scanned exactly. A few thousand rows do not need HNSW,
   -- and leaving the dimension open lets a model change be a reindex instead of a migration.
-  embedding vector,
-  search tsvector GENERATED ALWAYS AS (
-    setweight(to_tsvector('simple', translate(path, '/_.-', '    ')), 'A') ||
-    setweight(to_tsvector('simple', symbol_text), 'A') ||
-    setweight(to_tsvector('english', content), 'C')
-  ) STORED
+  embedding vector
 );
-CREATE INDEX IF NOT EXISTS source_chunks_search_idx ON source_chunks USING gin (search);
 CREATE INDEX IF NOT EXISTS source_chunks_revision_idx ON source_chunks (revision_id);

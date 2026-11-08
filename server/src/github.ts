@@ -6,7 +6,7 @@ export type RemoteRepo = {
   name: string; owner: string; url: string; branch: string; description: string;
   stars: number; language: string; topics: string[]; pushedAt: string; openIssues: number; sizeKb: number;
 };
-export type TreeEntry = { path: string; size: number };
+type TreeEntry = { path: string; size: number };
 
 export function createGitHub(token: string | undefined, fetchImpl: typeof fetch = fetch) {
   const headers: Record<string, string> = {

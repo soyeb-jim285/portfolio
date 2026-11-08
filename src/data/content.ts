@@ -1,6 +1,5 @@
 // Single source of truth for every variant. Facts come from ../cv.json (with provenance);
 // this file shapes them for pages. Do not invent numbers here.
-import cv from './cv.json';
 
 export const person = {
   name: 'Soyeb Pervez Jim',
@@ -80,4 +79,3 @@ export const skills = {
   systems: ['Qt 6', 'Wayland', 'Hyprland', 'Arch Linux', 'Flatpak', 'Nix', 'AppImage'],
 };
 
-export const provenance = cv.sources;

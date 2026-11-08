@@ -7,8 +7,6 @@ test('documents the real routes and streams a session-grounded answer', async ()
   const { sent, client } = replying();
   const app = createApp(config, db, fakeRetrieval(), fakeMailer(), fakeStorage(), fakeScheduler(), client);
   assert.equal((await app.request('/health')).status, 200);
-  const docs = await (await app.request('/docs')).text();
-  assert.match(docs, /scalar/i);
   const spec = await (await app.request('/openapi.json')).json();
   assert.ok(spec.paths['/v1/chat'].post.responses['200'].content['text/event-stream']);
   assert.ok(spec.components.schemas.ChatEvent);

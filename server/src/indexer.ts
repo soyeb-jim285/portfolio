@@ -14,7 +14,7 @@ const INSERT_BATCH = 100;
 const git = (args: string[], cwd?: string) => run('git', args, { cwd, maxBuffer: 64 * 1024 * 1024, timeout: 600_000 });
 
 /** Head commit of the default branch, without cloning anything. */
-export async function remoteHead(repo: Repo) {
+async function remoteHead(repo: Repo) {
   const { stdout } = await git(['ls-remote', repo.url, `refs/heads/${repo.branch}`]);
   return stdout.split(/\s+/)[0] ?? '';
 }
@@ -35,7 +35,7 @@ export const wantedPaths = (entries: { path: string; size: number }[]) =>
  * sparse checkout limited to those paths downloads their contents and nothing else, so a
  * repository full of binaries costs the bytes of its source and no more.
  */
-export async function fetchRepoFiles(repo: Repo, cacheDir: string, paths: string[]) {
+async function fetchRepoFiles(repo: Repo, cacheDir: string, paths: string[]) {
   const dir = join(cacheDir, `${repo.owner}--${repo.name}`);
   await mkdir(cacheDir, { recursive: true });
   const cloned = await stat(join(dir, '.git')).then(() => true).catch(() => false);
@@ -56,7 +56,7 @@ export async function fetchRepoFiles(repo: Repo, cacheDir: string, paths: string
   return { dir, commit: stdout.trim() };
 }
 
-export type IndexReport = {
+type IndexReport = {
   repo: string; commit: string; files: number; chunks: number; embedded: number; reused: number;
   skipped: { path: string; reason: string }[]; revisionId: string; unchanged?: boolean;
 };

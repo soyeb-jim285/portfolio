@@ -75,7 +75,6 @@ The combined command labels frontend/API logs and stops both services on Ctrl+C 
 The frontend origin must match `SITE_ORIGIN` exactly, including port. Server environment validation rejects the example key/model placeholders. Never put provider credentials in `PUBLIC_*` variables.
 
 - API health: `http://localhost:3001/health`
-- Interactive Scalar documentation: `http://localhost:3001/docs`
 - Exportable OpenAPI specification: `http://localhost:3001/openapi.json`
 
 While answering, the model may call eight tools: `search_knowledge` (hybrid full-text and vector search over the index), `read_source` (a bounded window of one indexed file), `list_files`, `show_section` (take the visitor to a part of this site), `prepare_contact` (draft a message), `create_artifact` (write a downloadable document), `get_availability` (read real calendar slots), and `propose_booking` (offer one slot for confirmation). Each call is bounded, validated against the allowlist, and capped by `MAX_TOOL_STEPS`; the final step runs without tools so the model must answer. Tool results are wrapped as untrusted evidence, so text inside the source code cannot redirect the assistant. The stream reports each execution and the sources actually read, and both are stored with the answer.
@@ -84,22 +83,21 @@ While answering, the model may call eight tools: `search_knowledge` (hybrid full
 
 ### Scheduling
 
-Scheduling runs on Google Calendar directly, with no scheduling service in between. `get_availability` reads your real free/busy list and turns it into bookable slots here: your working hours, meeting length, buffer and notice period, computed in your own time zone and then shown to the visitor in theirs. The picker groups slots by day with a count per day and a compact time grid, and the model receives a per-day summary with a handful of example times rather than the whole list, which keeps a week of availability from costing a thousand prompt tokens.
+Scheduling runs on Cal.com, which owns working hours, buffers, notice and slot generation. `get_availability` reads open slots for the event types in `CAL_EVENT_TYPES`.
 
 There is no tool that books, mirroring contact. Picking a time calls `POST /v1/proposals`, which re-checks live availability and holds that slot for confirmation, so a visitor can book even when the model only listed times; `propose_booking` does the same from the model's side. Either way the visitor confirms through `POST /v1/bookings` with the slot and details they saw.
 
-At confirmation the server claims the proposal atomically, re-reads free/busy, and refuses a slot taken in the meantime with 409 and the current times, which the panel shows immediately. Confirming the same proposal twice returns the first booking rather than making a second. If Google does not answer, or answers 5xx, the outcome is recorded as unknown and never retried automatically, because the event may already exist; the visitor is told to check their email first. Bookings are capped per day across the whole server, and unconfirmed proposals expire and are swept.
+At confirmation the server claims the proposal atomically, re-reads availability, and refuses a slot taken in the meantime with 409 and the current times, which the panel shows immediately. Confirming the same proposal twice returns the first booking rather than making a second. If Google does not answer, or answers 5xx, the outcome is recorded as unknown and never retried automatically, because the event may already exist; the visitor is told to check their email first. Bookings are capped per day across the whole server, and unconfirmed proposals expire and are swept.
 
-A confirmed booking becomes a Google Calendar event with the visitor as an invited attendee, so Google sends the invitation and the reminders. Set `GOOGLE_ADD_MEET=true` to attach a Meet link.
+A confirmed booking is created through Cal.com, which sends the invitation and the reminders.
 
 #### Setting it up
 
-1. In Google Cloud, create a project, enable the Google Calendar API, and create an OAuth client of type **Desktop app**.
-2. Put the client id and secret in `server/.env`.
-3. Run `cd server && npm run google:auth`, approve in the browser, and paste the `code` parameter back. It prints the refresh token to store as `GOOGLE_REFRESH_TOKEN`.
+1. Create an API key under Settings, Developer, API keys in Cal.com.
+2. Set `CAL_API_KEY` in `server/.env`.
+3. Set `CAL_EVENT_TYPES` to `<eventTypeId>:<minutes>:<label>` entries separated by `|`.
 
-The defaults are weekdays 09:00 to 18:00 `Asia/Dhaka`, 12 hours notice, a 10 minute buffer around existing events, half-hour slot starts, and a 14 day window. All of it is configurable, and the daylight-saving arithmetic is covered by tests in `src/slots.test.ts`. Without the three credentials the tools are refused, the endpoints answer 503, and the assistant never offers a call.
-
+Without `CAL_API_KEY` and `CAL_EVENT_TYPES` the assistant never offers a call.
 ### Artifacts
 
 `create_artifact` writes a Markdown brief, project comparison or Mermaid diagram, cites the source ranges it read and labels what it inferred. The document is stored privately in R2 under a key the server builds from its own ids, so a title can never shape the path. Documents over `ARTIFACT_MAX_BYTES` are refused, as is anything containing HTML, an inline event handler or a script-like URL. `GET /v1/artifacts/{id}` checks that the artifact belongs to the caller's session and only then returns a signed URL valid for `ARTIFACT_URL_TTL_SECONDS`; another session gets 404. Rows expire after `ARTIFACT_TTL_DAYS` and the hourly sweep deletes the objects with them, so nothing stored outlives its row.
@@ -132,7 +130,7 @@ A citation in an answer links to the cited lines on GitHub at the indexed commit
 
 The site's own contact dialog posts to the same endpoint, so both paths share the validation, limits and delivery. Set `RESEND_API_KEY`, `CONTACT_FROM` (on a domain verified in Resend) and `CONTACT_TO` to switch delivery on; without all three the assistant says delivery is off and points at the contact page, the endpoint answers 503, and the dialog falls back to the visitor's mail client. A 202 means the provider accepted the message, not that it reached the inbox.
 
-Every `/v1` route requires the configured site Origin. `POST /v1/sessions` issues a bearer token for one anonymous visitor; `POST /v1/chat` streams an answer. The browser sends recent turns as `history`; the server retains the newest `MAX_MESSAGES_PER_SESSION` and trims the oldest to fit the context budget. A finished answer is cached for `ANSWER_CACHE_TTL_HOURS` (default 24, 0 disables it) under a SHA-256 hash of the model, system prompt, indexed commits, visitor time zone, question and **full retained history**. Identical contexts from any visitor replay with `usage.cached` set, without a model call or daily-budget request. Matching only a suffix is unsafe: an answer may quote earlier private context. Failed or truncated answers and answers containing drafts, bookings, documents, slot lists or navigation are not cached. Reindexing or changing the prompt automatically changes the key. Scalar documents the contract; the API docs page has a different origin, so use the site or curl:
+Every `/v1` route requires the configured site Origin. `POST /v1/sessions` issues a bearer token for one anonymous visitor; `POST /v1/chat` streams an answer. The browser sends recent turns as `history`; the server retains the newest `MAX_MESSAGES_PER_SESSION` and trims the oldest to fit the context budget. A finished answer is cached for `ANSWER_CACHE_TTL_HOURS` (default 24, 0 disables it) under a SHA-256 hash of the model, system prompt, indexed commits, visitor time zone, question and **full retained history**. Identical contexts from any visitor replay with `usage.cached` set, without a model call or daily-budget request. Matching only a suffix is unsafe: an answer may quote earlier private context. Failed or truncated answers and answers containing drafts, bookings, documents, slot lists or navigation are not cached. Reindexing or changing the prompt automatically changes the key. `/openapi.json` documents the contract; the API docs page has a different origin, so use the site or curl:
 
 ```sh
 TOKEN=$(curl -s -X POST http://localhost:3001/v1/sessions \
