@@ -340,7 +340,7 @@
     {
       "name": "HyprFM",
       "repo": "https://github.com/soyeb-jim285/hyprfm",
-      "stars": 349,
+      "stars": 350,
       "language": "C++",
       "src": ["gh-hyprfm", "gh-api-repos", "linuxlinks"],
       "conf": "verified",
