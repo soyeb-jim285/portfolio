@@ -259,9 +259,11 @@
     },
     {
       "id": "ai4pain-2026",
-      "title": "Detecting Pain Without Localising It: A Hierarchical Physiological Classifier and the Arm-Hand Localisation Ceiling on AI4Pain 2026",
-      "venue": "ACII 2026, Grand Challenge Track",
-      "status": "under double-blind review",
+      "title": "A Two-Stage Hierarchical Classifier for Pain Detection and Localisation from Physiological Signals",
+      "venue": "2026 14th International Conference on Affective Computing and Intelligent Interaction Workshops and Demos (ACIIW), IEEE",
+      "status": "published",
+      "doi": "10.1109/ACIIW71585.2026.11712101",
+      "authors": ["Soyeb Pervez Jim", "Ahasanul Kabir Rifat", "Tahera Hossain", "Ammar Alsherfawi", "Md. Zasim Uddin", "Takuro Yonezawa"],
       "src": ["local-ai4pain"],
       "conf": "verified",
       "results": {
@@ -568,7 +570,6 @@
     "What the unverified research folders actually contain (battery-soh-mamba, dga-tabpfn, LeakNet, Na-Battery, bacteria projects, RET-lab, AlignPoint, HOLMES-IV).",
     "Confirmed title of the final-year thesis.",
     "Status of the ISAS/ABC 2025 work — submitted, published, or abandoned.",
-    "Whether the AI4Pain paper has been accepted since submission.",
     "Current Fuego compensation, for benchmarking against the remote market."
   ]
 }

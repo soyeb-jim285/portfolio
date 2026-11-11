@@ -10,7 +10,7 @@ const [psep, e2co, pain, mumidc] = research;
 <Layout title="Research, Soyeb Pervez Jim" description="Physics-informed models for pipeline leak detection and CO2 storage, the AI4Pain 2026 pain classifier and the MUMIDC movement-intent model, with measured results." sheet="3" big="Research" stamp={{ k: 'Papers', v: '2 journal, 2 challenge' }}>
   <section class="head r" data-anchor="research-intro">
     <h1 class="title">Research</h1>
-    <p class="sub">Two journal papers, one published and one under review, plus two challenge papers on physiological signals. Every number below is from the official test set or from cross-validation, as noted.</p>
+    <p class="sub">Two journal papers, one published and one under review, plus two challenge papers on physiological signals, the AI4Pain one published by IEEE. Every number below is from the official test set or from cross-validation, as noted.</p>
   </section>
 
   <section data-anchor="research-pipelines">
@@ -58,10 +58,12 @@ const [psep, e2co, pain, mumidc] = research;
     <div class="head r" style="margin-bottom:24px">
       <h2 class="t2">{pain.short}</h2>
       <p class="sub"><span class="ora">{pain.venue}</span>, {pain.status}.</p>
+      <p class="sub"><a class="nowrap" href={pain.doi} target="_blank" rel="noopener">doi.org/10.1109/ACIIW71585.2026.11712101</a></p>
     </div>
     <div class="r">
       <p class="lead">{pain.abstract}</p>
       <p class="lead"><b>Finding.</b> {pain.finding}</p>
+      <p class="lead"><b>Authors.</b> {pain.authors}.</p>
     </div>
     <div class="diag-wide"><PainDiagram /></div>
     <div class="tw r" style="margin-top:32px">

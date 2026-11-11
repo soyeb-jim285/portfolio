@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T11:42:38.256Z",
+  "generatedAt": "2026-11-11T05:30:04.707Z",
   "featuredRepos": [
     "hyprfm",
     "ocr-visualization-",
@@ -347,10 +347,10 @@
     },
     {
       "slug": "ai4pain-2026",
-      "title": "Detecting Pain Without Localising It: A Hierarchical Physiological Classifier and the Arm-Hand Localisation Ceiling on AI4Pain 2026",
+      "title": "A Two-Stage Hierarchical Classifier for Pain Detection and Localisation from Physiological Signals",
       "short": "Detecting pain without localising it",
-      "venue": "ACII 2026 Grand Challenge track",
-      "status": "under double-blind review",
+      "venue": "ACII 2026 Workshops and Demos (ACIIW), IEEE",
+      "status": "published, 2026",
       "finding": "Stage-one detection is strong. Stage-two arm-versus-hand localisation sits near chance and stays there through baseline-relative normalisation, respiratory dynamics, modality late-fusion, a sweep of non-linear models and an oracle variant fed ground-truth labels. At the segment level these peripheral signals carry pain intensity, not somatotopic location.",
       "results": [
         {
